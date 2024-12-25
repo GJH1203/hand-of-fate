@@ -19,10 +19,15 @@ repositories {
 }
 
 dependencies {
-	implementation("org.springframework.boot:spring-boot-starter-actuator")
 	implementation("org.springframework.boot:spring-boot-starter-data-mongodb")
 	implementation("org.springframework.boot:spring-boot-starter-web")
+
+	// Logging
 	implementation("org.springframework.boot:spring-boot-starter-logging")
+
+	// monitoring
+	implementation("org.springframework.boot:spring-boot-starter-actuator")
+	implementation ("io.micrometer:micrometer-registry-prometheus")
 
 	// immutables
 	annotationProcessor("org.immutables:value:2.10.1")
@@ -30,6 +35,9 @@ dependencies {
 
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+	// utility
+	implementation ("com.google.guava:guava:32.1.2-jre")
 }
 
 tasks.withType<Test> {
