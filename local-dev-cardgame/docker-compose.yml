@@ -1,0 +1,15 @@
+# MongoDB
+version: '3.8'
+services:
+  mongodb:
+    image: mongodb/mongodb-community-server:latest
+    container_name: card-game-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      - MONGODB_DATABASE=cardgame
+
+volumes:
+  mongodb_data:
