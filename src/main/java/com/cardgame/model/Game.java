@@ -4,6 +4,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
+import java.time.Instant;
 import java.util.List;
 
 @Document(collection = "games")
@@ -12,20 +13,26 @@ public class Game {
     @Id // Marks the primary key for this document's ID
     private String id;
 
-    @Field("board") // Maps this field to the "board" field in MongoDB
+    private GameState gameState;
+
     private Board board;
 
-    @Field("PlayerIds") // Maps the player IDs
-    private List<String> playerIds;
+    private Instant createdAt;
 
-    @Field("currentPlayerIndex") // The index of the player in the playerIds list
-    private int currentPlayerIndex;
+    private Instant updatedAt;
 
-    public Game(String id, List<String> playerIds) {
+    // constructor, getters, and setters
+    public Game() {
+        this.createdAt = Instant.now();
+        this.updatedAt = Instant.now();
+    }
+
+    public Game(String id, GameState gameState, Board board) {
         this.id = id;
-        this.board = new Board();
-        this.playerIds = playerIds;
-        this.currentPlayerIndex = 0;
+        this.gameState = gameState;
+        this.board = board;
+        this.createdAt = Instant.now();
+        this.updatedAt = Instant.now();
     }
 
     public String getId() {
@@ -36,6 +43,14 @@ public class Game {
         this.id = id;
     }
 
+    public GameState getGameState() {
+        return gameState;
+    }
+
+    public void setGameState(GameState gameState) {
+        this.gameState = gameState;
+    }
+
     public Board getBoard() {
         return board;
     }
@@ -44,19 +59,37 @@ public class Game {
         this.board = board;
     }
 
-    public List<String> getPlayerIds() {
-        return playerIds;
+    public Instant getCreatedAt() {
+        return createdAt;
     }
 
-    public void setPlayerIds(List<String> playerIds) {
-        this.playerIds = playerIds;
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
     }
 
-    public int getCurrentPlayerIndex() {
-        return currentPlayerIndex;
+    public Instant getUpdatedAt() {
+        return updatedAt;
     }
 
-    public void setCurrentPlayerIndex(int currentPlayerIndex) {
-        this.currentPlayerIndex = currentPlayerIndex;
+    public void setUpdatedAt(Instant updatedAt) {
+        this.updatedAt = updatedAt;
     }
+
+    @Override
+    public String toString() {
+        return "Game{" +
+                "id='" + id + '\'' +
+                ", gameState=" + gameState +
+                ", board=" + board +
+                ", createdAt=" + createdAt +
+                ", updatedAt=" + updatedAt +
+                '}';
+    }
+
+    public void updateGame(GameState gameState, Board board) {
+        this.gameState = gameState;
+        this.board = board;
+        this.updatedAt = Instant.now();
+    }
+
 }
