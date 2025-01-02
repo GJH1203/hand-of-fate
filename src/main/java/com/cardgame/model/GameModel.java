@@ -2,13 +2,11 @@ package com.cardgame.model;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.time.Instant;
-import java.util.List;
 
 @Document(collection = "games")
-public class Game {
+public class GameModel {
 
     @Id // Marks the primary key for this document's ID
     private String id;
@@ -22,12 +20,12 @@ public class Game {
     private Instant updatedAt;
 
     // constructor, getters, and setters
-    public Game() {
+    public GameModel() {
         this.createdAt = Instant.now();
         this.updatedAt = Instant.now();
     }
 
-    public Game(String id, GameState gameState, Board board) {
+    public GameModel(String id, GameState gameState, Board board) {
         this.id = id;
         this.gameState = gameState;
         this.board = board;
