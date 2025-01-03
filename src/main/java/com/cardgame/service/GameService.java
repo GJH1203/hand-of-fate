@@ -1,14 +1,15 @@
 package com.cardgame.service;
 
-import com.cardgame.dto.BoardDto;
-import com.cardgame.dto.GameDto;
-import com.cardgame.dto.ImmutableGameDto;
+import com.cardgame.dto.*;
 import com.cardgame.model.Board;
 import com.cardgame.model.GameModel;
+import com.cardgame.model.GameState;
+import com.cardgame.model.Position;
 import com.cardgame.repository.GameRepository;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class GameService {
@@ -18,38 +19,45 @@ public class GameService {
         this.gameRepository = gameRepository;
     }
 
-    public GameDto createGame(GameDto gameDto) {
-        // Convert DTO to entity
-        GameModel game = new GameModel();
-        game.setGameState(gameDto.getState());
-        game.setBoard(convertBoardDtoToEntity(gameDto.getBoard()));
-        game.setCreatedAt(Instant.now());
-        game.setUpdatedAt(Instant.now());
+    public GameDto createGame(GameState gameState, int width, int height, Map<Position, String> pieces) {
+        Board board = new Board(width, height, pieces);
+        GameModel gameModel = new GameModel(null, gameState, board);
+        gameModel = (GameModel) gameRepository.save(gameModel);
+        return convertToDto(gameModel);
+    }
 
-        // Save entity
-        GameModel savedGame = (GameModel) gameRepository.save(game);
+    public GameDto updateGame(String gameId, GameState gameState, int width, int height, Map<Position, String> pieces) throws Throwable {
+        GameModel gameModel = (GameModel) gameRepository
+                .findById(gameId)
+                .orElseThrow(() -> new RuntimeException("Game not found"));
+        Board board = new Board(width, height, pieces);
+        gameModel.updateGame(gameState, board);
+        gameModel = (GameModel) gameRepository.save(gameModel);
+        return convertToDto(gameModel);
+    }
 
-        // Convert back to DTO
+    private GameDto convertToDto(GameModel gameModel) {
         return ImmutableGameDto.builder()
-                .id(savedGame.getId())
-                .state(savedGame.getGameState())
-                .board(convertBoardToDto(savedGame.getBoard()))
-                .createdAt(savedGame.getCreatedAt())
-                .updatedAt(savedGame.getUpdatedAt())
+                .id(gameModel.getId())
+                .state(gameModel.getGameState())
+                .board(ImmutableBoardDto.builder()
+                        .width(gameModel.getBoard().getWidth())
+                        .height(gameModel.getBoard().getHeight())
+                        .pieces(convertPiecesToDto(gameModel.getBoard().getPieces()))
+                        .build())
+                .createdAt(gameModel.getCreatedAt())
+                .updatedAt(gameModel.getUpdatedAt())
                 .build();
     }
 
-    private BoardDto convertBoardToDto(Board board) {
-        return null;
+    private Map<PositionDto, String> convertPiecesToDto(Map<Position, String> pieces) {
+        return pieces.entrySet().stream()
+                .collect(Collectors.toMap(
+                        entry -> ImmutablePositionDto.builder()
+                                .x(entry.getKey().getX())
+                                .y(entry.getKey().getY())
+                                .build(),
+                        Map.Entry::getValue
+                ));
     }
-
-    private Board convertBoardDtoToEntity(BoardDto dto) {
-//        Board board = new Board();
-//        board.setWidth(dto.getWidth());
-//        board.setHeight(dto.getHeight());
-//        board.setPieces(convertPositionsToEntity(dto.getPieces()));
-//        return board;
-        return null;
-    }
-
 }
