@@ -3,7 +3,9 @@ package com.cardgame.service;
 import com.cardgame.dto.ImmutablePositionDto;
 import com.cardgame.dto.PositionDto;
 import com.cardgame.model.Position;
+import org.springframework.stereotype.Service;
 
+@Service
 public class PositionService {
 
     public PositionDto createPosition(int x, int y) {
