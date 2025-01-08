@@ -9,7 +9,6 @@ import org.immutables.value.Value;
 @JsonDeserialize(as = ImmutableCardDto.class)
 public interface CardDto {
     String getId();
-    String getSuit();
-    String getRank();
-    int getValue();
+    int getPower();
+    String getName();
 }
