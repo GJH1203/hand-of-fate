@@ -1,7 +1,9 @@
 package com.cardgame.service.player;
 
+import com.cardgame.dto.CardDto;
 import com.cardgame.dto.ImmutablePlayerAction;
 import com.cardgame.dto.PlayerAction;
+import com.cardgame.dto.PositionDto;
 import com.cardgame.model.Card;
 import com.cardgame.model.Position;
 import com.cardgame.service.GameService;
@@ -13,7 +15,7 @@ public class PlayerActionService {
     /**
      * Creates a card placement action
      */
-    public PlayerAction placeCard(String playerId, Card card, Position position) {
+    public PlayerAction placeCard(String playerId, CardDto card, PositionDto position) {
         // Basic validation
 //        if (playerId == null || card == null || position == null) {
 //            throw new InvalidActionException("Player ID, card, and position are required");
@@ -22,8 +24,8 @@ public class PlayerActionService {
         return ImmutablePlayerAction.builder()
                 .type(PlayerAction.ActionType.PLACE_CARD)
                 .playerId(playerId)
-                .card(card)
-                .targetPosition(position)
+                .card((Card) card)
+                .targetPosition((Position) position)
                 .timestamp(System.currentTimeMillis())
                 .build();
     }
