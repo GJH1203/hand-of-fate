@@ -60,4 +60,40 @@ public class GameService {
                         Map.Entry::getValue
                 ));
     }
+
+    /**
+     * Initialize a new game
+     */
+
+    /**
+     * Process a player's move
+     */
+
+    /**
+     * Validate if it's player's turn and game is activated
+     */
+
+    /**
+     * Check if move is valid according to game rules
+     */
+
+    /**
+     * Calculate current board scores
+     */
+
+    /**
+     * Check if game is over
+     */
+
+    /**
+     * Finalize the game and create result
+     */
+
+    /**
+     * Determine winner based on scores
+     */
+
+    /**
+     * Switch to next player
+     */
 }
