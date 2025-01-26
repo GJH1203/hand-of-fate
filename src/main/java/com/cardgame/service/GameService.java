@@ -1,6 +1,8 @@
 package com.cardgame.service;
 
 import com.cardgame.dto.*;
+import com.cardgame.exception.game.GameNotFoundException;
+import com.cardgame.exception.game.InvalidMoveException;
 import com.cardgame.model.Board;
 import com.cardgame.model.Card;
 import com.cardgame.model.Deck;
@@ -192,32 +194,222 @@ public class GameService {
     /**
      * Process a player's move
      */
+    public GameDto processMove(String gameId, PlayerAction action) {
+        GameModel gameModel = gameRepository.findById(gameId)
+                .orElseThrow(() -> new GameNotFoundException("Game not found: " + gameId));
+
+        // Validate turn and game state
+        validatePlayerTurn(gameModel, action.getPlayerId());
+
+        if (action.getType() == PlayerAction.ActionType.PLACE_CARD) {
+            // Validate and process card placement
+            validateMove(gameModel, action);
+            executeMove(gameModel, action);
+        } else if (action.getType() == PlayerAction.ActionType.PASS) {
+            // Handle pass action
+            handlePass(gameModel, action.getPlayerId());
+        }
+
+        // Check if game is over
+        if (isGameOver(gameModel)) {
+            finalizeGame(gameModel);
+        } else {
+            // Switch to next player
+            switchToNextPlayer(gameModel);
+        }
+
+        // Save and return updated game state
+        gameModel = gameRepository.save(gameModel);
+        return convertToDto(gameModel);
+    }
 
     /**
      * Validate if it's player's turn and game is activated
      */
+    private void validatePlayerTurn(GameModel gameModel, String playerId) {
+        if (gameModel.getGameState() != GameState.IN_PROGRESS) {
+            throw new InvalidMoveException("Game is not in progress");
+        }
+        if (!playerId.equals(gameModel.getCurrentPlayerId())) {
+            throw new InvalidMoveException("Not your turn");
+        }
+    }
 
     /**
      * Check if move is valid according to game rules
      */
+    private void validateMove(GameModel gameModel, PlayerAction action) {
+        Position targetPos = action.getTargetPosition();
+        Card card = action.getCard();
+        Player player = playerService.getPlayer(action.getPlayerId());
+
+        // Check if position is valid and empty
+        if (!gameModel.getBoard().isPositionValid(targetPos) ||
+                !gameModel.getBoard().isPositionEmpty(targetPos)) {
+            throw new InvalidMoveException("Invalid or occupied position");
+        }
+
+        // Check if player has the card
+        if (!player.getHand().contains(card)) {
+            throw new InvalidMoveException("Card not in player's hand");
+        }
+
+        // Check adjacency rule
+        boolean hasAdjacentCard = false;
+        List<Position> adjacentPositions = gameModel.getBoard().getAdjacentPositions(targetPos);
+
+        for (Position adj : adjacentPositions) {
+            String cardId = gameModel.getBoard().getCardIdAt(adj);
+            if (cardId != null) {
+                // Check if the adjacent card belongs to the current player
+                boolean isPlayerCard = player.getPlacedCards().values().stream()
+                        .anyMatch(c -> c.getId().equals(cardId));
+                if (isPlayerCard) {
+                    hasAdjacentCard = true;
+                    break;
+                }
+            }
+        }
+
+        // Exception for first move of each player
+        if (player.getPlacedCards().isEmpty()) {
+            // First move - check if it's at the designated starting position
+            boolean isValidStartPos = isValidStartingPosition(targetPos, action.getPlayerId(), gameModel);
+            if (!isValidStartPos) {
+                throw new InvalidMoveException("Invalid starting position");
+            }
+        } else if (!hasAdjacentCard) {
+            throw new InvalidMoveException("Must place card adjacent to your existing cards");
+        }
+    }
+
+    private boolean isValidStartingPosition(Position pos, String playerId, GameModel gameModel) {
+        // Player 1's starting position is (2, 4), Player 2's is (2, 0)
+        if (playerId.equals(gameModel.getPlayerIds().get(0))) {
+            return pos.getX() == 2 && pos.getY() == 4;
+        } else {
+            return pos.getX() == 2 && pos.getY() == 0;
+        }
+    }
 
     /**
      * Calculate current board scores
      */
 
     /**
+     * Handle pass action
+     */
+    private void handlePass(GameModel gameModel, String playerId) {
+        // For now, just switch turns
+        // Could add additional logic here if needed
+    }
+
+    /**
      * Check if game is over
      */
+    private boolean isGameOver(GameModel gameModel) {
+        Board board = gameModel.getBoard();
+
+        // Game is over if board is full
+        if (board.isFull()) {
+            return true;
+        }
+
+        // Check if current player has any valid moves
+        Player currentPlayer = playerService.getPlayer(gameModel.getCurrentPlayerId());
+        if (currentPlayer.getHand().isEmpty()) {
+            return true;
+        }
+
+        // Check if there are any valid positions for current player
+        return !hasValidMoves(gameModel, currentPlayer);
+    }
+
+    /**
+     * Check if player has any valid moves
+     */
+    private boolean hasValidMoves(GameModel gameModel, Player player) {
+        Board board = gameModel.getBoard();
+        List<Position> emptyPositions = board.getEmptyPositions();
+
+        for (Position pos : emptyPositions) {
+            // Check if any card in hand can be placed at this position
+            PlayerAction testAction = ImmutablePlayerAction.builder()
+                    .type(PlayerAction.ActionType.PLACE_CARD)
+                    .playerId(player.getId())
+                    .targetPosition(pos)
+                    .card(player.getHand().get(0)) // Just need any card for adjacency check
+                    .timestamp(System.currentTimeMillis())
+                    .build();
+
+            try {
+                validateMove(gameModel, testAction);
+                return true;
+            } catch (InvalidMoveException e) {
+                // Continue checking other positions
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Execute the move
+     */
+    private void executeMove(GameModel gameModel, PlayerAction action) {
+        Player player = playerService.getPlayer(action.getPlayerId());
+        Card card = action.getCard();
+        Position position = action.getTargetPosition();
+
+        // Remove card from hand
+        player.getHand().remove(card);
+
+        // Place card on board
+        gameModel.getBoard().placeCard(position, card.getId());
+        player.getPlacedCards().put(position, card);
+
+        // Update player score
+        updatePlayerScore(player);
+
+        // Save updated player state
+        playerService.savePlayer(player);
+    }
 
     /**
      * Finalize the game and create result
      */
+    private void finalizeGame(GameModel gameModel) {
+        gameModel.setGameState(GameState.COMPLETED);
+
+        // Calculate final scores
+        Player player1 = playerService.getPlayer(gameModel.getPlayerIds().get(0));
+        Player player2 = playerService.getPlayer(gameModel.getPlayerIds().get(1));
+
+        updatePlayerScore(player1);
+        updatePlayerScore(player2);
+
+        playerService.savePlayer(player1);
+        playerService.savePlayer(player2);
+    }
 
     /**
-     * Determine winner based on scores
+     * Update player's score
      */
+    private void updatePlayerScore(Player player) {
+        int totalScore = player.getPlacedCards().values().stream()
+                .mapToInt(Card::getPower)
+                .sum();
+        player.setScore(totalScore);
+    }
 
     /**
      * Switch to next player
      */
+    private void switchToNextPlayer(GameModel gameModel) {
+        List<String> playerIds = gameModel.getPlayerIds();
+        String currentPlayerId = gameModel.getCurrentPlayerId();
+        int currentIndex = playerIds.indexOf(currentPlayerId);
+        int nextIndex = (currentIndex + 1) % playerIds.size();
+        gameModel.setCurrentPlayerId(playerIds.get(nextIndex));
+    }
+
 }
