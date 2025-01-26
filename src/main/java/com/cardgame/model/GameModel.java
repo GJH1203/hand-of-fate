@@ -4,6 +4,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
+import java.util.List;
 
 @Document(collection = "games")
 public class GameModel {
@@ -18,6 +19,10 @@ public class GameModel {
     private Instant createdAt;
 
     private Instant updatedAt;
+
+    private String currentPlayerId;
+
+    private List<String> playerIds;
 
     // constructor, getters, and setters
     public GameModel() {
@@ -71,6 +76,22 @@ public class GameModel {
 
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public String getCurrentPlayerId() {
+        return currentPlayerId;
+    }
+
+    public void setCurrentPlayerId(String currentPlayerId) {
+        this.currentPlayerId = currentPlayerId;
+    }
+
+    public List<String> getPlayerIds() {
+        return playerIds;
+    }
+
+    public void setPlayerIds(List<String> playerIds) {
+        this.playerIds = playerIds;
     }
 
     @Override

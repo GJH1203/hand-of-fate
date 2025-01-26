@@ -79,4 +79,7 @@ public class PlayerService {
         // playerRepository.save(updatedPlayer);
     }
 
+    public void savePlayer(Player player) {
+        playerRepository.save(player);
+    }
 }
