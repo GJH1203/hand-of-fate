@@ -10,6 +10,8 @@ services:
       - mongodb_data:/data/db
     environment:
       - MONGODB_DATABASE=cardgame
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password
 
 volumes:
   mongodb_data:

@@ -30,7 +30,6 @@ public class GameService {
     private final PlayerService playerService;
     private final CardService cardService;
     private final DeckService deckService;
-//    private final DeckService deckService;
 
     public GameService(GameRepository gameRepository, PlayerService playerService, CardService cardService, DeckService deckService) {
         this.gameRepository = gameRepository;
@@ -39,10 +38,11 @@ public class GameService {
         this.deckService = deckService;
     }
 
-    public GameDto createGame(GameState gameState, int width, int height, Map<Position, String> pieces) {
-        Board board = new Board(width, height, pieces);
-        GameModel gameModel = new GameModel(null, gameState, board);
-        gameModel = (GameModel) gameRepository.save(gameModel);
+    public GameDto createGame(GameState gameState) {
+        Map<Position, String> emptyPieces = new HashMap<>();
+        Board board = new Board(3, 5, emptyPieces); // Default size 3x5
+        GameModel gameModel = new GameModel(UUID.randomUUID().toString(), gameState, board);
+        gameModel = gameRepository.save(gameModel);
         return convertToDto(gameModel);
     }
 
