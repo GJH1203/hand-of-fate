@@ -43,7 +43,24 @@ public class PlayerService {
                 .id(player.getId())
                 .name(player.getName())
                 .score(player.getScore())
+                .handSize(player.getHand().size())  // Add this
+                .playerCardCounts(calculatePlayerCardCounts(player)) // Add this
                 .build();
+    }
+
+    // Add this helper method
+    private Map<String, Integer> calculatePlayerCardCounts(Player player) {
+        // For now, return an empty map since we're just starting
+        return Map.of();
+
+        // Later you can implement actual card counting logic:
+    /*
+    Map<String, Integer> cardCounts = new HashMap<>();
+    for (Card card : player.getPlacedCards().values()) {
+        cardCounts.merge(card.getType(), 1, Integer::sum);
+    }
+    return cardCounts;
+    */
     }
 
     public void addCardToHand(PlayerDto player, CardDto card) {
