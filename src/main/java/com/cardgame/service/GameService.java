@@ -106,9 +106,10 @@ public class GameService {
         setupPlayerGameState(player1Id, deck1Id);
         setupPlayerGameState(player2Id, deck2Id);
 
-        placeInitialCards(gameModel, player1Id, player2Id);
+//        placeInitialCards(gameModel, player1Id, player2Id);
 
         gameModel.setGameState(GameState.IN_PROGRESS);
+        gameRepository.save(gameModel);
 
         return convertToDto(gameModel);
     }
