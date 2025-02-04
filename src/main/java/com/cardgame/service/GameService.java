@@ -38,24 +38,24 @@ public class GameService {
         this.deckService = deckService;
     }
 
-    public GameDto createGame(GameState gameState) {
-        Map<Position, String> emptyPieces = new HashMap<>();
-        Board board = new Board(3, 5, emptyPieces); // Default size 3x5
-        GameModel gameModel = new GameModel(UUID.randomUUID().toString(), gameState, board);
-        gameModel = gameRepository.save(gameModel);
-        return convertToDto(gameModel);
-    }
-
-    public GameDto updateGame(String gameId, GameState gameState, int width, int height, Map<Position, String> pieces) throws Throwable {
-        GameModel gameModel = (GameModel) gameRepository
-                .findById(gameId)
-                .orElseThrow(() -> new RuntimeException("Game not found"));
-        Board board = new Board(width, height, pieces);
-        gameModel.updateGame(gameState, board);
-        gameModel = (GameModel) gameRepository.save(gameModel);
-        return convertToDto(gameModel);
-    }
-
+//    public GameDto createGame(GameState gameState) {
+//        Map<Position, String> emptyPieces = new HashMap<>();
+//        Board board = new Board(3, 5, emptyPieces); // Default size 3x5
+//        GameModel gameModel = new GameModel(UUID.randomUUID().toString(), gameState, board);
+//        gameModel = gameRepository.save(gameModel);
+//        return convertToDto(gameModel);
+//    }
+//
+//    public GameDto updateGame(String gameId, GameState gameState, int width, int height, Map<Position, String> pieces) throws Throwable {
+//        GameModel gameModel = (GameModel) gameRepository
+//                .findById(gameId)
+//                .orElseThrow(() -> new RuntimeException("Game not found"));
+//        Board board = new Board(width, height, pieces);
+//        gameModel.updateGame(gameState, board);
+//        gameModel = (GameModel) gameRepository.save(gameModel);
+//        return convertToDto(gameModel);
+//    }
+//
     private GameDto convertToDto(GameModel gameModel) {
         return ImmutableGameDto.builder()
                 .id(gameModel.getId())
@@ -70,13 +70,16 @@ public class GameService {
                 .build();
     }
 
-    private Map<PositionDto, String> convertPiecesToDto(Map<Position, String> pieces) {
+    private Map<PositionDto, String> convertPiecesToDto(Map<String, String> pieces) {
         return pieces.entrySet().stream()
                 .collect(Collectors.toMap(
-                        entry -> ImmutablePositionDto.builder()
-                                .x(entry.getKey().getX())
-                                .y(entry.getKey().getY())
-                                .build(),
+                        entry -> {
+                            Position pos = Position.fromStorageString(entry.getKey());
+                            return ImmutablePositionDto.builder()
+                                    .x(pos.getX())
+                                    .y(pos.getY())
+                                    .build();
+                        },
                         Map.Entry::getValue
                 ));
     }
@@ -106,7 +109,7 @@ public class GameService {
         setupPlayerGameState(player1Id, deck1Id);
         setupPlayerGameState(player2Id, deck2Id);
 
-//        placeInitialCards(gameModel, player1Id, player2Id);
+        placeInitialCards(gameModel, player1Id, player2Id);
 
         gameModel.setGameState(GameState.IN_PROGRESS);
         gameRepository.save(gameModel);
@@ -178,14 +181,18 @@ public class GameService {
         Card player1Card = player1.getHand().remove(0); // Take first card from hand
         Position player1Pos = new Position(2, 4);
         board.placeCard(player1Pos, player1Card.getId());
-        player1.getPlacedCards().put(player1Pos, player1Card);
+        // Convert position to string key (e.g., "2,4")
+        String player1PosKey = String.format("%d,%d", player1Pos.getX(), player1Pos.getY());
+        player1.getPlacedCards().put(player1PosKey, player1Card);
 
         // Place initial card for player 2 at top center (2, 0)
         Player player2 = playerService.getPlayer(player2Id);
         Card player2Card = player2.getHand().remove(0); // Take first card from hand
         Position player2Pos = new Position(2, 0);
         board.placeCard(player2Pos, player2Card.getId());
-        player2.getPlacedCards().put(player2Pos, player2Card);
+        // Convert position to string key (e.g., "2,0")
+        String player2PosKey = String.format("%d,%d", player2Pos.getX(), player2Pos.getY());
+        player2.getPlacedCards().put(player2PosKey, player2Card);
 
         // Save updated players
         playerService.savePlayer(player1);
@@ -366,7 +373,8 @@ public class GameService {
 
         // Place card on board
         gameModel.getBoard().placeCard(position, card.getId());
-        player.getPlacedCards().put(position, card);
+        // Convert position to storage format before putting in placedCards
+        player.getPlacedCards().put(position.toStorageString(), card);
 
         // Update player score
         updatePlayerScore(player);

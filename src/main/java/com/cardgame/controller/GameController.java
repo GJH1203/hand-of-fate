@@ -32,12 +32,12 @@ public class GameController {
         return "GameController is working!";
     }
 
-    @PostMapping(value = "/create")
-    public GameDto createGame(@RequestBody CreateGameRequest request) {
-        return gameService.createGame(
-                request.getGameState()
-        );
-    }
+//    @PostMapping(value = "/create")
+//    public GameDto createGame(@RequestBody CreateGameRequest request) {
+//        return gameService.createGame(
+//                request.getGameState()
+//        );
+//    }
 
     @PostMapping("/initialize")
     public ResponseEntity<GameDto> initializeGame(@RequestBody GameInitializationRequest request) {

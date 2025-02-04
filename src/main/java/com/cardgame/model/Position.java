@@ -21,6 +21,19 @@ public class Position {
         this.y = position.y;
     }
 
+    // Add helper methods for storage conversion
+    public String toStorageString() {
+        return String.format("%d,%d", x, y);
+    }
+
+    public static Position fromStorageString(String stored) {
+        String[] parts = stored.split(",");
+        return new Position(
+                Integer.parseInt(parts[0]),
+                Integer.parseInt(parts[1])
+        );
+    }
+
     public int getX() {
         return x;
     }
