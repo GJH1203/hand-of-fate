@@ -3,13 +3,19 @@ package com.cardgame.controller;
 import com.cardgame.dto.CreateGameRequest;
 import com.cardgame.dto.GameDto;
 import com.cardgame.dto.ImmutableGameDto;
+import com.cardgame.dto.ImmutablePlayerAction;
+import com.cardgame.dto.PlayerAction;
 import com.cardgame.dto.game.GameInitializationRequest;
+import com.cardgame.dto.game.PassRequest;
+import com.cardgame.dto.game.PlayerMoveRequest;
+import com.cardgame.model.GameModel;
 import com.cardgame.service.GameService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -39,6 +45,12 @@ public class GameController {
 //        );
 //    }
 
+    @GetMapping("/{gameId}")
+    public ResponseEntity<GameDto> getGame(@PathVariable String gameId) {
+        GameDto game = gameService.getGame(gameId);
+        return ResponseEntity.ok(game);
+    }
+
     @PostMapping("/initialize")
     public ResponseEntity<GameDto> initializeGame(@RequestBody GameInitializationRequest request) {
         try {
@@ -60,5 +72,44 @@ public class GameController {
             log.error("Unexpected error during game initialization", e);
             return ResponseEntity.internalServerError().build();
         }
+    }
+
+    @GetMapping("/{gameId}/current-player")
+    public ResponseEntity<String> getCurrentPlayer(@PathVariable String gameId) {
+        GameDto game = gameService.getGame(gameId);
+        String currentPlayerId = game.getCurrentPlayerId();
+        return ResponseEntity.ok(currentPlayerId);
+    }
+
+    @PostMapping("/{gameId}/moves")
+    public ResponseEntity<GameDto> makeMove(
+            @PathVariable String gameId,
+            @RequestBody PlayerMoveRequest moveRequest) {
+        PlayerAction action = convertToPlayerAction(moveRequest);
+        GameDto updatedGame = gameService.processMove(gameId, action);
+        return ResponseEntity.ok(updatedGame);
+    }
+
+    @PostMapping("/{gameId}/pass")
+    public ResponseEntity<GameDto> pass(
+            @PathVariable String gameId,
+            @RequestBody PassRequest passRequest) {
+        PlayerAction action = ImmutablePlayerAction.builder()
+                .type(PlayerAction.ActionType.PASS)
+                .playerId(passRequest.getPlayerId())
+                .timestamp(System.currentTimeMillis())
+                .build();
+        GameDto updatedGame = gameService.processMove(gameId, action);
+        return ResponseEntity.ok(updatedGame);
+    }
+
+    private PlayerAction convertToPlayerAction(PlayerMoveRequest moveRequest) {
+        return ImmutablePlayerAction.builder()
+                .type(PlayerAction.ActionType.PLACE_CARD)
+                .playerId(moveRequest.getPlayerId())
+                .card(moveRequest.getCard())
+                .targetPosition(moveRequest.getPosition())
+                .timestamp(System.currentTimeMillis())
+                .build();
     }
 }

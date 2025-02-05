@@ -1,6 +1,8 @@
 package com.cardgame.controller.player;
 
+import java.util.List;
 import com.cardgame.dto.PlayerDto;
+import com.cardgame.model.Card;
 import com.cardgame.model.Player;
 import com.cardgame.service.player.PlayerService;
 import org.springframework.http.ResponseEntity;
@@ -30,6 +32,12 @@ public class PlayerController {
     @GetMapping("/{playerId}")
     public ResponseEntity<PlayerDto> getPlayer(@PathVariable String playerId) {
         return ResponseEntity.ok(playerService.getPlayerDto(playerId));
+    }
+
+    @GetMapping("/game/players/{playerId}/hand")
+    public ResponseEntity<List<Card>> getPlayerHand(@PathVariable String playerId) {
+        Player player = playerService.getPlayer(playerId);
+        return ResponseEntity.ok(player.getHand());
     }
 
     @GetMapping("/player/test")

@@ -8,7 +8,6 @@ import org.immutables.value.Value;
 
 import java.time.Instant;
 
-
 @Value.Immutable
 @JsonSerialize(as = ImmutableGameDto.class)
 @JsonDeserialize(as = ImmutableGameDto.class)
@@ -16,6 +15,7 @@ public interface GameDto {
     String getId();
     GameState getState();
     BoardDto getBoard();
+    String getCurrentPlayerId();
     Instant getCreatedAt();
     Instant getUpdatedAt();
 }

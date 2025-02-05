@@ -47,9 +47,11 @@ public class PlayerService {
         // Create a default deck for the player
         List<Card> defaultCards = createDefaultDeck(); // You'll need to implement this based on your game rules
         Deck defaultDeck = deckService.createDeck(player.getId(), defaultCards);
+        System.out.println("player id =========== " + player.getId());
 
         // Set the deck reference and save player again
         player.setCurrentDeck(defaultDeck);
+
         return playerRepository.save(player);
     }
 

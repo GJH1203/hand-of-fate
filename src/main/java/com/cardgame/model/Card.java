@@ -1,5 +1,6 @@
 package com.cardgame.model;
 
+import java.util.Objects;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -44,6 +45,21 @@ public class Card {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Card card = (Card) o;
+        return power == card.power &&
+                Objects.equals(id, card.id) &&
+                Objects.equals(name, card.name);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, power, name);
     }
 
 }

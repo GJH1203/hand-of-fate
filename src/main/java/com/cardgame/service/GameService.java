@@ -16,6 +16,7 @@ import com.cardgame.service.player.PlayerService;
 import org.checkerframework.checker.units.qual.C;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -58,16 +59,17 @@ public class GameService {
 //
     private GameDto convertToDto(GameModel gameModel) {
         return ImmutableGameDto.builder()
-                .id(gameModel.getId())
-                .state(gameModel.getGameState())
-                .board(ImmutableBoardDto.builder()
-                        .width(gameModel.getBoard().getWidth())
-                        .height(gameModel.getBoard().getHeight())
-                        .pieces(convertPiecesToDto(gameModel.getBoard().getPieces()))
-                        .build())
-                .createdAt(gameModel.getCreatedAt())
-                .updatedAt(gameModel.getUpdatedAt())
-                .build();
+            .id(gameModel.getId())
+            .state(gameModel.getGameState())
+            .board(ImmutableBoardDto.builder()
+                    .width(gameModel.getBoard().getWidth())
+                    .height(gameModel.getBoard().getHeight())
+                    .pieces(convertPiecesToDto(gameModel.getBoard().getPieces()))
+                    .build())
+            .currentPlayerId(gameModel.getCurrentPlayerId())  // Add this line
+            .createdAt(gameModel.getCreatedAt())
+            .updatedAt(gameModel.getUpdatedAt())
+            .build();
     }
 
     private Map<PositionDto, String> convertPiecesToDto(Map<String, String> pieces) {
@@ -206,15 +208,18 @@ public class GameService {
         GameModel gameModel = gameRepository.findById(gameId)
                 .orElseThrow(() -> new GameNotFoundException("Game not found: " + gameId));
 
+        // Debug logging before
+        System.out.println("===== Before Move =====");
+        System.out.println("Current player: " + gameModel.getCurrentPlayerId());
+
         // Validate turn and game state
+        System.out.println("Entering validatePlayerTurn with playerId: " + action.getPlayerId());
         validatePlayerTurn(gameModel, action.getPlayerId());
 
         if (action.getType() == PlayerAction.ActionType.PLACE_CARD) {
-            // Validate and process card placement
             validateMove(gameModel, action);
             executeMove(gameModel, action);
         } else if (action.getType() == PlayerAction.ActionType.PASS) {
-            // Handle pass action
             handlePass(gameModel, action.getPlayerId());
         }
 
@@ -222,12 +227,23 @@ public class GameService {
         if (isGameOver(gameModel)) {
             finalizeGame(gameModel);
         } else {
-            // Switch to next player
             switchToNextPlayer(gameModel);
         }
 
+        // Update timestamp
+        gameModel.setUpdatedAt(Instant.now());
+
+        // Debug logging after
+        System.out.println("===== After Move =====");
+        System.out.println("Next player: " + gameModel.getCurrentPlayerId());
+
         // Save and return updated game state
         gameModel = gameRepository.save(gameModel);
+
+        // Verify save
+        System.out.println("===== After Save =====");
+        System.out.println("Saved current player: " + gameModel.getCurrentPlayerId());
+
         return convertToDto(gameModel);
     }
 
@@ -416,9 +432,27 @@ public class GameService {
     private void switchToNextPlayer(GameModel gameModel) {
         List<String> playerIds = gameModel.getPlayerIds();
         String currentPlayerId = gameModel.getCurrentPlayerId();
+
+        // Debug logging
+        System.out.println("===== Turn Switch Debug =====");
+        System.out.println("PlayerIds in game: " + playerIds);
+        System.out.println("Current player ID: " + currentPlayerId);
+
         int currentIndex = playerIds.indexOf(currentPlayerId);
         int nextIndex = (currentIndex + 1) % playerIds.size();
-        gameModel.setCurrentPlayerId(playerIds.get(nextIndex));
+        String nextPlayerId = playerIds.get(nextIndex);
+
+        System.out.println("Current index: " + currentIndex);
+        System.out.println("Next index: " + nextIndex);
+        System.out.println("Next player will be: " + nextPlayerId);
+        System.out.println("==========================");
+
+        gameModel.setCurrentPlayerId(nextPlayerId);
     }
 
+    public GameDto getGame(String gameId) {
+        GameModel gameModel = gameRepository.findById(gameId)
+                .orElseThrow(() -> new GameNotFoundException("Game not found: " + gameId));
+        return convertToDto(gameModel);
+    }
 }
