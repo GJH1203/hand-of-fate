@@ -11,8 +11,11 @@ import com.cardgame.model.GameState;
 import com.cardgame.model.Player;
 import com.cardgame.model.Position;
 import com.cardgame.repository.GameRepository;
+import com.cardgame.service.factory.MoveStrategyFactory;
+import com.cardgame.service.manager.BoardManager;
 import com.cardgame.service.player.DeckService;
 import com.cardgame.service.player.PlayerService;
+import com.cardgame.service.validator.GameValidator;
 import org.checkerframework.checker.units.qual.C;
 import org.springframework.stereotype.Service;
 
@@ -31,12 +34,24 @@ public class GameService {
     private final PlayerService playerService;
     private final CardService cardService;
     private final DeckService deckService;
+    private final BoardManager boardManager;
+    private final GameValidator gameValidator;
+    private final MoveStrategyFactory moveStrategyFactory;
 
-    public GameService(GameRepository gameRepository, PlayerService playerService, CardService cardService, DeckService deckService) {
+    public GameService(GameRepository gameRepository,
+                       PlayerService playerService,
+                       CardService cardService,
+                       DeckService deckService,
+                       BoardManager boardManager,
+                       GameValidator gameValidator,
+                       MoveStrategyFactory moveStrategyFactory) {
         this.gameRepository = gameRepository;
         this.playerService = playerService;
         this.cardService = cardService;
         this.deckService = deckService;
+        this.boardManager = boardManager;
+        this.gameValidator = gameValidator;
+        this.moveStrategyFactory = moveStrategyFactory;
     }
 
 //    public GameDto createGame(GameState gameState) {
