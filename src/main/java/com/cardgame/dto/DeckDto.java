@@ -22,4 +22,6 @@ public interface DeckDto {
     // Current number of cards remaining in deck
     int getRemainingCards();
 
+    boolean isValid();
+
 }

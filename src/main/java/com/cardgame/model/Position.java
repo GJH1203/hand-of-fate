@@ -1,8 +1,9 @@
 package com.cardgame.model;
 
-
 import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
+@JsonFormat(shape = JsonFormat.Shape.OBJECT)
 public class Position {
     private int x;
     private int y;
@@ -18,6 +19,19 @@ public class Position {
     public Position(Position position) {
         this.x = position.x;
         this.y = position.y;
+    }
+
+    // Add helper methods for storage conversion
+    public String toStorageString() {
+        return String.format("%d,%d", x, y);
+    }
+
+    public static Position fromStorageString(String stored) {
+        String[] parts = stored.split(",");
+        return new Position(
+                Integer.parseInt(parts[0]),
+                Integer.parseInt(parts[1])
+        );
     }
 
     public int getX() {

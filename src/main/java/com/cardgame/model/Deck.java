@@ -25,6 +25,9 @@ public class Deck {
     @Field("remaining_cards")
     private int remainingCards;
 
+    @Field("is_valid")
+    private boolean isValid;
+
     public Deck() {
     }
 
@@ -32,6 +35,30 @@ public class Deck {
         this.ownerId = ownerId;
         this.cards = cards;
         this.remainingCards = cards.size();
+    }
+
+    // Add methods for deck manipulation
+    public boolean addCard(Card card) {
+        if (cards.size() >= 15) {
+            return false;
+        }
+        cards.add(card);
+        remainingCards = cards.size();
+        validate();
+        return true;
+    }
+
+    public boolean removeCard(String cardId) {
+        boolean removed = cards.removeIf(card -> card.getId().equals(cardId));
+        if (removed) {
+            remainingCards = cards.size();
+            validate();
+        }
+        return removed;
+    }
+
+    public void validate() {
+        isValid = cards.size() == 15;
     }
 
     // Getters and Setters
@@ -65,6 +92,14 @@ public class Deck {
 
     public void setRemainingCards(int remainingCards) {
         this.remainingCards = remainingCards;
+    }
+
+    public boolean isValid() {
+        return isValid;
+    }
+
+    public void setValid(boolean valid) {
+        isValid = valid;
     }
 
 }

@@ -29,7 +29,7 @@ public class Player {
     private int score;
 
     @Field("placed_cards")
-    private Map<Position, Card> placedCards = new HashMap<>();
+    private Map<String, Card> placedCards = new HashMap<>();
 
     // Default constructor
     public Player() {
@@ -76,11 +76,11 @@ public class Player {
         this.score = score;
     }
 
-    public Map<Position, Card> getPlacedCards() {
+    public Map<String, Card> getPlacedCards() {
         return placedCards;
     }
 
-    public void setPlacedCards(Map<Position, Card> placedCards) {
+    public void setPlacedCards(Map<String, Card> placedCards) {
         this.placedCards = placedCards;
     }
 

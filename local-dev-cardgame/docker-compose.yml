@@ -9,7 +9,7 @@ services:
     volumes:
       - mongodb_data:/data/db
     environment:
-      - MONGODB_DATABASE=cardgame
+      - MONGODB_DATABASE=card_game
 
 volumes:
   mongodb_data:

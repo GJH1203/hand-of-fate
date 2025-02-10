@@ -33,6 +33,26 @@ public class DeckService {
         return deckRepository.save(deck);
     }
 
+    public Deck addCardToDeck(String deckId, String ownerId, Card card) {
+        Deck deck = getDeckWithOwner(deckId, ownerId);
+
+        if (!deck.addCard(card)) {
+            throw new InvalidDeckException("Cannot add card: deck is full");
+        }
+
+        return deckRepository.save(deck);
+    }
+
+    public Deck removeCardFromDeck(String deckId, String ownerId, String cardId) {
+        Deck deck = getDeckWithOwner(deckId, ownerId);
+
+        if (!deck.removeCard(cardId)) {
+            throw new InvalidDeckException("Card not found in deck: " + cardId);
+        }
+
+        return deckRepository.save(deck);
+    }
+
     /**
      * Get a deck by its ID
      */
@@ -113,6 +133,7 @@ public class DeckService {
                 .ownerId(deck.getOwnerId())
                 .cards(deck.getCards())
                 .remainingCards(deck.getRemainingCards())
+                .isValid(deck.isValid())
                 .build();
     }
 }

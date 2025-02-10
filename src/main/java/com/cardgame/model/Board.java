@@ -7,7 +7,7 @@ import java.util.Map;
 public class Board {
     private int width;
     private int height;
-    private Map<Position, String> pieces;
+    private Map<String, String> pieces;
 
     public Board() {
         this.width = 3;
@@ -15,7 +15,7 @@ public class Board {
         this.pieces = new HashMap<>();
     }
 
-    public Board(int width, int height, Map<Position, String> pieces) {
+    public Board(int width, int height, Map<String, String> pieces) {
         this.width = width;
         this.height = height;
         this.pieces = pieces;
@@ -37,11 +37,11 @@ public class Board {
         this.height = height;
     }
 
-    public Map<Position, String> getPieces() {
+    public Map<String, String> getPieces() {
         return pieces;
     }
 
-    public void setPieces(Map<Position, String> pieces) {
+    public void setPieces(Map<String, String> pieces) {
         this.pieces = pieces;
     }
 
@@ -81,7 +81,7 @@ public class Board {
         if (!isPositionEmpty(position)) {
             throw new IllegalArgumentException("Position already occupied");
         }
-        pieces.put(position, cardId);
+        pieces.put(position.toStorageString(), cardId);
     }
 
     public List<Position> getEmptyPositions() {
@@ -98,6 +98,6 @@ public class Board {
     }
 
     public String getCardIdAt(Position position) {
-        return pieces.get(position);
+        return pieces.get(position.toStorageString());
     }
 }
