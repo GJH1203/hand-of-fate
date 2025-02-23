@@ -20,18 +20,33 @@ export default function GameBoard() {
             setInitializingGame(true);
             setInitError(null);
 
-            // Create both players (which automatically creates their decks)
-            const [player1, player2] = await Promise.all([
+            // Get default deck IDs first
+            const [player1Response, player2Response] = await Promise.all([
                 playerService.createPlayer('Player 1'),
                 playerService.createPlayer('Player 2')
             ]);
 
+            // Validate the responses
+            if (!player1Response?.id || !player2Response?.id) {
+                throw new Error('Failed to create players: Invalid response');
+            }
+
+            // Get player details including their default decks
+            const [player1Details, player2Details] = await Promise.all([
+                playerService.getPlayer(player1Response.id),
+                playerService.getPlayer(player2Response.id)
+            ]);
+
+            if (!player1Details?.currentDeck?.id || !player2Details?.currentDeck?.id) {
+                throw new Error('Failed to get player deck information');
+            }
+
             // Initialize game with players and their decks
             await initializeGame(
-                player1.id,
-                player2.id,
-                player1.currentDeck.id,
-                player2.currentDeck.id
+                player1Details.id,
+                player2Details.id,
+                player1Details.currentDeck.id,
+                player2Details.currentDeck.id
             );
 
         } catch (err) {
@@ -46,6 +61,10 @@ export default function GameBoard() {
         if (!selectedCard || !gameState) return;
 
         try {
+            // Convert linear position to x,y coordinates
+            const x = position % gameState.board.width;
+            const y = Math.floor(position / gameState.board.width);
+
             const success = await makeMove(
                 gameState.currentPlayerId,
                 selectedCard,
@@ -127,20 +146,28 @@ export default function GameBoard() {
             </div>
 
             <div className="grid grid-cols-5 gap-4 mb-8 bg-secondary/20 p-4 rounded-lg">
-                {gameState.board.map((card, index) => (
-                    <GameCell
-                        key={index}
-                        position={index}
-                        card={card}
-                        onCellClick={handleCellClick}
-                        isValidMove={!card && gameState.validMoves?.includes(index)}
-                        isSelected={selectedCard !== null}
-                    />
-                ))}
+                {Array.from({length: gameState.board.height}).map((_, y) =>
+                    Array.from({length: gameState.board.width}).map((_, x) => {
+                        const positionKey = `${x},${y}`;
+                        const card = gameState.board.pieces[positionKey] || null;
+                        const index = y * gameState.board.width + x;
+
+                        return (
+                            <GameCell
+                                key={positionKey}
+                                position={index}
+                                card={card}
+                                onCellClick={handleCellClick}
+                                isValidMove={!card && gameState.validMoves?.includes(index)}
+                                isSelected={selectedCard !== null}
+                            />
+                        );
+                    })
+                )}
             </div>
 
             <PlayerHand
-                cards={gameState.currentPlayerHand}
+                cards={gameState?.currentPlayerHand || []}
                 selectedCard={selectedCard}
                 onCardSelect={setSelectedCard}
             />

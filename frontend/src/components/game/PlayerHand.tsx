@@ -18,7 +18,7 @@ export default function PlayerHand({
         <div className="mt-8">
             <h2 className="text-xl font-semibold mb-4 text-foreground">Your Hand</h2>
             <div className="flex gap-4 flex-wrap">
-                {cards.map((card) => (
+                {Array.isArray(cards) && cards.map((card) => (
                     <Card
                         key={card.id}
                         className={cn(
@@ -37,6 +37,9 @@ export default function PlayerHand({
                         </CardContent>
                     </Card>
                 ))}
+                {(!cards || cards.length === 0) && (
+                    <div className="text-muted-foreground">No cards in hand</div>
+                )}
             </div>
         </div>
     );

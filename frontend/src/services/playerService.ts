@@ -5,7 +5,10 @@ const API_BASE_URL = 'http://localhost:8080/players';
 export interface PlayerDto {
     id: string;
     name: string;
-    currentDeck: {
+    score: number;
+    handSize: number;
+    playerCardCounts: Record<string, number>;
+    currentDeck?: {  // Make this optional since it's not in the DTO
         id: string;
         cards: Array<{
             id: string;
