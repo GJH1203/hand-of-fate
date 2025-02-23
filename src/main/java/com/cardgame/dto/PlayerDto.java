@@ -17,6 +17,8 @@ public interface PlayerDto {
     int getScore();
     int getHandSize();
 
+    DeckDto getCurrentDeck();
+
     // summary of placed cards
     Map<String, Integer> getPlayerCardCounts();
 

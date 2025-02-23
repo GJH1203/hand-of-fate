@@ -68,14 +68,39 @@ public class PlayerService {
         return defaultCards;
     }
 
+//    public PlayerDto getPlayerDto(String playerId) {
+//        Player player = getPlayer(playerId);
+//        return ImmutablePlayerDto.builder()
+//                .id(player.getId())
+//                .name(player.getName())
+//                .score(player.getScore())
+//                .handSize(player.getHand().size())  // Add this
+//                .playerCardCounts(calculatePlayerCardCounts(player)) // Add this
+//                .build();
+//    }
+
     public PlayerDto getPlayerDto(String playerId) {
         Player player = getPlayer(playerId);
+
+        // Convert the Deck to DeckDto
+        DeckDto deckDto = null;
+        if (player.getCurrentDeck() != null) {
+            deckDto = ImmutableDeckDto.builder()
+                    .id(player.getCurrentDeck().getId())
+                    .ownerId(player.getCurrentDeck().getOwnerId())
+                    .remainingCards(player.getCurrentDeck().getRemainingCards())
+                    .cards(player.getCurrentDeck().getCards())  // Add this line
+                    .isValid(player.getCurrentDeck().isValid()) // Add this line
+                    .build();
+        }
+
         return ImmutablePlayerDto.builder()
                 .id(player.getId())
                 .name(player.getName())
                 .score(player.getScore())
-                .handSize(player.getHand().size())  // Add this
-                .playerCardCounts(calculatePlayerCardCounts(player)) // Add this
+                .handSize(player.getHand().size())
+                .currentDeck(deckDto)
+                .playerCardCounts(calculatePlayerCardCounts(player))
                 .build();
     }
 
