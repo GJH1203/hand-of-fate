@@ -7,33 +7,18 @@ export interface Card {
     id: string;
     power: number;
     name: string;
-    player?: 1 | 2;
-}
-
-export interface Board {
-    width: number;
-    height: number;
-    pieces: Record<string, Card | null>;
 }
 
 export interface GameState {
     id: string;
-    currentPlayerId: string;
-    board: Board;  // Changed from (Card | null)[] to Board
-    currentPlayerHand: Card[];
-    validMoves: number[];
-    scores?: {
-        player1: number;
-        player2: number;
+    state: 'INITIALIZED' | 'IN_PROGRESS' | 'COMPLETED';
+    board: {
+        width: number;
+        height: number;
+        pieces: Record<string, Card>;
     };
-    players: string[];
-    status?: 'ACTIVE' | 'FINISHED';
-}
-
-export interface MovePayload {
-    playerId: string;
-    card: Card;
-    position: number;
+    currentPlayerId: string;
+    currentPlayerHand: Card[];
 }
 
 export interface InitializePayload {

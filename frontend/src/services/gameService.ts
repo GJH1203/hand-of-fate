@@ -1,4 +1,4 @@
-import type { GameState, MovePayload, InitializePayload } from '@/types/game';
+import {GameState, InitializePayload} from "@/types/game";
 
 const API_BASE_URL = 'http://localhost:8080/game';
 
@@ -24,7 +24,8 @@ class GameService {
             });
 
             if (!response.ok) {
-                throw new Error('Failed to initialize game');
+                const errorData = await response.json().catch(() => null);
+                throw new Error(errorData?.message || 'Failed to initialize game');
             }
 
             return await response.json();
@@ -33,32 +34,13 @@ class GameService {
         }
     }
 
-    async makeMove(gameId: string, move: MovePayload): Promise<GameState> {
-        try {
-            const response = await fetch(`${API_BASE_URL}/${gameId}/moves`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(move),
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to make move');
-            }
-
-            return await response.json();
-        } catch (error) {
-            throw new Error(`Error making move: ${error instanceof Error ? error.message : String(error)}`);
-        }
-    }
-
     async getGame(gameId: string): Promise<GameState> {
         try {
             const response = await fetch(`${API_BASE_URL}/${gameId}`);
 
             if (!response.ok) {
-                throw new Error('Failed to fetch game state');
+                const errorData = await response.json().catch(() => null);
+                throw new Error(errorData?.message || 'Failed to fetch game state');
             }
 
             return await response.json();
