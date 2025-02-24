@@ -56,18 +56,31 @@ public class GameService {
     }
 
     private GameDto convertToDto(GameModel gameModel) {
+        Player currentPlayer = playerService.getPlayer(gameModel.getCurrentPlayerId());
+
         return ImmutableGameDto.builder()
-            .id(gameModel.getId())
-            .state(gameModel.getGameState())
-            .board(ImmutableBoardDto.builder()
-                    .width(gameModel.getBoard().getWidth())
-                    .height(gameModel.getBoard().getHeight())
-                    .pieces(convertPiecesToDto(gameModel.getBoard().getPieces()))
-                    .build())
-            .currentPlayerId(gameModel.getCurrentPlayerId())  // Add this line
-            .createdAt(gameModel.getCreatedAt())
-            .updatedAt(gameModel.getUpdatedAt())
-            .build();
+                .id(gameModel.getId())
+                .state(gameModel.getGameState())
+                .board(ImmutableBoardDto.builder()
+                        .width(gameModel.getBoard().getWidth())
+                        .height(gameModel.getBoard().getHeight())
+                        .pieces(convertPiecesToDto(gameModel.getBoard().getPieces()))
+                        .build())
+                .currentPlayerId(gameModel.getCurrentPlayerId())
+                .currentPlayerHand(currentPlayer.getHand().stream()
+                        .map(this::convertCardToDto)
+                        .collect(Collectors.toList()))
+                .createdAt(gameModel.getCreatedAt())
+                .updatedAt(gameModel.getUpdatedAt())
+                .build();
+    }
+
+    private CardDto convertCardToDto(Card card) {
+        return ImmutableCardDto.builder()
+                .id(card.getId())
+                .power(card.getPower())
+                .name(card.getName())
+                .build();
     }
 
     private Map<PositionDto, String> convertPiecesToDto(Map<String, String> pieces) {

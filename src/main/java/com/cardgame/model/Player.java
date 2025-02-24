@@ -1,6 +1,7 @@
 package com.cardgame.model;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
@@ -16,10 +17,10 @@ public class Player {
     @Id
     private String id;
 
-    @Field
+    @Indexed(unique = true)  // Add this if names should be unique
     private String name;
 
-    @DBRef
+    @DBRef(lazy = true)  // Add lazy loading for better performance
     private Deck currentDeck;
 
     @Field("hand")
