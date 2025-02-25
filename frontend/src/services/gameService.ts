@@ -1,4 +1,4 @@
-import {GameState, InitializePayload} from "@/types/game";
+import { Card, GameState, InitializePayload, MovePayload, Position } from '@/types/game';
 
 const API_BASE_URL = 'http://localhost:8080/game';
 
@@ -31,6 +31,37 @@ class GameService {
             return await response.json();
         } catch (error) {
             throw new Error(`Error initializing game: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
+
+    async makeMove(gameId: string, moveData: MovePayload): Promise<GameState> {
+        try {
+            console.log('Making move API call:', {
+                url: `${API_BASE_URL}/${gameId}/moves`,
+                moveData
+            });
+
+            const response = await fetch(`${API_BASE_URL}/${gameId}/moves`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    playerId: moveData.playerId,
+                    card: moveData.card,
+                    position: moveData.targetPosition
+                }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => null);
+                throw new Error(errorData?.message || 'Failed to make move');
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Move API error:', error);
+            throw error;
         }
     }
 

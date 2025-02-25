@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { gameService } from '@/services/gameService';
-import type { GameState } from '@/types/game';
+import type { Card, GameState, Position } from '@/types/game';
 
 export const useGameState = () => {
     const [gameState, setGameState] = useState<GameState | null>(null);
@@ -30,10 +30,38 @@ export const useGameState = () => {
         }
     };
 
+    const makeMove = async (
+        gameId: string,
+        playerId: string,
+        card: Card,
+        position: Position
+    ): Promise<void> => {
+        try {
+            setIsLoading(true);
+            setError(null);
+
+            const updatedGameState = await gameService.makeMove(gameId, {
+                type: 'PLACE_CARD',
+                playerId,
+                card,
+                targetPosition: position,
+                timestamp: Date.now()
+            });
+
+            setGameState(updatedGameState);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to make move');
+            throw err; // Re-throw so the UI can handle it
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return {
         gameState,
         isLoading,
         error,
-        initializeGame
+        initializeGame,
+        makeMove
     };
 };

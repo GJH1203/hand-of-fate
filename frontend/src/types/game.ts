@@ -20,8 +20,3 @@ export interface GameState {
     currentPlayerId: string;
     currentPlayerHand: Card[];
 }
-
-export interface InitializePayload {
-    playerIds: [string, string];
-    deckIds: [string, string];
-}
