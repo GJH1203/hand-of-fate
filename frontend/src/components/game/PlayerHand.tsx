@@ -1,4 +1,3 @@
-// components/game/PlayerHand.tsx
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from "@/lib/utils";
@@ -36,10 +35,9 @@ export default function PlayerHand({
             </h2>
             <div className="flex gap-4 flex-wrap">
                 {Array.isArray(cards) && cards.length > 0 ? (
-                    // Use index as part of the key to ensure uniqueness
-                    cards.map((card, index) => (
+                    cards.map((card) => (
                         <Card
-                            key={`hand-card-${card.id}-${index}`}
+                            key={card.id}
                             className={cn(
                                 "w-24 h-32 flex flex-col items-center justify-center",
                                 "transition-all duration-200",

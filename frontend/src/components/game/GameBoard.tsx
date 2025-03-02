@@ -1,19 +1,39 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import GameCell from './GameCell';
 import PlayerHand from './PlayerHand';
 import { useGameState } from '@/hooks/useGameState';
 import { Card, Position } from '@/types/game';
 
-const DEFAULT_BOARD_HEIGHT = 3;
-const DEFAULT_BOARD_WIDTH = 5;
+const DEFAULT_BOARD_WIDTH = 3;  // Adjusted to match backend
+const DEFAULT_BOARD_HEIGHT = 5; // Adjusted to match backend
 
 export default function GameBoard() {
     const { gameState, isLoading, error, initializeGame, makeMove } = useGameState();
     const [selectedCard, setSelectedCard] = useState<Card | null>(null);
     const [validMoves, setValidMoves] = useState<Position[]>([]);
+    const [boardCards, setBoardCards] = useState<Record<string, Card>>({});
+
+    // Effect to transform piece IDs into card objects
+    useEffect(() => {
+        if (gameState && gameState.board.pieces) {
+            // Create mock card objects for pieces on the board
+            const cardMap: Record<string, Card> = {};
+
+            Object.entries(gameState.board.pieces).forEach(([posKey, cardId]) => {
+                // Create a card object from the ID
+                cardMap[posKey] = {
+                    id: String(cardId),
+                    name: "Card " + cardId,
+                    power: 5  // Default power value
+                };
+            });
+
+            setBoardCards(cardMap);
+        }
+    }, [gameState]);
 
     const startNewGame = async () => {
         try {
@@ -46,13 +66,11 @@ export default function GameBoard() {
 
         // Check if there are any pieces on the board
         const playerPieces = Object.entries(boardPieces)
-            .filter(([_, piece]: [string, any]) => piece && piece.ownerId === gameState.currentPlayerId);
+            .filter(([_, piece]: [string, any]) => piece === gameState.currentPlayerId);
 
-        // If no pieces are placed yet, allow anywhere (or specific starting positions)
+        // If no pieces are placed yet, allow specific starting positions
         if (Object.keys(boardPieces).length === 0) {
-            // For initial moves, maybe limit to certain positions
-            // For now, let's allow the middle positions
-            positions.push({ x: 2, y: 1 });
+            positions.push({ x: 1, y: 2 }); // Middle position
             return positions;
         }
 
@@ -155,13 +173,15 @@ export default function GameBoard() {
                 </div>
             )}
 
-            <div className="grid grid-cols-5 gap-4 mb-8 bg-secondary/20 p-4 rounded-lg">
+            <div className="grid grid-cols-3 gap-4 mb-8 bg-secondary/20 p-4 rounded-lg">
                 {Array.from({ length: DEFAULT_BOARD_HEIGHT }).flatMap((_, y) =>
                     Array.from({ length: DEFAULT_BOARD_WIDTH }).map((_, x) => {
                         const cellKey = `cell-${x}-${y}`;
                         const position = { x, y };
                         const positionString = `${x},${y}`;
-                        const card = gameState.board.pieces[positionString] || null;
+
+                        // Get card from boardCards (which has processed the pieces)
+                        const card = boardCards[positionString] || null;
 
                         // Check if this is a valid move position
                         const isValidMove = validMoves.some(pos => pos.x === x && pos.y === y);
