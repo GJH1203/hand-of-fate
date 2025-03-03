@@ -112,4 +112,14 @@ public class GameController {
                 .timestamp(System.currentTimeMillis())
                 .build();
     }
+
+//    /**
+//     * Get a formatted text representation of the game results.
+//     */
+//    @GetMapping("/{gameId}/results")
+//    public ResponseEntity<String> getFormattedGameResults(@PathVariable String gameId) {
+//        String formattedResults = gameService.getGameResults(gameId);
+//        return ResponseEntity.ok(formattedResults);
+//    }
+
 }

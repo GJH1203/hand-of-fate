@@ -31,7 +31,9 @@ public class PlaceCardStrategy implements MoveStrategy {
         boardManager.placeCard(gameModel.getBoard(), position, card.getId());
         player.getPlacedCards().put(position.toStorageString(), card);
 
-        ScoreCalculator.updatePlayerScore(player);
+        // Update player score after placing the card
+        ScoreCalculator.updatePlayerScore(player, gameModel);
+
         playerService.savePlayer(player);
     }
 }

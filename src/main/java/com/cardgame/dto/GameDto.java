@@ -1,13 +1,14 @@
 package com.cardgame.dto;
 
-
 import com.cardgame.model.GameState;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.mongodb.lang.Nullable;
 import org.immutables.value.Value;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 @Value.Immutable
 @JsonSerialize(as = ImmutableGameDto.class)
@@ -20,4 +21,26 @@ public interface GameDto {
     List<CardDto> getCurrentPlayerHand(); // Add this
     Instant getCreatedAt();
     Instant getUpdatedAt();
+
+    /**
+     * Get the scores for each player. Only populated when game is completed.
+     */
+    @Value.Default
+    default Map<String, Integer> getScores() {
+        return Map.of();
+    }
+
+    /**
+     * Get the ID of the winning player. Only populated when game is completed.
+     */
+    @Nullable
+    String getWinnerId();
+
+    /**
+     * Whether the game ended in a tie. Only relevant when game is completed.
+     */
+    @Value.Default
+    default boolean isTie() {
+        return false;
+    }
 }
