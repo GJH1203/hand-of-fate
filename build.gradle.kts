@@ -16,6 +16,7 @@ java {
 
 repositories {
 	mavenCentral()
+	maven { url = uri("https://jitpack.io") }  // Add this repository for Nakama SDK
 }
 
 dependencies {
@@ -27,17 +28,20 @@ dependencies {
 
 	// monitoring
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
-	implementation ("io.micrometer:micrometer-registry-prometheus")
+	implementation("io.micrometer:micrometer-registry-prometheus")
 
 	// immutables
 	annotationProcessor("org.immutables:value:2.10.1")
 	compileOnly("org.immutables:value:2.10.1")
 
-	testImplementation("org.springframework.boot:spring-boot-starter-test")
-	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+	// Nakama SDK
+	implementation("com.github.heroiclabs.nakama-java:nakama-java:v2.5.3")  // Add this dependency
 
 	// utility
-	implementation ("com.google.guava:guava:32.1.2-jre")
+	implementation("com.google.guava:guava:32.1.2-jre")
+
+	testImplementation("org.springframework.boot:spring-boot-starter-test")
+	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 tasks.withType<Test> {
