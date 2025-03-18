@@ -74,10 +74,22 @@ public class GameService {
                 .createdAt(gameModel.getCreatedAt())
                 .updatedAt(gameModel.getUpdatedAt());
 
+        // Add win request information if there's a pending request
+        if (gameModel.hasPendingWinRequest()) {
+            builder.hasPendingWinRequest(true);
+            // Only set the pendingWinRequestPlayerId if it's not null
+            if (gameModel.getPendingWinRequestPlayerId() != null) {
+                builder.pendingWinRequestPlayerId(gameModel.getPendingWinRequestPlayerId());
+            }
+        }
+
         // If the game is completed, include the scores and winner information
         if (gameModel.getGameState() == GameState.COMPLETED) {
             builder.scores(gameModel.getPlayerScores());
-            builder.winnerId(gameModel.getWinnerId());
+            // Only set the winnerId if it's not null
+            if (gameModel.getWinnerId() != null) {
+                builder.winnerId(gameModel.getWinnerId());
+            }
             builder.isTie(gameModel.isTie());
         }
 
@@ -190,16 +202,69 @@ public class GameService {
         GameModel gameModel = gameRepository.findById(gameId)
                 .orElseThrow(() -> new GameNotFoundException("Game not found: " + gameId));
 
+        // Special handling for win request response
+        if (action.getType() == PlayerAction.ActionType.RESPOND_TO_WIN_REQUEST) {
+            return handleWinRequestResponse(gameModel, action);
+        }
+
+        // For other actions, validate it's the player's turn
         gameValidator.validatePlayerTurn(gameModel, action.getPlayerId());
 
+        // Use strategy pattern to execute the move
         var strategy = moveStrategyFactory.createStrategy(action.getType());
         strategy.executeMove(gameModel, action);
 
-        // Check if game is over
+        // Special post-processing for win request
+        if (action.getType() == PlayerAction.ActionType.REQUEST_WIN_CALCULATION) {
+            // For win requests, we switch to the next player and return
+            switchToNextPlayer(gameModel);
+            gameModel.setUpdatedAt(Instant.now());
+            gameModel = gameRepository.save(gameModel);
+            return convertToDto(gameModel);
+        }
+
+        // Check if game is over (for regular moves)
         if (isGameOver(gameModel)) {
             finalizeGame(gameModel);
         } else {
             switchToNextPlayer(gameModel);
+        }
+
+        // Update timestamp
+        gameModel.setUpdatedAt(Instant.now());
+
+        // Save and return updated game state
+        gameModel = gameRepository.save(gameModel);
+
+        return convertToDto(gameModel);
+    }
+
+    private GameDto handleWinRequestResponse(GameModel gameModel, PlayerAction action) {
+        String respondingPlayerId = action.getPlayerId();
+
+        // Validate that there's a pending win request
+        if (!gameModel.hasPendingWinRequest()) {
+            throw new InvalidMoveException("There is no pending win request to respond to");
+        }
+
+        // Validate it's this player's turn
+        gameValidator.validatePlayerTurn(gameModel, respondingPlayerId);
+
+        // Use strategy to handle the response
+        var strategy = moveStrategyFactory.createStrategy(action.getType());
+        strategy.executeMove(gameModel, action);
+
+        // Extract acceptance from action data
+        Boolean accepted = false;
+        if (action.getActionData() instanceof Boolean) {
+            accepted = (Boolean) action.getActionData();
+        } else {
+            throw new InvalidMoveException("Response action must include a boolean acceptance value");
+        }
+
+        if (accepted) {
+            // If request is accepted, finalize the game
+            finalizeGame(gameModel);
         }
 
         // Update timestamp

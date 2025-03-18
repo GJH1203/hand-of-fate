@@ -18,7 +18,7 @@ public interface GameDto {
     GameState getState();
     BoardDto getBoard();
     String getCurrentPlayerId();
-    List<CardDto> getCurrentPlayerHand(); // Add this
+    List<CardDto> getCurrentPlayerHand();
     Instant getCreatedAt();
     Instant getUpdatedAt();
 
@@ -43,4 +43,19 @@ public interface GameDto {
     default boolean isTie() {
         return false;
     }
+
+    /**
+     * Whether there is a pending win request from a player.
+     */
+    @Value.Default
+    default boolean hasPendingWinRequest() {
+        return false;
+    }
+
+    /**
+     * The ID of the player who requested an early win calculation.
+     * Only populated when hasPendingWinRequest is true.
+     */
+    @Nullable
+    String getPendingWinRequestPlayerId();
 }

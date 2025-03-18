@@ -31,11 +31,16 @@ public class GameModel {
     private boolean isTie;
     private Map<String, Integer> playerScores;
 
+    // Win request fields
+    private boolean hasPendingWinRequest;
+    private String pendingWinRequestPlayerId;
+
     // constructor, getters, and setters
     public GameModel() {
         this.createdAt = Instant.now();
         this.updatedAt = Instant.now();
         this.playerScores = new HashMap<>();
+        this.hasPendingWinRequest = false;
     }
 
     public GameModel(String id, GameState gameState, Board board) {
@@ -45,6 +50,24 @@ public class GameModel {
         this.createdAt = Instant.now();
         this.updatedAt = Instant.now();
         this.playerScores = new HashMap<>();
+        this.hasPendingWinRequest = false;
+    }
+
+    // Win request getters and setters
+    public boolean hasPendingWinRequest() {
+        return hasPendingWinRequest;
+    }
+
+    public void setHasPendingWinRequest(boolean hasPendingWinRequest) {
+        this.hasPendingWinRequest = hasPendingWinRequest;
+    }
+
+    public String getPendingWinRequestPlayerId() {
+        return pendingWinRequestPlayerId;
+    }
+
+    public void setPendingWinRequestPlayerId(String pendingWinRequestPlayerId) {
+        this.pendingWinRequestPlayerId = pendingWinRequestPlayerId;
     }
 
     public String getId() {
@@ -153,6 +176,8 @@ public class GameModel {
                 ", winnerId='" + winnerId + '\'' +
                 ", isTie=" + isTie +
                 ", playerScores=" + playerScores +
+                ", hasPendingWinRequest=" + hasPendingWinRequest +
+                ", pendingWinRequestPlayerId='" + pendingWinRequestPlayerId + '\'' +
                 '}';
     }
 
