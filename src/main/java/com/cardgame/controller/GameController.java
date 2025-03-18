@@ -8,6 +8,8 @@ import com.cardgame.dto.PlayerAction;
 import com.cardgame.dto.game.GameInitializationRequest;
 import com.cardgame.dto.game.PassRequest;
 import com.cardgame.dto.game.PlayerMoveRequest;
+import com.cardgame.dto.game.WinRequestRequest;
+import com.cardgame.dto.game.WinResponseRequest;
 import com.cardgame.model.GameModel;
 import com.cardgame.service.GameService;
 import org.slf4j.Logger;
@@ -111,5 +113,48 @@ public class GameController {
                 .targetPosition(moveRequest.getPosition())
                 .timestamp(System.currentTimeMillis())
                 .build();
+    }
+
+//    /**
+//     * Get a formatted text representation of the game results.
+//     */
+//    @GetMapping("/{gameId}/results")
+//    public ResponseEntity<String> getFormattedGameResults(@PathVariable String gameId) {
+//        String formattedResults = gameService.getGameResults(gameId);
+//        return ResponseEntity.ok(formattedResults);
+//    }
+
+
+    /**
+     * Request early win calculation
+     */
+    @PostMapping("/{gameId}/request-win")
+    public ResponseEntity<GameDto> requestWinCalculation(
+            @PathVariable String gameId,
+            @RequestBody WinRequestRequest request) {
+        PlayerAction action = ImmutablePlayerAction.builder()
+                .type(PlayerAction.ActionType.REQUEST_WIN_CALCULATION)
+                .playerId(request.getPlayerId())
+                .timestamp(System.currentTimeMillis())
+                .build();
+        GameDto updatedGame = gameService.processMove(gameId, action);
+        return ResponseEntity.ok(updatedGame);
+    }
+
+    /**
+     * Respond to a win calculation request
+     */
+    @PostMapping("/{gameId}/respond-win-request")
+    public ResponseEntity<GameDto> respondToWinRequest(
+            @PathVariable String gameId,
+            @RequestBody WinResponseRequest request) {
+        PlayerAction action = ImmutablePlayerAction.builder()
+                .type(PlayerAction.ActionType.RESPOND_TO_WIN_REQUEST)
+                .playerId(request.getPlayerId())
+                .actionData(request.isAccepted())
+                .timestamp(System.currentTimeMillis())
+                .build();
+        GameDto updatedGame = gameService.processMove(gameId, action);
+        return ResponseEntity.ok(updatedGame);
     }
 }

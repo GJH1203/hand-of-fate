@@ -30,6 +30,11 @@ public interface PlayerAction {
     @Nullable
     Position getTargetPosition();
 
+    // General purpose action data field (optional - used for RESPOND_TO_WIN_REQUEST)
+    @JsonProperty("actionData")
+    @Nullable
+    Object getActionData();
+
     // Timestamp of when the action was created
     @JsonProperty("timestamp")
     long getTimestamp();
@@ -37,7 +42,9 @@ public interface PlayerAction {
     // Action type enum
     enum ActionType {
         PLACE_CARD,
-        PASS
+        PASS,
+        REQUEST_WIN_CALCULATION,  // New: Request an early win calculation
+        RESPOND_TO_WIN_REQUEST    // New: Accept or reject a win request
     }
 
     @Value.Check
@@ -50,6 +57,16 @@ public interface PlayerAction {
                 throw new IllegalStateException("Target position is required for PLACE_CARD action");
             }
         }
+
+        if (getType() == ActionType.RESPOND_TO_WIN_REQUEST) {
+            if (getActionData() == null) {
+                throw new IllegalStateException("Action data is required for RESPOND_TO_WIN_REQUEST action");
+            }
+            if (!(getActionData() instanceof Boolean)) {
+                throw new IllegalStateException("Action data must be a boolean for RESPOND_TO_WIN_REQUEST action");
+            }
+        }
+
         if (getPlayerId() == null || getPlayerId().isEmpty()) {
             throw new IllegalStateException("Player ID is required");
         }
