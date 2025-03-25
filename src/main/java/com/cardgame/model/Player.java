@@ -85,5 +85,29 @@ public class Player {
         this.placedCards = placedCards;
     }
 
+    /**
+     * Nakama
+     */
+    @Indexed
+    private String nakamaUserId;  // Link with Nakama
+
+    private String email;  // Store email for reference
+
+    public String getNakamaUserId() {
+        return nakamaUserId;
+    }
+
+    public void setNakamaUserId(String nakamaUserId) {
+        this.nakamaUserId = nakamaUserId;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
 
 }

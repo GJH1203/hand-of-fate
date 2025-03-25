@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class PlayerService {
@@ -154,5 +155,34 @@ public class PlayerService {
 
     public void savePlayer(Player player) {
         playerRepository.save(player);
+    }
+
+    // Add this method to find a player by Nakama user ID
+    public Optional<Player> findPlayerByNakamaUserId(String nakamaUserId) {
+        return playerRepository.findByNakamaUserId(nakamaUserId);
+    }
+
+    // Update create player to take email and nakamaUserId
+    public Player createPlayer(String name, String email, String nakamaUserId) {
+        // Create player with basic initialization
+        Player player = new Player();
+        player.setName(name);
+        player.setScore(0);
+        player.setHand(new ArrayList<>());
+        player.setPlacedCards(new HashMap<>());
+        player.setEmail(email);               // Set email
+        player.setNakamaUserId(nakamaUserId); // Link to Nakama user
+
+        // Save player first to get the ID
+        player = playerRepository.save(player);
+
+        // Create a default deck for the player
+        List<Card> defaultCards = createDefaultDeck();
+        Deck defaultDeck = deckService.createDeck(player.getId(), defaultCards);
+
+        // Set the deck reference and save player again
+        player.setCurrentDeck(defaultDeck);
+
+        return playerRepository.save(player);
     }
 }
