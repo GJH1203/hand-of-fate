@@ -33,20 +33,20 @@ services:
   nakama:
     container_name: nakama
     image: registry.heroiclabs.com/heroiclabs/nakama:3.22.0
+    platform: linux/amd64
     entrypoint:
       - "/bin/sh"
       - "-ecx"
       - >
         /nakama/nakama migrate up --database.address postgres:localdb@postgres:5432/nakama &&
         exec /nakama/nakama --name nakama1 --database.address postgres:localdb@postgres:5432/nakama --logger.level DEBUG --session.token_expiry_sec 7200
-    restart: always
     links:
       - "postgres:db"
     depends_on:
       postgres:
         condition: service_healthy
     volumes:
-      - ./:/nakama/data
+      - ./modules:/nakama/data/modules
     expose:
       - "7349"
       - "7350"

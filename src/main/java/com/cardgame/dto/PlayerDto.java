@@ -17,6 +17,8 @@ public interface PlayerDto {
     int getScore();
     int getHandSize();
 
+    int getLifetimeScore();
+
     DeckDto getCurrentDeck();
 
     // summary of placed cards
