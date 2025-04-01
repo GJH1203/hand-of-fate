@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class PlayerService {
@@ -38,6 +39,7 @@ public class PlayerService {
         Player player = new Player();
         player.setName(name);
         player.setScore(0);
+        player.setLifetimeScore(0); // Initialize lifetime score to 0
         player.setHand(new ArrayList<>());
         player.setPlacedCards(new HashMap<>());
 
@@ -45,7 +47,7 @@ public class PlayerService {
         player = playerRepository.save(player);
 
         // Create a default deck for the player
-        List<Card> defaultCards = createDefaultDeck(); // You'll need to implement this based on your game rules
+        List<Card> defaultCards = createDefaultDeck();
         Deck defaultDeck = deckService.createDeck(player.getId(), defaultCards);
         System.out.println("player id =========== " + player.getId());
 
@@ -68,17 +70,6 @@ public class PlayerService {
         return defaultCards;
     }
 
-//    public PlayerDto getPlayerDto(String playerId) {
-//        Player player = getPlayer(playerId);
-//        return ImmutablePlayerDto.builder()
-//                .id(player.getId())
-//                .name(player.getName())
-//                .score(player.getScore())
-//                .handSize(player.getHand().size())  // Add this
-//                .playerCardCounts(calculatePlayerCardCounts(player)) // Add this
-//                .build();
-//    }
-
     public PlayerDto getPlayerDto(String playerId) {
         Player player = getPlayer(playerId);
 
@@ -89,8 +80,8 @@ public class PlayerService {
                     .id(player.getCurrentDeck().getId())
                     .ownerId(player.getCurrentDeck().getOwnerId())
                     .remainingCards(player.getCurrentDeck().getRemainingCards())
-                    .cards(player.getCurrentDeck().getCards())  // Add this line
-                    .isValid(player.getCurrentDeck().isValid()) // Add this line
+                    .cards(player.getCurrentDeck().getCards())
+                    .isValid(player.getCurrentDeck().isValid())
                     .build();
         }
 
@@ -98,6 +89,7 @@ public class PlayerService {
                 .id(player.getId())
                 .name(player.getName())
                 .score(player.getScore())
+                .lifetimeScore(player.getLifetimeScore()) // Include lifetime score in DTO
                 .handSize(player.getHand().size())
                 .currentDeck(deckDto)
                 .playerCardCounts(calculatePlayerCardCounts(player))
@@ -108,15 +100,6 @@ public class PlayerService {
     private Map<String, Integer> calculatePlayerCardCounts(Player player) {
         // For now, return an empty map since we're just starting
         return Map.of();
-
-        // Later you can implement actual card counting logic:
-    /*
-    Map<String, Integer> cardCounts = new HashMap<>();
-    for (Card card : player.getPlacedCards().values()) {
-        cardCounts.merge(card.getType(), 1, Integer::sum);
-    }
-    return cardCounts;
-    */
     }
 
     public void addCardToHand(PlayerDto player, CardDto card) {
@@ -147,12 +130,52 @@ public class PlayerService {
         ImmutablePlayerDto.builder()
                 .from(player)
                 .placedCards(currentPlacedCards);
-
-        // Save the updated player to the repository if needed
-        // playerRepository.save(updatedPlayer);
     }
 
     public void savePlayer(Player player) {
         playerRepository.save(player);
+    }
+
+    // Add this method to find a player by Nakama user ID
+    public Optional<Player> findPlayerByNakamaUserId(String nakamaUserId) {
+        return playerRepository.findByNakamaUserId(nakamaUserId);
+    }
+
+    // Update create player to take email and nakamaUserId
+    public Player createPlayer(String name, String email, String nakamaUserId) {
+        // Create player with basic initialization
+        Player player = new Player();
+        player.setName(name);
+        player.setScore(0);
+        player.setLifetimeScore(0); // Initialize lifetime score to 0
+        player.setHand(new ArrayList<>());
+        player.setPlacedCards(new HashMap<>());
+        player.setEmail(email);
+        player.setNakamaUserId(nakamaUserId);
+
+        // Save player first to get the ID
+        player = playerRepository.save(player);
+
+        // Create a default deck for the player
+        List<Card> defaultCards = createDefaultDeck();
+        Deck defaultDeck = deckService.createDeck(player.getId(), defaultCards);
+
+        // Set the deck reference and save player again
+        player.setCurrentDeck(defaultDeck);
+
+        return playerRepository.save(player);
+    }
+
+    // Add methods to update lifetime score
+    public void addToLifetimeScore(String playerId, int points) {
+        Player player = getPlayer(playerId);
+        player.setLifetimeScore(player.getLifetimeScore() + points);
+        savePlayer(player);
+    }
+
+    public void setLifetimeScore(String playerId, int lifetimeScore) {
+        Player player = getPlayer(playerId);
+        player.setLifetimeScore(lifetimeScore);
+        savePlayer(player);
     }
 }

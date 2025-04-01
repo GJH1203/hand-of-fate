@@ -13,6 +13,7 @@ import com.cardgame.model.Position;
 import com.cardgame.repository.GameRepository;
 import com.cardgame.service.factory.MoveStrategyFactory;
 import com.cardgame.service.manager.BoardManager;
+import com.cardgame.service.nakama.NakamaLeaderBoardService;
 import com.cardgame.service.player.DeckService;
 import com.cardgame.service.player.PlayerService;
 import com.cardgame.service.util.ScoreCalculator;
@@ -38,6 +39,7 @@ public class GameService {
     private final BoardManager boardManager;
     private final GameValidator gameValidator;
     private final MoveStrategyFactory moveStrategyFactory;
+    private final NakamaLeaderBoardService nakamaLeaderBoardService;
 
     public GameService(GameRepository gameRepository,
                        PlayerService playerService,
@@ -45,7 +47,7 @@ public class GameService {
                        DeckService deckService,
                        BoardManager boardManager,
                        GameValidator gameValidator,
-                       MoveStrategyFactory moveStrategyFactory) {
+                       MoveStrategyFactory moveStrategyFactory, NakamaLeaderBoardService nakamaLeaderBoardService) {
         this.gameRepository = gameRepository;
         this.playerService = playerService;
         this.cardService = cardService;
@@ -53,6 +55,7 @@ public class GameService {
         this.boardManager = boardManager;
         this.gameValidator = gameValidator;
         this.moveStrategyFactory = moveStrategyFactory;
+        this.nakamaLeaderBoardService = nakamaLeaderBoardService;
     }
 
     private GameDto convertToDto(GameModel gameModel) {
@@ -324,18 +327,45 @@ public class GameService {
             Player player = playerService.getPlayer(playerId);
             players.put(playerId, player);
 
-            // Calculate and update player scores
+            // Calculate and update player scores for this game
             ScoreCalculator.updatePlayerScore(player, gameModel);
-            playerService.savePlayer(player);
+
+            // Add the current game score to lifetime score
+            int gameScore = player.getScore();
+            player.addLifetimeScore(gameScore);
 
             // Store scores in the game model
-            gameModel.updatePlayerScore(playerId, player.getScore());
+            gameModel.updatePlayerScore(playerId, gameScore);
+
+            // Save player with updated lifetime score
+            playerService.savePlayer(player);
+
+            // Submit lifetime score to leaderboard if player has a Nakama user ID
+//            if (player.getNakamaUserId() != null && !player.getNakamaUserId().isEmpty()) {
+//                nakamaLeaderBoardService.submitPlayerScore(player.getNakamaUserId(), player.getLifetimeScore(), player.getName(), player.getEmail(), );
+//            }
         }
 
         // Determine winner
         String winnerId = ScoreCalculator.determineWinner(gameModel);
         gameModel.setWinnerId(winnerId);
         gameModel.setTie(winnerId == null);
+
+        // Award bonus points to the winner's lifetime score
+        if (winnerId != null && !gameModel.isTie()) {
+            Player winner = players.get(winnerId);
+            if (winner != null) {
+                // Add a victory bonus to lifetime score (e.g., 10 points)
+                int victoryBonus = 10;
+                winner.addLifetimeScore(victoryBonus);
+                playerService.savePlayer(winner);
+
+                // Update leaderboard with the new lifetime score including victory bonus
+//                if (winner.getNakamaUserId() != null && !winner.getNakamaUserId().isEmpty()) {
+//                    nakamaLeaderBoardService.submitPlayerScore(winner.getNakamaUserId(), winner.getLifetimeScore(), winner.getName());
+//                }
+            }
+        }
     }
 
     private void switchToNextPlayer(GameModel gameModel) {

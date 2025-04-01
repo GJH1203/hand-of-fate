@@ -32,6 +32,9 @@ public class Player {
     @Field("placed_cards")
     private Map<String, Card> placedCards = new HashMap<>();
 
+    @Field("lifetime_score")
+    private int lifetimeScore = 0;
+
     // Default constructor
     public Player() {
     }
@@ -83,6 +86,46 @@ public class Player {
 
     public void setPlacedCards(Map<String, Card> placedCards) {
         this.placedCards = placedCards;
+    }
+
+    public int getLifetimeScore() {
+        return lifetimeScore;
+    }
+
+    public void setLifetimeScore(int lifetimeScore) {
+        this.lifetimeScore = lifetimeScore;
+    }
+
+    /**
+     * Add points to the player's lifetime score
+     * @param points The points to add
+     */
+    public void addLifetimeScore(int points) {
+        this.lifetimeScore += points;
+    }
+
+    /**
+     * Nakama
+     */
+    @Indexed
+    private String nakamaUserId;  // Link with Nakama
+
+    private String email;  // Store email for reference
+
+    public String getNakamaUserId() {
+        return nakamaUserId;
+    }
+
+    public void setNakamaUserId(String nakamaUserId) {
+        this.nakamaUserId = nakamaUserId;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
 
