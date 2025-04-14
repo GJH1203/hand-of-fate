@@ -36,6 +36,8 @@ dependencies {
 
 	// Nakama SDK
 	implementation("com.github.heroiclabs.nakama-java:nakama-java:v2.5.3")  // Add this dependency
+//	implementation("com.github.heroiclabs.nakama-java:nakama-java:v3.6.0")  // Add this dependency
+
 
 	// utility
 	implementation("com.google.guava:guava:32.1.2-jre")
