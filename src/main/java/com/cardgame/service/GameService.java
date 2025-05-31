@@ -156,30 +156,32 @@ public class GameService {
 
     private void setupPlayerGameState(String playerId, String deckId) {
         Player player = playerService.getPlayer(playerId);
-        Deck deck = deckService.getDeck(deckId);
+        Deck originalDeck = deckService.getDeck(deckId);
 
-        // Create a copy of the deck for this game
+        // Store reference to original deck for restoration after game
+        player.setOriginalDeck(originalDeck);
+
+        // Create a temporary copy of the deck for this game (in memory only - don't save to DB)
         Deck gameDeck = new Deck();
         gameDeck.setId(UUID.randomUUID().toString());
         gameDeck.setOwnerId(playerId);
-        gameDeck.setCards(new ArrayList<>(deck.getCards())); // Copy cards from original deck
-        gameDeck.setRemainingCards(deck.getCards().size());
+        gameDeck.setCards(new ArrayList<>(originalDeck.getCards())); // Copy cards from original deck
+        gameDeck.setRemainingCards(originalDeck.getCards().size());
 
-        // Save game deck
-        gameDeck = deckService.saveDeck(gameDeck);
+        // Note: NOT saving gameDeck to database - it's temporary for this game only
 
         // Draw initial hand (5 cards)
         List<Card> initialHand = new ArrayList<>(gameDeck.getCards().subList(0, 5));
         gameDeck.getCards().subList(0, 5).clear();
         gameDeck.setRemainingCards(gameDeck.getCards().size());
 
-        // Update player's game state
+        // Update player's game state with temporary deck
         player.setCurrentDeck(gameDeck);
         player.setHand(initialHand);
         player.setScore(0);
         player.setPlacedCards(new HashMap<>());
 
-        // Save updated player state
+        // Save updated player state (includes originalDeck reference)
         playerService.savePlayer(player);
     }
 
@@ -230,7 +232,7 @@ public class GameService {
         if (isGameOver(gameModel)) {
             finalizeGame(gameModel);
         } else {
-            switchToNextPlayer(gameModel);
+            handleTurnSwitching(gameModel);
         }
 
         // Update timestamp
@@ -284,8 +286,18 @@ public class GameService {
             return true;
         }
 
-        Player currentPlayer = playerService.getPlayer(gameModel.getCurrentPlayerId());
-        return currentPlayer.getHand().isEmpty() || !hasValidMoves(gameModel, currentPlayer);
+        // Check if both players have no valid moves
+        return !anyPlayerHasValidMoves(gameModel);
+    }
+
+    private boolean anyPlayerHasValidMoves(GameModel gameModel) {
+        for (String playerId : gameModel.getPlayerIds()) {
+            Player player = playerService.getPlayer(playerId);
+            if (!player.getHand().isEmpty() && hasValidMoves(gameModel, player)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean hasValidMoves(GameModel gameModel, Player player) {
@@ -337,7 +349,10 @@ public class GameService {
             // Store scores in the game model
             gameModel.updatePlayerScore(playerId, gameScore);
 
-            // Save player with updated lifetime score
+            // Restore player's original deck and clean up temporary game state
+            restorePlayerOriginalState(player);
+
+            // Save player with updated lifetime score and restored original deck
             playerService.savePlayer(player);
 
             // Submit lifetime score to leaderboard if player has a Nakama user ID
@@ -366,6 +381,41 @@ public class GameService {
 //                }
             }
         }
+    }
+
+    private void handleTurnSwitching(GameModel gameModel) {
+        String currentPlayerId = gameModel.getCurrentPlayerId();
+        Player currentPlayer = playerService.getPlayer(currentPlayerId);
+        
+        // Try to switch to next player first
+        switchToNextPlayer(gameModel);
+        String nextPlayerId = gameModel.getCurrentPlayerId();
+        Player nextPlayer = playerService.getPlayer(nextPlayerId);
+        
+        // If next player has no valid moves, check if current player can continue
+        if (nextPlayer.getHand().isEmpty() || !hasValidMoves(gameModel, nextPlayer)) {
+            // Switch back to current player if they still have valid moves
+            if (!currentPlayer.getHand().isEmpty() && hasValidMoves(gameModel, currentPlayer)) {
+                gameModel.setCurrentPlayerId(currentPlayerId);
+            }
+            // If both players have no valid moves, the game will end on next check
+        }
+    }
+
+    /**
+     * Restore player's original deck and clean up temporary game state
+     */
+    private void restorePlayerOriginalState(Player player) {
+        // Restore original deck reference
+        if (player.getOriginalDeck() != null) {
+            player.setCurrentDeck(player.getOriginalDeck());
+            player.setOriginalDeck(null); // Clear temporary reference
+        }
+
+        // Clean up temporary game state
+        player.setHand(new ArrayList<>()); // Clear hand
+        player.setPlacedCards(new HashMap<>()); // Clear placed cards
+        player.setScore(0); // Reset game score (lifetime score already updated)
     }
 
     private void switchToNextPlayer(GameModel gameModel) {

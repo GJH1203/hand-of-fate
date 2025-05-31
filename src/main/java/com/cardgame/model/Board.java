@@ -51,7 +51,7 @@ public class Board {
     }
 
     public boolean isPositionEmpty(Position position) {
-        return !pieces.containsKey(position);
+        return !pieces.containsKey(position.toStorageString());
     }
 
     public List<Position> getAdjacentPositions(Position pos) {

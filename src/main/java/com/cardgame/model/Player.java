@@ -23,6 +23,10 @@ public class Player {
     @DBRef(lazy = true)  // Add lazy loading for better performance
     private Deck currentDeck;
 
+    @DBRef(lazy = true)  // Temporary storage for original deck during games
+    @Field("original_deck")
+    private Deck originalDeck;
+
     @Field("hand")
     private List<Card> hand = new ArrayList<>();
 
@@ -62,6 +66,14 @@ public class Player {
 
     public void setCurrentDeck(Deck currentDeck) {
         this.currentDeck = currentDeck;
+    }
+
+    public Deck getOriginalDeck() {
+        return originalDeck;
+    }
+
+    public void setOriginalDeck(Deck originalDeck) {
+        this.originalDeck = originalDeck;
     }
 
     public List<Card> getHand() {
