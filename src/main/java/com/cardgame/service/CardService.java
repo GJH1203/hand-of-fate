@@ -36,11 +36,18 @@ public class CardService {
     }
 
     private String generateNextId() {
-        return cardRepository.findAll().stream()
-                .map(card -> Integer.parseInt(card.getId()))
-                .max(Integer::compareTo)
-                .map(maxId -> String.valueOf(maxId + 1))
-                .orElse("1");  // If no cards exist, start with 1
+        try {
+            return cardRepository.findAll().stream()
+                    .map(Card::getId)
+                    .filter(id -> id.matches("\\d+"))  // Only consider numeric IDs
+                    .map(Integer::parseInt)
+                    .max(Integer::compareTo)
+                    .map(maxId -> String.valueOf(maxId + 1))
+                    .orElse("1");  // If no numeric cards exist, start with 1
+        } catch (NumberFormatException e) {
+            // Fallback if any non-numeric IDs cause issues
+            return "1";
+        }
     }
 
     public List<CardDto> getAllCards() {

@@ -113,13 +113,12 @@ class GameFlowIntegrationTest {
         assertEquals(5, game.getBoard().getHeight());
         assertEquals(2, game.getBoard().getPieces().size()); // Two starting cards
 
-        // Verify starting positions - check that positions (2,4) and (2,0) exist
-        boolean hasPosition24 = game.getBoard().getPieces().keySet().stream()
-                .anyMatch(pos -> pos.getX() == 2 && pos.getY() == 4);
-        boolean hasPosition20 = game.getBoard().getPieces().keySet().stream()
-                .anyMatch(pos -> pos.getX() == 2 && pos.getY() == 0);
-        assertTrue(hasPosition24);
-        assertTrue(hasPosition20);
+        // Verify starting positions - check that positions exist
+        // Initial positions are now (1,3) and (1,1)
+        boolean hasPosition13 = game.getBoard().getPieces().containsKey("1,3");
+        boolean hasPosition11 = game.getBoard().getPieces().containsKey("1,1");
+        assertTrue(hasPosition13);
+        assertTrue(hasPosition11);
 
         // Verify players have 4 cards in hand (after placing initial card from 5-card hand)
         assertEquals(4, game.getCurrentPlayerHand().size());
@@ -129,14 +128,14 @@ class GameFlowIntegrationTest {
     void testValidCardPlacement() {
         GameDto game = gameService.initializeGame(player1.getId(), player2.getId(), deck1.getId(), deck2.getId());
 
-        // Player 1 places card adjacent to their starting position (2,4)
+        // Player 1 places card adjacent to their starting position (1,3)
         CardDto cardToPlace = game.getCurrentPlayerHand().get(0);
         Card card = new Card(cardToPlace.getId(), cardToPlace.getPower(), cardToPlace.getName());
         PlayerAction action = ImmutablePlayerAction.builder()
                 .type(PlayerAction.ActionType.PLACE_CARD)
                 .playerId(player1.getId())
                 .card(card)
-                .targetPosition(new Position(1, 4)) // Adjacent to (2,4)
+                .targetPosition(new Position(1, 4)) // Adjacent to (1,3)
                 .timestamp(System.currentTimeMillis())
                 .build();
 
@@ -144,8 +143,7 @@ class GameFlowIntegrationTest {
 
         // Verify card was placed
         assertEquals(3, updatedGame.getBoard().getPieces().size()); // Now has 3 cards
-        boolean hasPosition14 = updatedGame.getBoard().getPieces().keySet().stream()
-                .anyMatch(pos -> pos.getX() == 1 && pos.getY() == 4);
+        boolean hasPosition14 = updatedGame.getBoard().getPieces().containsKey("1,4");
         assertTrue(hasPosition14);
 
         // Verify turn switched to player 2

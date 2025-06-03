@@ -68,7 +68,7 @@ public class GameService {
                 .board(ImmutableBoardDto.builder()
                         .width(gameModel.getBoard().getWidth())
                         .height(gameModel.getBoard().getHeight())
-                        .pieces(convertPiecesToDto(gameModel.getBoard().getPieces()))
+                        .pieces(gameModel.getBoard().getPieces())  // Use string keys directly
                         .build())
                 .currentPlayerId(gameModel.getCurrentPlayerId())
                 .currentPlayerHand(currentPlayer.getHand().stream()
@@ -107,19 +107,6 @@ public class GameService {
                 .build();
     }
 
-    private Map<PositionDto, String> convertPiecesToDto(Map<String, String> pieces) {
-        return pieces.entrySet().stream()
-                .collect(Collectors.toMap(
-                        entry -> {
-                            Position pos = Position.fromStorageString(entry.getKey());
-                            return ImmutablePositionDto.builder()
-                                    .x(pos.getX())
-                                    .y(pos.getY())
-                                    .build();
-                        },
-                        Map.Entry::getValue
-                ));
-    }
 
     /**
      * Initialize a new game
@@ -188,8 +175,8 @@ public class GameService {
     private void placeInitialCards(GameModel gameModel, String player1Id, String player2Id) {
         Board board = gameModel.getBoard();
 
-        placeInitialCardForPlayer(player1Id, new Position(2, 4), board);
-        placeInitialCardForPlayer(player2Id, new Position(2, 0), board);
+        placeInitialCardForPlayer(player1Id, new Position(1, 3), board);
+        placeInitialCardForPlayer(player2Id, new Position(1, 1), board);
     }
 
     private void placeInitialCardForPlayer(String playerId, Position position, Board board) {
@@ -214,6 +201,11 @@ public class GameService {
 
         // For other actions, validate it's the player's turn
         gameValidator.validatePlayerTurn(gameModel, action.getPlayerId());
+        
+        // Validate the move itself (e.g., card placement rules)
+        if (action.getType() == PlayerAction.ActionType.PLACE_CARD) {
+            gameValidator.validateMove(gameModel, action);
+        }
 
         // Use strategy pattern to execute the move
         var strategy = moveStrategyFactory.createStrategy(action.getType());
