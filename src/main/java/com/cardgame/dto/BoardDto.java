@@ -12,5 +12,5 @@ import java.util.Map;
 public interface BoardDto {
     int getWidth();
     int getHeight();
-    Map<PositionDto, String> getPieces();
+    Map<String, String> getPieces();  // Changed to use String keys for proper JSON serialization
 }

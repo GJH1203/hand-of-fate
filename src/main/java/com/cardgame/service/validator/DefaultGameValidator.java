@@ -82,8 +82,16 @@ public class DefaultGameValidator implements GameValidator {
     }
 
     private void validateCardPlacement(GameModel gameModel, Player player, Position targetPos) {
-        if (player.getPlacedCards().isEmpty()) {
-            validateFirstMove(targetPos, player.getId(), gameModel);
+        // Check if player has any cards on the board
+        boolean playerHasCardsOnBoard = gameModel.getBoard().getPieces().entrySet().stream()
+                .anyMatch(entry -> {
+                    String cardId = entry.getValue();
+                    return player.getPlacedCards().values().stream()
+                            .anyMatch(card -> card.getId().equals(cardId));
+                });
+        
+        if (!playerHasCardsOnBoard) {
+            // Player has no cards on board yet - any empty position is valid
             return;
         }
 
@@ -91,13 +99,9 @@ public class DefaultGameValidator implements GameValidator {
     }
 
     private void validateFirstMove(Position pos, String playerId, GameModel gameModel) {
-        boolean isValidStartPos = (playerId.equals(gameModel.getPlayerIds().get(0)))
-                ? pos.getX() == 2 && pos.getY() == 4  // Player 1 starting position
-                : pos.getX() == 2 && pos.getY() == 0; // Player 2 starting position
-
-        if (!isValidStartPos) {
-            throw new InvalidMoveException("Invalid starting position");
-        }
+        // For the first move after initial placement, any empty position is valid
+        // since cards are already placed at initialization
+        // The adjacency rule will apply from the second move onwards
     }
 
     private void validateAdjacentPlacement(GameModel gameModel, Player player, Position targetPos) {

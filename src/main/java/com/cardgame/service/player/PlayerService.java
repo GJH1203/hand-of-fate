@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class PlayerService {
@@ -63,9 +64,13 @@ public class PlayerService {
         Card defaultCard = cardRepository.findById("1")
                 .orElseThrow(() -> new RuntimeException("Default card with ID 1 not found"));
 
-        // Add the same card reference 15 times
+        // Create unique card instances with different IDs
         for (int i = 0; i < 15; i++) {
-            defaultCards.add(defaultCard);
+            Card uniqueCard = new Card();
+            uniqueCard.setId("default_" + UUID.randomUUID().toString());
+            uniqueCard.setPower(defaultCard.getPower());
+            uniqueCard.setName(defaultCard.getName() + " #" + (i + 1));
+            defaultCards.add(uniqueCard);
         }
         return defaultCards;
     }
