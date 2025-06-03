@@ -183,4 +183,8 @@ public class PlayerService {
         player.setLifetimeScore(lifetimeScore);
         savePlayer(player);
     }
+    
+    public Player findPlayerByName(String name) {
+        return playerRepository.findByName(name).orElse(null);
+    }
 }
