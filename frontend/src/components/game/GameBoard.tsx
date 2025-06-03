@@ -6,19 +6,22 @@ import GameCell from './GameCell';
 import PlayerHand from './PlayerHand';
 import { useGameState } from '@/hooks/useGameState';
 import { Card, Position } from '@/types/game';
+import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
 
 const DEFAULT_BOARD_WIDTH = 3;  // Adjusted to match backend
 const DEFAULT_BOARD_HEIGHT = 5; // Adjusted to match backend
 
 export default function GameBoard() {
     const { gameState, isLoading, error, initializeGame, makeMove, requestWin, respondToWinRequest } = useGameState();
+    const { isAuthenticated, user } = useAuth();
+    const router = useRouter();
     const [selectedCard, setSelectedCard] = useState<Card | null>(null);
     const [validMoves, setValidMoves] = useState<Position[]>([]);
     const [boardCards, setBoardCards] = useState<Record<string, Card>>({});
-    const [showPlayerForm, setShowPlayerForm] = useState(true);
-    const [player1Name, setPlayer1Name] = useState('');
-    const [player2Name, setPlayer2Name] = useState('');
-    const [isCreatingPlayers, setIsCreatingPlayers] = useState(false);
+    const [showOpponentSelection, setShowOpponentSelection] = useState(true);
+    const [opponentName, setOpponentName] = useState('');
+    const [isCreatingGame, setIsCreatingGame] = useState(false);
     const [players, setPlayers] = useState<{[key: string]: string}>({});
 
     // Effect to get actual card data for pieces on the board
@@ -48,64 +51,74 @@ export default function GameBoard() {
         }
     }, [gameState]);
 
-    const createPlayersAndStartGame = async () => {
-        if (!player1Name.trim() || !player2Name.trim()) {
+    // Redirect if not authenticated
+    useEffect(() => {
+        if (!isAuthenticated) {
+            router.push('/auth');
+        }
+    }, [isAuthenticated, router]);
+
+    const createGameWithOpponent = async () => {
+        if (!opponentName.trim() || !user) {
             return;
         }
 
         try {
-            setIsCreatingPlayers(true);
+            setIsCreatingGame(true);
             
-            // Create Player 1
-            const player1Response = await fetch(`http://localhost:8080/players?name=${encodeURIComponent(player1Name)}`, {
-                method: 'POST',
-            });
-            
-            if (!player1Response.ok) {
-                throw new Error('Failed to create Player 1');
+            // Get current player data
+            const currentPlayerResponse = await fetch(`http://localhost:8080/players/${user.playerId}`);
+            if (!currentPlayerResponse.ok) {
+                throw new Error('Failed to fetch current player data');
             }
+            const currentPlayerData = await currentPlayerResponse.json();
             
-            const player1Data = await player1Response.json();
+            // Check if opponent exists
+            const opponentResponse = await fetch(`http://localhost:8080/players/by-name/${encodeURIComponent(opponentName)}`);
             
-            // Create Player 2
-            const player2Response = await fetch(`http://localhost:8080/players?name=${encodeURIComponent(player2Name)}`, {
-                method: 'POST',
-            });
-            
-            if (!player2Response.ok) {
-                throw new Error('Failed to create Player 2');
+            let opponentData;
+            if (!opponentResponse.ok) {
+                // Create opponent if doesn't exist
+                const createOpponentResponse = await fetch(`http://localhost:8080/players?name=${encodeURIComponent(opponentName)}`, {
+                    method: 'POST',
+                });
+                
+                if (!createOpponentResponse.ok) {
+                    throw new Error('Failed to create opponent player');
+                }
+                
+                opponentData = await createOpponentResponse.json();
+            } else {
+                opponentData = await opponentResponse.json();
             }
-            
-            const player2Data = await player2Response.json();
             
             // Store player names
             setPlayers({
-                [player1Data.id]: player1Data.name,
-                [player2Data.id]: player2Data.name
+                [currentPlayerData.id]: currentPlayerData.name,
+                [opponentData.id]: opponentData.name
             });
             
-            // Start game with created players
+            // Start game with both players
             await initializeGame(
-                player1Data.id, 
-                player2Data.id, 
-                player1Data.currentDeck.id, 
-                player2Data.currentDeck.id
+                currentPlayerData.id, 
+                opponentData.id, 
+                currentPlayerData.currentDeck.id, 
+                opponentData.currentDeck.id
             );
             
-            setShowPlayerForm(false);
+            setShowOpponentSelection(false);
             setSelectedCard(null);
             setValidMoves([]);
         } catch (err) {
-            console.error('Failed to create players and start game:', err);
+            console.error('Failed to create game:', err);
         } finally {
-            setIsCreatingPlayers(false);
+            setIsCreatingGame(false);
         }
     };
 
     const startNewGame = () => {
-        setShowPlayerForm(true);
-        setPlayer1Name('');
-        setPlayer2Name('');
+        setShowOpponentSelection(true);
+        setOpponentName('');
         setSelectedCard(null);
         setValidMoves([]);
     };
@@ -211,48 +224,39 @@ export default function GameBoard() {
         );
     }
 
-    if (!gameState && showPlayerForm) {
+    if (!gameState && showOpponentSelection) {
         return (
             <div className="flex flex-col items-center justify-center min-h-screen gap-6">
                 <div className="text-2xl font-bold">Welcome to Hand of Fate</div>
-                <div className="text-sm text-muted-foreground mb-4">Create two players to start the game</div>
+                <div className="text-sm text-muted-foreground mb-4">
+                    Playing as: {user?.username}
+                </div>
                 
                 <div className="w-full max-w-md space-y-4">
                     <div className="space-y-2">
-                        <label htmlFor="player1" className="text-sm font-medium">
-                            Player 1 Name
+                        <label htmlFor="opponent" className="text-sm font-medium">
+                            Opponent Name
                         </label>
                         <input
-                            id="player1"
+                            id="opponent"
                             type="text"
-                            value={player1Name}
-                            onChange={(e) => setPlayer1Name(e.target.value)}
-                            placeholder="Enter Player 1 name"
+                            value={opponentName}
+                            onChange={(e) => setOpponentName(e.target.value)}
+                            placeholder="Enter opponent's name"
                             className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
                         />
-                    </div>
-                    
-                    <div className="space-y-2">
-                        <label htmlFor="player2" className="text-sm font-medium">
-                            Player 2 Name
-                        </label>
-                        <input
-                            id="player2"
-                            type="text"
-                            value={player2Name}
-                            onChange={(e) => setPlayer2Name(e.target.value)}
-                            placeholder="Enter Player 2 name"
-                            className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
-                        />
+                        <p className="text-xs text-muted-foreground">
+                            If the opponent doesn't exist, they will be created automatically
+                        </p>
                     </div>
                     
                     <Button
-                        onClick={createPlayersAndStartGame}
+                        onClick={createGameWithOpponent}
                         size="lg"
                         className="w-full"
-                        disabled={!player1Name.trim() || !player2Name.trim() || isCreatingPlayers}
+                        disabled={!opponentName.trim() || isCreatingGame}
                     >
-                        {isCreatingPlayers ? 'Creating Players...' : 'Create Players & Start Game'}
+                        {isCreatingGame ? 'Starting Game...' : 'Start Game'}
                     </Button>
                 </div>
                 
