@@ -40,6 +40,15 @@ public class PlayerController {
         return ResponseEntity.ok(player.getHand());
     }
 
+    @GetMapping("/by-name/{name}")
+    public ResponseEntity<PlayerDto> getPlayerByName(@PathVariable String name) {
+        Player player = playerService.findPlayerByName(name);
+        if (player == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(playerService.getPlayerDto(player.getId()));
+    }
+
     @GetMapping("/player/test")
     public String testEndpoint() {
         return "GameController is working!";
