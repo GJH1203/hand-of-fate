@@ -18,7 +18,7 @@ export default function GameCell({
                                      selectedCard
                                  }: GameCellProps) {
     const handleClick = () => {
-        if (onCellClick && (isValidMove || !card)) {
+        if (onCellClick && !card) {
             onCellClick(position);
         }
     };
@@ -30,12 +30,12 @@ export default function GameCell({
                 "h-24 w-full rounded-lg border-2 flex items-center justify-center",
                 "transition-all duration-200 relative",
                 {
-                    "cursor-pointer hover:shadow-md": isValidMove || !card,
-                    "cursor-not-allowed": card && !isValidMove,
-                    "border-primary bg-primary/5 hover:bg-primary/10": isValidMove && selectedCard,
-                    "border-muted": !isValidMove || !selectedCard,
-                    "bg-card": card,
-                    "hover:bg-accent/50": !card && isValidMove,
+                    "cursor-pointer hover:shadow-md": !card,
+                    "cursor-not-allowed": card,
+                    "border-green-500 bg-green-50 hover:bg-green-100 shadow-lg": isValidMove && selectedCard && !card,
+                    "border-gray-300": !isValidMove || !selectedCard,
+                    "bg-white": card,
+                    "hover:bg-gray-50": !card && !isValidMove,
                 }
             )}
         >
