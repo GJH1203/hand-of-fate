@@ -57,11 +57,43 @@ export const useGameState = () => {
         }
     };
 
+    const requestWin = async (gameId: string, playerId: string): Promise<void> => {
+        try {
+            setIsLoading(true);
+            setError(null);
+            const updatedGameState = await gameService.requestWin(gameId, playerId);
+            setGameState(updatedGameState);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to request win');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const respondToWinRequest = async (
+        gameId: string,
+        playerId: string,
+        acceptRequest: boolean
+    ): Promise<void> => {
+        try {
+            setIsLoading(true);
+            setError(null);
+            const updatedGameState = await gameService.respondToWinRequest(gameId, playerId, acceptRequest);
+            setGameState(updatedGameState);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to respond to win request');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return {
         gameState,
         isLoading,
         error,
         initializeGame,
-        makeMove
+        makeMove,
+        requestWin,
+        respondToWinRequest
     };
 };

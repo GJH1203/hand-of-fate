@@ -15,8 +15,36 @@ export interface GameState {
     board: {
         width: number;
         height: number;
-        pieces: Record<string, Card>;
+        pieces: Record<string, string>; // Backend sends {"x,y": "cardId"}
     };
     currentPlayerId: string;
     currentPlayerHand: Card[];
+    placedCards: Record<string, Card>; // Map of cardId to Card for all placed cards
+    scores?: Record<string, number>; // Player ID to score mapping
+    winnerId?: string | null;
+    isTie?: boolean;
+    hasPendingWinRequest?: boolean;
+    pendingWinRequestPlayerId?: string | null;
+}
+
+export interface InitializePayload {
+    playerIds: string[];
+    deckIds: string[];
+}
+
+export interface MovePayload {
+    type: 'PLACE_CARD';
+    playerId: string;
+    card: Card;
+    targetPosition: Position;
+    timestamp: number;
+}
+
+export interface WinRequestPayload {
+    playerId: string;
+}
+
+export interface WinResponsePayload {
+    playerId: string;
+    accepted: boolean;  // Changed to match backend's expected field name
 }
