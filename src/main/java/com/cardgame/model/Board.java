@@ -56,10 +56,10 @@ public class Board {
 
     public List<Position> getAdjacentPositions(Position pos) {
         List<Position> adjacent = new ArrayList<>();
-        int[] dx = {-1, -1, -1, 0, 0, 1, 1, 1};
-        int[] dy = {-1, 0, 1, -1, 1, -1, 0, 1};
+        int[] dx = {0, 0, 1, -1};
+        int[] dy = {1, -1, 0, 0};
 
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < 4; i++) {
             int newX = pos.getX() + dx[i];
             int newY = pos.getY() + dy[i];
             Position newPos = new Position(newX, newY);

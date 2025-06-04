@@ -163,14 +163,14 @@ class GameLogicIntegrationTest {
 
         /**
          * Tests that placing a card adjacent only to opponent's card is invalid.
-         * Player1 attempts to place at (0,1) which is only adjacent to player2's card at (1,1).
+         * Player1 attempts to place at (2,1) which is only adjacent to player2's card at (1,1).
          * Should throw InvalidMoveException with appropriate message.
          */
         @Test
         @DisplayName("Invalid placement adjacent only to opponent's card")
         void testInvalidMove_AdjacentOnlyToOpponentCard() {
             CardDto cardToPlace = game.getCurrentPlayerHand().get(0);
-            PlayerAction action = createPlaceCardAction(player1Id, cardToPlace, new Position(0, 1));
+            PlayerAction action = createPlaceCardAction(player1Id, cardToPlace, new Position(2, 1));
 
             InvalidMoveException exception = assertThrows(InvalidMoveException.class,
                     () -> gameService.processMove(game.getId(), action));

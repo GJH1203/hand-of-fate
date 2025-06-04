@@ -292,7 +292,7 @@ class GameFlowIntegrationTest {
     void testDiagonalAdjacency() {
         GameDto game = gameService.initializeGame(player1.getId(), player2.getId(), deck1.getId(), deck2.getId());
 
-        // Test that diagonal adjacency works
+        // Test that diagonal adjacency is NOT allowed (only orthogonal adjacency)
         CardDto cardToPlace = game.getCurrentPlayerHand().get(0);
         Card card = new Card(cardToPlace.getId(), cardToPlace.getPower(), cardToPlace.getName());
         PlayerAction action = ImmutablePlayerAction.builder()
@@ -303,8 +303,8 @@ class GameFlowIntegrationTest {
                 .timestamp(System.currentTimeMillis())
                 .build();
 
-        // Should succeed - diagonal adjacency is allowed
-        assertDoesNotThrow(() -> {
+        // Should fail - only orthogonal adjacency is allowed, not diagonal
+        assertThrows(Exception.class, () -> {
             gameService.processMove(game.getId(), action);
         });
     }
