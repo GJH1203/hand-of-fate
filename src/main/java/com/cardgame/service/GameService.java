@@ -348,9 +348,10 @@ public class GameService {
             playerService.savePlayer(player);
 
             // Submit lifetime score to leaderboard if player has a Nakama user ID
-//            if (player.getNakamaUserId() != null && !player.getNakamaUserId().isEmpty()) {
-//                nakamaLeaderBoardService.submitPlayerScore(player.getNakamaUserId(), player.getLifetimeScore(), player.getName(), player.getEmail(), );
-//            }
+            if (player.getNakamaUserId() != null && !player.getNakamaUserId().isEmpty()) {
+                nakamaLeaderBoardService.submitPlayerScore(player.getNakamaUserId(), player.getLifetimeScore(), 
+                    player.getName());
+            }
         }
 
         // Determine winner
@@ -368,9 +369,10 @@ public class GameService {
                 playerService.savePlayer(winner);
 
                 // Update leaderboard with the new lifetime score including victory bonus
-//                if (winner.getNakamaUserId() != null && !winner.getNakamaUserId().isEmpty()) {
-//                    nakamaLeaderBoardService.submitPlayerScore(winner.getNakamaUserId(), winner.getLifetimeScore(), winner.getName());
-//                }
+                if (winner.getNakamaUserId() != null && !winner.getNakamaUserId().isEmpty()) {
+                    nakamaLeaderBoardService.submitPlayerScore(winner.getNakamaUserId(), winner.getLifetimeScore(), 
+                        winner.getName());
+                }
             }
         }
     }
