@@ -35,7 +35,7 @@ export default function GameCell({
     
     // Get player display info
     const getPlayerInfo = (playerId: string | null) => {
-        if (!playerId) return { name: '', color: 'gray', bgColor: 'bg-gray-100', borderColor: 'border-gray-300' };
+        if (!playerId) return { name: '', color: 'gray', bgColor: 'bg-gray-100', borderColor: 'border-gray-300', textColor: 'text-gray-800' };
         
         const isCurrentPlayer = playerId === currentPlayerId;
         const playerName = playerNames?.[playerId] || playerId;
