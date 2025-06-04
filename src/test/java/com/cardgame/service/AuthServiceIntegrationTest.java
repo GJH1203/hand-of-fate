@@ -95,7 +95,7 @@ class AuthServiceIntegrationTest {
     void testCreatePlayer_DuplicateUsername_ThrowsException() {
         playerService.createPlayer(testUsername, testEmail, testNakamaUserId);
 
-        assertThrows(Exception.class, () -> {
+        assertThrows(IllegalArgumentException.class, () -> {
             playerService.createPlayer(testUsername, "different@example.com", "different-nakama-id");
         });
     }

@@ -7,6 +7,8 @@ import com.cardgame.model.Deck;
 import com.cardgame.model.Player;
 import com.cardgame.repository.CardRepository;
 import com.cardgame.repository.PlayerRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -18,6 +20,8 @@ import java.util.UUID;
 
 @Service
 public class PlayerService {
+    private static final Logger logger = LoggerFactory.getLogger(PlayerService.class);
+    
     private final PlayerActionService playerActionService;
     private final PlayerRepository playerRepository;
     private final DeckService deckService;
@@ -50,7 +54,7 @@ public class PlayerService {
         // Create a default deck for the player
         List<Card> defaultCards = createDefaultDeck();
         Deck defaultDeck = deckService.createDeck(player.getId(), defaultCards);
-        System.out.println("player id =========== " + player.getId());
+        logger.debug("Created player with ID: {}", player.getId());
 
         // Set the deck reference and save player again
         player.setCurrentDeck(defaultDeck);
@@ -232,11 +236,11 @@ public class PlayerService {
             return playerRepository.findBySupabaseUserId(supabaseUserId);
         } catch (org.springframework.dao.IncorrectResultSizeDataAccessException e) {
             // Handle case where there are multiple players with same Supabase ID
-            System.out.println("Multiple players found with Supabase ID: " + supabaseUserId + ", returning the first one");
+            logger.warn("Multiple players found with Supabase ID: {}, returning the first one", supabaseUserId);
             List<Player> players = playerRepository.findAllBySupabaseUserId(supabaseUserId);
             if (!players.isEmpty()) {
                 // Return the first player and log the issue
-                System.out.println("Found " + players.size() + " players with same Supabase ID, using player: " + players.get(0).getId());
+                logger.info("Found {} players with same Supabase ID, using player: {}", players.size(), players.get(0).getId());
                 return Optional.of(players.get(0));
             }
             return Optional.empty();
@@ -291,7 +295,7 @@ public class PlayerService {
             
         } catch (org.springframework.dao.DuplicateKeyException e) {
             // Handle MongoDB duplicate key error - likely a race condition
-            System.out.println("Duplicate key error during player creation, attempting to find existing player: " + e.getMessage());
+            logger.warn("Duplicate key error during player creation, attempting to find existing player: {}", e.getMessage());
             
             // Try to find the existing player by any of the unique fields
             Optional<Player> existing = playerRepository.findBySupabaseUserId(supabaseUserId);
@@ -320,6 +324,10 @@ public class PlayerService {
     
     public void deletePlayer(String playerId) {
         playerRepository.deleteById(playerId);
+    }
+    
+    public void deleteAllPlayers() {
+        playerRepository.deleteAll();
     }
     
     public void createDefaultDeckForPlayer(String playerId) {

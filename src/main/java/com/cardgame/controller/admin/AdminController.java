@@ -7,6 +7,7 @@ import com.cardgame.repository.CardRepository;
 import com.cardgame.repository.GameResultRepository;
 import com.cardgame.repository.GameScoreRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -132,7 +133,7 @@ public class AdminController {
             if (!playerRepository.existsById(playerId)) {
                 result.put("success", false);
                 result.put("error", "Player not found: " + playerId);
-                return ResponseEntity.notFound().build();
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(result);
             }
             
             // Delete player's games (where they are a participant)

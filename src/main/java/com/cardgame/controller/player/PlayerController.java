@@ -124,10 +124,8 @@ public class PlayerController {
             List<Player> allPlayers = playerService.getAllPlayers();
             int playerCount = allPlayers.size();
             
-            // Delete all players
-            for (Player player : allPlayers) {
-                playerService.deletePlayer(player.getId());
-            }
+            // Delete all players in batch for better performance
+            playerService.deleteAllPlayers();
             
             return ResponseEntity.ok("Deleted " + playerCount + " players successfully");
         } catch (Exception e) {
