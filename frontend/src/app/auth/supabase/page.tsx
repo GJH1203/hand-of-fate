@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert } from '@/components/ui/alert';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { isSupabaseConfigured } from '@/lib/supabase';
 
 export default function SupabaseAuthPage() {
@@ -18,8 +18,21 @@ export default function SupabaseAuthPage() {
     const [pendingVerification, setPendingVerification] = useState(false);
     const [verificationEmail, setVerificationEmail] = useState('');
 
-    const { signUp, signIn, isLoading, resendVerification } = useSupabaseAuth();
+    const { signUp, signIn, isLoading, resendVerification, isAuthenticated, user } = useSupabaseAuth();
     const router = useRouter();
+    const searchParams = useSearchParams();
+
+    // Handle post-verification redirect
+    useEffect(() => {
+        const verified = searchParams.get('verified');
+        if (verified === 'true' && isAuthenticated && user?.email_confirmed_at) {
+            console.log('Email verified user detected, redirecting to main page');
+            setMessage('Email verified successfully! Redirecting...');
+            setTimeout(() => {
+                router.push('/');
+            }, 2000);
+        }
+    }, [searchParams, isAuthenticated, user, router]);
 
     // Show configuration message if Supabase is not set up
     if (!isSupabaseConfigured) {
@@ -104,15 +117,37 @@ export default function SupabaseAuthPage() {
         }
 
         try {
+            console.log('Attempting sign in with email:', email);
             const result = await signIn(email, password);
+            console.log('Sign in result:', { 
+                hasUser: !!result.user, 
+                hasSession: !!result.session, 
+                hasError: !!result.error,
+                emailConfirmed: result.user?.email_confirmed_at 
+            });
             
             if (result.error) {
+                console.error('Sign in error:', result.error.message);
                 setError(result.error.message || 'Sign in failed');
             } else if (result.user && result.session) {
-                setMessage('Signed in successfully!');
-                router.push('/game');
+                if (result.user.email_confirmed_at) {
+                    console.log('User email is confirmed, redirecting to main page');
+                    setMessage('Signed in successfully! Redirecting...');
+                    // Use a longer delay to ensure auth state is fully updated
+                    setTimeout(() => {
+                        console.log('Executing redirect to main page');
+                        router.push('/');
+                    }, 1000);
+                } else {
+                    console.log('User email not confirmed yet');
+                    setError('Please verify your email before signing in. Check your inbox for the verification link.');
+                }
+            } else {
+                console.error('Sign in failed: no user or session returned');
+                setError('Sign in failed - please try again');
             }
         } catch (err) {
+            console.error('Sign in exception:', err);
             setError('An unexpected error occurred');
         }
     };
