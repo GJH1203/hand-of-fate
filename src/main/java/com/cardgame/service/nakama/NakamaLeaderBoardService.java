@@ -89,12 +89,13 @@ public class NakamaLeaderBoardService {
     }
 
     /**
-     * Submit a player's lifetime score to leaderboards
+     * Submit a player's lifetime score to leaderboards using player's session
      *
      * @param nakamaUserId The Nakama user ID as a string
      * @param lifetimeScore The player's lifetime score
+     * @param userName The player's username
      */
-    public void submitPlayerScore(String nakamaUserId, int lifetimeScore, String userName, String email, String password) {
+    public void submitPlayerScore(String nakamaUserId, int lifetimeScore, String userName) {
         if (nakamaUserId == null || nakamaUserId.isEmpty()) {
             logger.warn("Cannot submit score for player with null or empty Nakama user ID");
             return;
@@ -102,36 +103,45 @@ public class NakamaLeaderBoardService {
 
         ensureSession();
 
-        Session playerSession;
         try {
-            // 2) Log in an existing user by email/password.
-            //    Because create=false, if the user doesn't exist or the password is wrong,
-            //    Nakama throws an error (NOT_FOUND, INVALID_ARGUMENT, etc.).
-            playerSession = client.authenticateEmail(email, password, false, userName).get();
-        } catch (ExecutionException e) {
-            // Probably means user not found or invalid credentials
-            logger.error("User not found or invalid credentials for email '{}': {}", email, e.getMessage());
-            return; // Stop here, no user session
-        } catch (InterruptedException e) {
-            logger.error("Interrupted while authenticating email '{}': {}", email, e.getMessage());
-            Thread.currentThread().interrupt();
-            return;
-        }
-
-        // 3) If we get here, we have a valid session for an existing user
-        try {
-            // Submit to weekly leaderboard
+            // Try to authenticate existing user first, then create if needed
+            Session playerSession;
+            try {
+                // First try to authenticate existing user
+                playerSession = client.authenticateDevice(nakamaUserId, false, userName).get();
+            } catch (ExecutionException e) {
+                // If user doesn't exist, create new one with unique username
+                String uniqueUsername = userName + "_" + nakamaUserId.substring(0, 8);
+                logger.info("User doesn't exist, creating new Nakama user: {}", uniqueUsername);
+                playerSession = client.authenticateDevice(nakamaUserId, true, uniqueUsername).get();
+            }
+            
+            // Submit to weekly leaderboard using player's session
             client.writeLeaderboardRecord(playerSession, WEEKLY_LEADERBOARD, lifetimeScore).get();
-            // Submit to all-time leaderboard
+            // Submit to all-time leaderboard using player's session
             client.writeLeaderboardRecord(playerSession, ALLTIME_LEADERBOARD, lifetimeScore).get();
 
-            logger.info("Successfully submitted lifetime score {} for user '{}'", lifetimeScore, email);
+            logger.info("Successfully submitted lifetime score {} for user '{}' (ID: {})", lifetimeScore, userName, nakamaUserId);
         } catch (ExecutionException | InterruptedException e) {
-            logger.error("Error writing leaderboard record for '{}': {}", email, e.getMessage(), e);
+            logger.error("Error writing leaderboard record for user '{}' (ID: {}): {}", userName, nakamaUserId, e.getMessage(), e);
             if (e instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
             }
         }
+    }
+
+    /**
+     * Submit a player's lifetime score to leaderboards (legacy method with authentication)
+     *
+     * @param nakamaUserId The Nakama user ID as a string
+     * @param lifetimeScore The player's lifetime score
+     * @param userName The player's username  
+     * @param email The player's email
+     * @param password The player's password
+     */
+    public void submitPlayerScore(String nakamaUserId, int lifetimeScore, String userName, String email, String password) {
+        // Delegate to the new simpler method that doesn't require authentication
+        submitPlayerScore(nakamaUserId, lifetimeScore, userName);
     }
 
 
