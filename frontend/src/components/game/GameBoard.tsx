@@ -159,7 +159,7 @@ export default function GameBoard() {
         
         // Get list of all players from the game
         // Use our tracked card ownership information
-        const getCardOwnership = (posKey: string, cardId: string): string | null => {
+        const getCardOwnership = (posKey: string): string | null => {
             return cardOwnership[posKey] || null;
         };
 
