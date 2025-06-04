@@ -1,6 +1,8 @@
 package com.cardgame.controller.player;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import com.cardgame.dto.PlayerDto;
 import com.cardgame.model.Card;
@@ -71,6 +73,51 @@ public class PlayerController {
         return "GameController is working!";
     }
     
+    @PostMapping("/create-test-player")
+    public ResponseEntity<PlayerDto> createTestPlayer(@RequestParam String name) {
+        try {
+            Player testPlayer = playerService.createPlayer(name);
+            return ResponseEntity.ok(playerService.getPlayerDto(testPlayer.getId()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+    
+    @PostMapping("/{playerId}/create-deck")
+    public ResponseEntity<PlayerDto> createDeckForPlayer(@PathVariable String playerId) {
+        try {
+            Player player = playerService.getPlayer(playerId);
+            if (player.getCurrentDeck() != null) {
+                return ResponseEntity.ok(playerService.getPlayerDto(playerId));
+            }
+            
+            // Create default deck for player
+            playerService.createDefaultDeckForPlayer(playerId);
+            return ResponseEntity.ok(playerService.getPlayerDto(playerId));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+    
+    @GetMapping("/list")
+    public ResponseEntity<List<Map<String, String>>> getAllPlayers() {
+        try {
+            List<Player> allPlayers = playerService.getAllPlayers();
+            List<Map<String, String>> simplePlayers = allPlayers.stream()
+                .map(player -> {
+                    Map<String, String> playerInfo = new HashMap<>();
+                    playerInfo.put("id", player.getId());
+                    playerInfo.put("name", player.getName());
+                    playerInfo.put("email", player.getEmail());
+                    return playerInfo;
+                })
+                .collect(java.util.stream.Collectors.toList());
+            return ResponseEntity.ok(simplePlayers);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
     @DeleteMapping("/all")
     public ResponseEntity<String> deleteAllPlayers() {
         try {

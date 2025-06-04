@@ -80,7 +80,7 @@ public class PlayerService {
 
         // Convert the Deck to DeckDto
         DeckDto deckDto = null;
-        if (player.getCurrentDeck() != null) {
+        if (player.getCurrentDeck() != null && player.getCurrentDeck().getId() != null) {
             deckDto = ImmutableDeckDto.builder()
                     .id(player.getCurrentDeck().getId())
                     .ownerId(player.getCurrentDeck().getOwnerId())
@@ -320,5 +320,15 @@ public class PlayerService {
     
     public void deletePlayer(String playerId) {
         playerRepository.deleteById(playerId);
+    }
+    
+    public void createDefaultDeckForPlayer(String playerId) {
+        Player player = getPlayer(playerId);
+        if (player.getCurrentDeck() == null) {
+            List<Card> defaultCards = createDefaultDeck();
+            Deck defaultDeck = deckService.createDeck(playerId, defaultCards);
+            player.setCurrentDeck(defaultDeck);
+            playerRepository.save(player);
+        }
     }
 }
