@@ -23,6 +23,7 @@ export default function GameBoard() {
     const [opponentName, setOpponentName] = useState('');
     const [isCreatingGame, setIsCreatingGame] = useState(false);
     const [players, setPlayers] = useState<{[key: string]: string}>({});
+    const [cardOwnership, setCardOwnership] = useState<{[key: string]: string}>({});
 
     // Effect to get actual card data for pieces on the board
     useEffect(() => {
@@ -106,6 +107,13 @@ export default function GameBoard() {
                 opponentData.currentDeck.id
             );
             
+            // Initialize card ownership tracking
+            // Player1 starts with card at (1,3), Player2 at (1,1)
+            setCardOwnership({
+                '1,3': currentPlayerData.id,  // Player1's initial position
+                '1,1': opponentData.id        // Player2's initial position
+            });
+            
             setShowOpponentSelection(false);
             setSelectedCard(null);
             setValidMoves([]);
@@ -121,6 +129,7 @@ export default function GameBoard() {
         setOpponentName('');
         setSelectedCard(null);
         setValidMoves([]);
+        setCardOwnership({});
     };
 
     const handleCardSelect = (card: Card | null) => {
@@ -133,22 +142,29 @@ export default function GameBoard() {
         }
     };
 
-    const calculateValidMoves = (gameState: { board: { pieces?: Record<string, unknown> }, placedCards?: Record<string, unknown> }): Position[] => {
+    const calculateValidMoves = (gameState: any): Position[] => {
         const positions: Position[] = [];
         const boardPieces = gameState.board.pieces || {};
         console.log('Calculating valid moves, board pieces:', boardPieces);
+        console.log('Current player ID:', gameState.currentPlayerId);
 
-
-        // Check if there are any pieces from the current player
-        const currentPlayerHasPieces = Object.entries(boardPieces).some(([, cardId]: [string, unknown]) => {
-            // Check if this card belongs to current player (we need to check placedCards)
-            return gameState.placedCards && gameState.placedCards[cardId as string];
-        });
+        // Since we don't have reliable ownership data from the backend yet,
+        // let's use a simple approach: determine ownership based on game rules
         
-        console.log('Current player has pieces:', currentPlayerHasPieces);
+        // For now, we'll determine ownership based on the known initial positions:
+        // Player 1 starts at (1,3), Player 2 starts at (1,1)
+        // Then track ownership based on who made subsequent moves
+        
+        // Get list of all players from the game
+        const allPlayerIds = [gameState.currentPlayerId]; // We know current player, need to infer others
+        
+        // Use our tracked card ownership information
+        const getCardOwnership = (posKey: string, cardId: string): string | null => {
+            return cardOwnership[posKey] || null;
+        };
 
-        // Find all valid adjacent positions to existing pieces
-        Object.keys(boardPieces).forEach(posKey => {
+        // Find positions adjacent to current player's own cards only
+        Object.entries(boardPieces).forEach(([posKey, cardId]: [string, unknown]) => {
             const [x, y] = posKey.split(',').map(Number);
             
             // Skip if we couldn't parse the position
@@ -157,20 +173,32 @@ export default function GameBoard() {
                 return;
             }
 
-            // Check all adjacent positions (orthogonal and diagonal)
-            const adjacentPositions = [
-                { x: x-1, y: y }, { x: x+1, y: y },    // left, right
-                { x: x, y: y-1 }, { x: x, y: y+1 },    // top, bottom
-                { x: x-1, y: y-1 }, { x: x+1, y: y-1 }, // top-left, top-right
-                { x: x-1, y: y+1 }, { x: x+1, y: y+1 }  // bottom-left, bottom-right
+            // Check if this card belongs to the current player
+            const cardOwner = getCardOwnership(posKey, cardId as string);
+            const isOwnCard = cardOwner === gameState.currentPlayerId;
+            
+            if (!isOwnCard) {
+                console.log(`Skipping card ${cardId} at ${posKey} - not owned by current player`);
+                return;
+            }
+
+            console.log(`Found own card ${cardId} at ${posKey}`);
+
+            // Check only orthogonal adjacent positions (no diagonals)
+            const orthogonalPositions = [
+                { x: x-1, y: y }, // left
+                { x: x+1, y: y }, // right
+                { x: x, y: y-1 }, // top
+                { x: x, y: y+1 }  // bottom
             ];
 
-            adjacentPositions.forEach(pos => {
+            orthogonalPositions.forEach(pos => {
                 // Check if position is valid (within board bounds and empty)
                 if (pos.x >= 0 && pos.x < DEFAULT_BOARD_WIDTH &&
                     pos.y >= 0 && pos.y < DEFAULT_BOARD_HEIGHT &&
                     !boardPieces[`${pos.x},${pos.y}`]) {
                     positions.push(pos);
+                    console.log(`Added valid position: ${pos.x},${pos.y}`);
                 }
             });
         });
@@ -179,7 +207,7 @@ export default function GameBoard() {
         const uniquePositions = positions.filter((pos, index, self) =>
             index === self.findIndex(p => p.x === pos.x && p.y === pos.y)
         );
-        console.log('Valid positions:', uniquePositions);
+        console.log('Final valid positions:', uniquePositions);
         return uniquePositions;
     };
 
@@ -200,6 +228,13 @@ export default function GameBoard() {
                 selectedCard,
                 position
             );
+
+            // Track the ownership of the newly placed card
+            const positionKey = `${position.x},${position.y}`;
+            setCardOwnership(prev => ({
+                ...prev,
+                [positionKey]: gameState.currentPlayerId
+            }));
 
             // Reset selection after a successful move
             setSelectedCard(null);
