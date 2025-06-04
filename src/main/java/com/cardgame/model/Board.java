@@ -5,6 +5,10 @@ import java.util.List;
 import java.util.Map;
 
 public class Board {
+    // Orthogonal direction vectors: North, South, East, West
+    private static final int[] ORTHOGONAL_DX = {0, 0, 1, -1};
+    private static final int[] ORTHOGONAL_DY = {1, -1, 0, 0};
+    
     private int width;
     private int height;
     private Map<String, String> pieces;
@@ -56,12 +60,10 @@ public class Board {
 
     public List<Position> getAdjacentPositions(Position pos) {
         List<Position> adjacent = new ArrayList<>();
-        int[] dx = {0, 0, 1, -1};
-        int[] dy = {1, -1, 0, 0};
 
-        for (int i = 0; i < 4; i++) {
-            int newX = pos.getX() + dx[i];
-            int newY = pos.getY() + dy[i];
+        for (int i = 0; i < ORTHOGONAL_DX.length; i++) {
+            int newX = pos.getX() + ORTHOGONAL_DX[i];
+            int newY = pos.getY() + ORTHOGONAL_DY[i];
             Position newPos = new Position(newX, newY);
             if (isPositionValid(newPos)) {
                 adjacent.add(newPos);
