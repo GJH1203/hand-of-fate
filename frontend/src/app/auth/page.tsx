@@ -140,7 +140,7 @@ export default function AuthPage() {
                         </Button>
                     </form>
 
-                    <div className="mt-4 text-center">
+                    <div className="mt-4 text-center space-y-2">
                         <button
                             type="button"
                             onClick={() => setIsLogin(!isLogin)}
@@ -150,6 +150,16 @@ export default function AuthPage() {
                                 ? "Don't have an account? Sign up"
                                 : 'Already have an account? Login'}
                         </button>
+                        
+                        <div className="border-t pt-4">
+                            <Button
+                                variant="outline"
+                                onClick={() => router.push('/auth/supabase')}
+                                className="w-full"
+                            >
+                                🔒 Try Supabase Auth (Email Verification)
+                            </Button>
+                        </div>
                     </div>
                 </CardContent>
             </Card>
