@@ -76,7 +76,9 @@ public class PlayerController {
     @PostMapping("/create-test-player")
     public ResponseEntity<PlayerDto> createTestPlayer(@RequestParam String name) {
         try {
-            Player testPlayer = playerService.createPlayer(name);
+            String email = name + "@example.com"; // Generate a mock email
+            String nakamaUserId = java.util.UUID.randomUUID().toString(); // Generate a mock NakamaUserId
+            Player testPlayer = playerService.createPlayer(name, email, nakamaUserId);
             return ResponseEntity.ok(playerService.getPlayerDto(testPlayer.getId()));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();
