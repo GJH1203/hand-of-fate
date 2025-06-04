@@ -204,8 +204,9 @@ public class PlayerService {
             throw new IllegalArgumentException("Nakama user ID cannot be null or empty");
         }
         
-        // Basic email format validation
-        if (!email.contains("@") || !email.contains(".")) {
+        // Basic email format validation using regex
+        String emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
+        if (!email.matches(emailRegex)) {
             throw new IllegalArgumentException("Invalid email format: " + email);
         }
     }
