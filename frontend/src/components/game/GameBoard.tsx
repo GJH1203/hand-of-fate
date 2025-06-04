@@ -133,23 +133,16 @@ export default function GameBoard() {
         }
     };
 
-    const calculateValidMoves = (gameState: any): Position[] => {
+    const calculateValidMoves = (gameState: { board: { pieces?: Record<string, unknown> }, placedCards?: Record<string, unknown> }): Position[] => {
         const positions: Position[] = [];
         const boardPieces = gameState.board.pieces || {};
         console.log('Calculating valid moves, board pieces:', boardPieces);
 
-        // Check if there are any pieces on the board
-        const playerPieces = Object.entries(boardPieces)
-            .filter(([_, cardId]) => {
-                // Check if this card belongs to the current player
-                const card = gameState.placedCards?.[cardId];
-                return card !== undefined; // For now, just check if card exists
-            });
 
         // Check if there are any pieces from the current player
-        const currentPlayerHasPieces = Object.entries(boardPieces).some(([_, cardId]) => {
+        const currentPlayerHasPieces = Object.entries(boardPieces).some(([, cardId]: [string, unknown]) => {
             // Check if this card belongs to current player (we need to check placedCards)
-            return gameState.placedCards && gameState.placedCards[cardId];
+            return gameState.placedCards && gameState.placedCards[cardId as string];
         });
         
         console.log('Current player has pieces:', currentPlayerHasPieces);
@@ -193,7 +186,7 @@ export default function GameBoard() {
     const handleCellClick = async (position: Position) => {
         // Check if this is an empty position
         const positionKey = `${position.x},${position.y}`;
-        const isOccupied = gameState.board.pieces && gameState.board.pieces[positionKey];
+        const isOccupied = gameState?.board.pieces && gameState.board.pieces[positionKey];
         
         if (!selectedCard || !gameState || isOccupied) {
             return;
@@ -246,7 +239,7 @@ export default function GameBoard() {
                             className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
                         />
                         <p className="text-xs text-muted-foreground">
-                            If the opponent doesn't exist, they will be created automatically
+                            If the opponent doesn&apos;t exist, they will be created automatically
                         </p>
                     </div>
                     
