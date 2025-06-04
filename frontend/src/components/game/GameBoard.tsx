@@ -315,6 +315,21 @@ export default function GameBoard() {
                     <div className="text-sm text-muted-foreground">
                         Game State: {gameState.state}
                     </div>
+                    {/* Player color legend */}
+                    <div className="flex gap-4 mt-2">
+                        <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 bg-blue-100 border-2 border-blue-400 rounded"></div>
+                            <span className="text-xs text-blue-800 font-medium">
+                                Your Cards
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="w-4 h-4 bg-red-100 border-2 border-red-400 rounded"></div>
+                            <span className="text-xs text-red-800 font-medium">
+                                Opponent Cards
+                            </span>
+                        </div>
+                    </div>
                 </div>
                 <Button
                     onClick={startNewGame}
@@ -434,6 +449,9 @@ export default function GameBoard() {
                                 isValidMove={isValidMove}
                                 onCellClick={handleCellClick}
                                 selectedCard={selectedCard}
+                                cardOwner={cardOwnership[positionString]}
+                                currentPlayerId={gameState.currentPlayerId}
+                                playerNames={players}
                             />
                         );
                     })
