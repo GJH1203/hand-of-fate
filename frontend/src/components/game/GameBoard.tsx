@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import GameCell from './GameCell';
 import PlayerHand from './PlayerHand';
 import { useGameState } from '@/hooks/useGameState';
-import { Card, Position } from '@/types/game';
+import { Card, Position, GameState } from '@/types/game';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 
@@ -142,7 +142,7 @@ export default function GameBoard() {
         }
     };
 
-    const calculateValidMoves = (gameState: any): Position[] => {
+    const calculateValidMoves = (gameState: GameState): Position[] => {
         const positions: Position[] = [];
         const boardPieces = gameState.board.pieces || {};
         if (process.env.NODE_ENV === 'development') {
@@ -164,7 +164,7 @@ export default function GameBoard() {
         };
 
         // Find positions adjacent to current player's own cards only
-        Object.entries(boardPieces).forEach(([posKey, cardId]: [string, unknown]) => {
+        Object.entries(boardPieces).forEach(([posKey, cardId]: [string, string]) => {
             const [x, y] = posKey.split(',').map(Number);
             
             // Skip if we couldn't parse the position
@@ -174,7 +174,7 @@ export default function GameBoard() {
             }
 
             // Check if this card belongs to the current player
-            const cardOwner = getCardOwnership(posKey, cardId as string);
+            const cardOwner = getCardOwnership(posKey);
             const isOwnCard = cardOwner === gameState.currentPlayerId;
             
             if (!isOwnCard) {
