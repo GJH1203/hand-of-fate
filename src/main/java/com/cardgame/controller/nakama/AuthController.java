@@ -32,6 +32,49 @@ public class AuthController {
     public ResponseEntity<AuthDto> register(@RequestParam String email,
                                             @RequestParam String password,
                                             @RequestParam String username) {
+        // Validate input parameters
+        if (email == null || email.trim().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ImmutableAuthDto.builder()
+                            .isSuccess(false)
+                            .message("Email cannot be empty")
+                            .build());
+        }
+        
+        if (password == null || password.trim().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ImmutableAuthDto.builder()
+                            .isSuccess(false)
+                            .message("Password cannot be empty")
+                            .build());
+        }
+        
+        if (username == null || username.trim().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ImmutableAuthDto.builder()
+                            .isSuccess(false)
+                            .message("Username cannot be empty")
+                            .build());
+        }
+
+        // Check if email already exists in our system BEFORE calling Nakama
+        if (playerService.findPlayerByEmail(email).isPresent()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ImmutableAuthDto.builder()
+                            .isSuccess(false)
+                            .message("Registration failed: Email already exists")
+                            .build());
+        }
+
+        // Check if username already exists in our system
+        if (playerService.findPlayerByName(username) != null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ImmutableAuthDto.builder()
+                            .isSuccess(false)
+                            .message("Registration failed: Username already exists")
+                            .build());
+        }
+
         // First, authenticate/register with Nakama
         Session session = nakamaAuthService.authenticateEmail(email, password, true, username);
 
@@ -50,8 +93,16 @@ public class AuthController {
         if (existingPlayer.isPresent()) {
             player = existingPlayer.get();
         } else {
-            // Create a new player in your system linked to the Nakama account
-            player = playerService.createPlayer(username, email, session.getUserId());
+            try {
+                // Create a new player in your system linked to the Nakama account
+                player = playerService.createPlayer(username, email, session.getUserId());
+            } catch (IllegalArgumentException e) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(ImmutableAuthDto.builder()
+                                .isSuccess(false)
+                                .message("Registration failed: " + e.getMessage())
+                                .build());
+            }
         }
 
         // Return authentication info and player details
@@ -67,6 +118,23 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthDto> login(@RequestParam String email,
                                          @RequestParam String password) {
+        // Validate input parameters
+        if (email == null || email.trim().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ImmutableAuthDto.builder()
+                            .isSuccess(false)
+                            .message("Email cannot be empty")
+                            .build());
+        }
+        
+        if (password == null || password.trim().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ImmutableAuthDto.builder()
+                            .isSuccess(false)
+                            .message("Password cannot be empty")
+                            .build());
+        }
+
         // Use email as the username parameter since Nakama requires a non-null value
         Session session = nakamaAuthService.authenticateEmail(email, password, false, email);
 

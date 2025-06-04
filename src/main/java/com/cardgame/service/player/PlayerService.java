@@ -148,6 +148,24 @@ public class PlayerService {
 
     // Update create player to take email and nakamaUserId
     public Player createPlayer(String name, String email, String nakamaUserId) {
+        // Validate input parameters
+        validatePlayerCreationInput(name, email, nakamaUserId);
+        
+        // Check for duplicate username
+        if (playerRepository.findByName(name).isPresent()) {
+            throw new IllegalArgumentException("Username already exists: " + name);
+        }
+        
+        // Check for duplicate email
+        if (playerRepository.findByEmail(email).isPresent()) {
+            throw new IllegalArgumentException("Email already exists: " + email);
+        }
+        
+        // Check for duplicate Nakama user ID
+        if (playerRepository.findByNakamaUserId(nakamaUserId).isPresent()) {
+            throw new IllegalArgumentException("Nakama user already exists: " + nakamaUserId);
+        }
+
         // Create player with basic initialization
         Player player = new Player();
         player.setName(name);
@@ -170,6 +188,23 @@ public class PlayerService {
 
         return playerRepository.save(player);
     }
+    
+    private void validatePlayerCreationInput(String name, String email, String nakamaUserId) {
+        if (name == null || name.trim().isEmpty()) {
+            throw new IllegalArgumentException("Player name cannot be null or empty");
+        }
+        if (email == null || email.trim().isEmpty()) {
+            throw new IllegalArgumentException("Email cannot be null or empty");
+        }
+        if (nakamaUserId == null || nakamaUserId.trim().isEmpty()) {
+            throw new IllegalArgumentException("Nakama user ID cannot be null or empty");
+        }
+        
+        // Basic email format validation
+        if (!email.contains("@") || !email.contains(".")) {
+            throw new IllegalArgumentException("Invalid email format: " + email);
+        }
+    }
 
     // Add methods to update lifetime score
     public void addToLifetimeScore(String playerId, int points) {
@@ -186,5 +221,9 @@ public class PlayerService {
     
     public Player findPlayerByName(String name) {
         return playerRepository.findByName(name).orElse(null);
+    }
+    
+    public Optional<Player> findPlayerByEmail(String email) {
+        return playerRepository.findByEmail(email);
     }
 }

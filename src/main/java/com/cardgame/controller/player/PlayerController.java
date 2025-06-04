@@ -23,11 +23,8 @@ public class PlayerController {
         this.playerService = playerService;
     }
 
-    @PostMapping
-    public ResponseEntity<PlayerDto> createPlayer(@RequestParam String name) {
-        Player player = playerService.createPlayer(name);
-        return ResponseEntity.ok(playerService.getPlayerDto(player.getId()));
-    }
+    // Removed auto-creation endpoint to prevent unauthorized player creation
+    // Players should only be created through proper authentication flow
 
     @GetMapping("/{playerId}")
     public ResponseEntity<PlayerDto> getPlayer(@PathVariable String playerId) {
