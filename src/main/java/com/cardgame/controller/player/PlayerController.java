@@ -1,6 +1,7 @@
 package com.cardgame.controller.player;
 
 import java.util.List;
+import java.util.Optional;
 import com.cardgame.dto.PlayerDto;
 import com.cardgame.model.Card;
 import com.cardgame.model.Player;
@@ -44,6 +45,15 @@ public class PlayerController {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(playerService.getPlayerDto(player.getId()));
+    }
+
+    @GetMapping("/by-supabase-id/{supabaseUserId}")
+    public ResponseEntity<PlayerDto> getPlayerBySupabaseId(@PathVariable String supabaseUserId) {
+        Optional<Player> player = playerService.findPlayerBySupabaseUserId(supabaseUserId);
+        if (player.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(playerService.getPlayerDto(player.get().getId()));
     }
 
     @GetMapping("/player/test")

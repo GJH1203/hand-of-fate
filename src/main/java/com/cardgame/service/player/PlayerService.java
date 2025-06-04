@@ -226,4 +226,50 @@ public class PlayerService {
     public Optional<Player> findPlayerByEmail(String email) {
         return playerRepository.findByEmail(email);
     }
+    
+    public Optional<Player> findPlayerBySupabaseUserId(String supabaseUserId) {
+        return playerRepository.findBySupabaseUserId(supabaseUserId);
+    }
+    
+    public Player createPlayerFromSupabase(String name, String email, String supabaseUserId) {
+        // Validate input parameters
+        validatePlayerCreationInput(name, email, supabaseUserId);
+        
+        // Check for duplicate email
+        if (playerRepository.findByEmail(email).isPresent()) {
+            throw new IllegalArgumentException("Email already exists: " + email);
+        }
+        
+        // Check for duplicate username
+        if (playerRepository.findByName(name).isPresent()) {
+            throw new IllegalArgumentException("Username already exists: " + name);
+        }
+        
+        // Check for duplicate Supabase user ID
+        if (playerRepository.findBySupabaseUserId(supabaseUserId).isPresent()) {
+            throw new IllegalArgumentException("Supabase user already exists: " + supabaseUserId);
+        }
+
+        // Create player with basic initialization
+        Player player = new Player();
+        player.setName(name);
+        player.setScore(0);
+        player.setLifetimeScore(0);
+        player.setHand(new ArrayList<>());
+        player.setPlacedCards(new HashMap<>());
+        player.setEmail(email);
+        player.setSupabaseUserId(supabaseUserId);
+
+        // Save player first to get the ID
+        player = playerRepository.save(player);
+
+        // Create a default deck for the player
+        List<Card> defaultCards = createDefaultDeck();
+        Deck defaultDeck = deckService.createDeck(player.getId(), defaultCards);
+
+        // Set the deck reference and save player again
+        player.setCurrentDeck(defaultDeck);
+
+        return playerRepository.save(player);
+    }
 }

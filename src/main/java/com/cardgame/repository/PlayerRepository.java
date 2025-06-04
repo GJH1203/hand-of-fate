@@ -24,4 +24,7 @@ public interface PlayerRepository extends MongoRepository<Player, String> {
 
     // Add this method to find player by email
     Optional<Player> findByEmail(String email);
+    
+    // Add this method to find player by Supabase user ID
+    Optional<Player> findBySupabaseUserId(String supabaseUserId);
 }

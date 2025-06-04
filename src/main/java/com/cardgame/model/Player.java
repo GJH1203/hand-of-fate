@@ -26,6 +26,9 @@ public class Player {
     @Indexed(unique = true)
     private String nakamaUserId;
 
+    @Indexed(unique = true)
+    private String supabaseUserId;
+
     @DBRef(lazy = true)
     private Deck currentDeck;
 
@@ -129,6 +132,14 @@ public class Player {
 
     public void setNakamaUserId(String nakamaUserId) {
         this.nakamaUserId = nakamaUserId;
+    }
+
+    public String getSupabaseUserId() {
+        return supabaseUserId;
+    }
+
+    public void setSupabaseUserId(String supabaseUserId) {
+        this.supabaseUserId = supabaseUserId;
     }
 
     public String getEmail() {
