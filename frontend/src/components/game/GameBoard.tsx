@@ -77,21 +77,11 @@ export default function GameBoard() {
             // Check if opponent exists
             const opponentResponse = await fetch(`http://localhost:8080/players/by-name/${encodeURIComponent(opponentName)}`);
             
-            let opponentData;
             if (!opponentResponse.ok) {
-                // Create opponent if doesn't exist
-                const createOpponentResponse = await fetch(`http://localhost:8080/players?name=${encodeURIComponent(opponentName)}`, {
-                    method: 'POST',
-                });
-                
-                if (!createOpponentResponse.ok) {
-                    throw new Error('Failed to create opponent player');
-                }
-                
-                opponentData = await createOpponentResponse.json();
-            } else {
-                opponentData = await opponentResponse.json();
+                throw new Error(`Player "${opponentName}" not found. Please ask them to register first.`);
             }
+            
+            const opponentData = await opponentResponse.json();
             
             // Store player names
             setPlayers({
@@ -274,7 +264,7 @@ export default function GameBoard() {
                             className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
                         />
                         <p className="text-xs text-muted-foreground">
-                            If the opponent doesn&apos;t exist, they will be created automatically
+                            The opponent must be registered first to play
                         </p>
                     </div>
                     
