@@ -315,7 +315,7 @@ public class PlayerService {
             }
             
             // If we can't find the conflicting record, re-throw the original exception
-            throw new IllegalArgumentException("Player creation failed due to duplicate key: " + e.getMessage());
+            throw new IllegalArgumentException("Player creation failed due to a duplicate key error.");
         }
     }
     
