@@ -13,7 +13,7 @@ export class SupabaseAuthService {
   async signUp(email: string, password: string, username: string): Promise<AuthResponse> {
     this.checkConfiguration()
     try {
-      const { data, error } = await supabase!.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
