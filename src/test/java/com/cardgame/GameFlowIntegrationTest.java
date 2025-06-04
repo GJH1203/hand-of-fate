@@ -304,9 +304,10 @@ class GameFlowIntegrationTest {
                 .build();
 
         // Should fail - only orthogonal adjacency is allowed, not diagonal
-        assertThrows(Exception.class, () -> {
+        InvalidMoveException exception = assertThrows(InvalidMoveException.class, () -> {
             gameService.processMove(game.getId(), action);
         });
+        assertEquals("Diagonal adjacency is not allowed", exception.getMessage());
     }
 
     @Test
