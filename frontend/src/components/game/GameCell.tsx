@@ -31,7 +31,6 @@ export default function GameCell({
 
     // Determine player-specific styling
     const isCurrentPlayerCard = cardOwner === currentPlayerId;
-    const isOpponentCard = cardOwner && cardOwner !== currentPlayerId;
     
     // Get player display info
     const getPlayerInfo = (playerId: string | null) => {
