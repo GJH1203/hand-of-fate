@@ -145,8 +145,10 @@ export default function GameBoard() {
     const calculateValidMoves = (gameState: any): Position[] => {
         const positions: Position[] = [];
         const boardPieces = gameState.board.pieces || {};
-        console.log('Calculating valid moves, board pieces:', boardPieces);
-        console.log('Current player ID:', gameState.currentPlayerId);
+        if (process.env.NODE_ENV === 'development') {
+            console.log('Calculating valid moves, board pieces:', boardPieces);
+            console.log('Current player ID:', gameState.currentPlayerId);
+        }
 
         // Since we don't have reliable ownership data from the backend yet,
         // let's use a simple approach: determine ownership based on game rules
