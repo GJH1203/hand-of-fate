@@ -9,6 +9,8 @@ import com.cardgame.model.Player;
 import com.cardgame.service.nakama.NakamaAuthService;
 import com.cardgame.service.player.PlayerService;
 import com.heroiclabs.nakama.Session;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +24,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
+    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
     private final NakamaAuthService nakamaAuthService;
     private final PlayerService playerService;
@@ -294,12 +297,12 @@ public class AuthController {
                 List<com.cardgame.model.Player> players = entry.getValue();
                 
                 if (players.size() > 1) {
-                    System.out.println("Found " + players.size() + " players with Supabase ID: " + supabaseId);
+                    logger.info("Found {} players with Supabase ID: {}", players.size(), supabaseId);
                     
                     // Keep the first player, remove the rest
                     for (int i = 1; i < players.size(); i++) {
                         com.cardgame.model.Player playerToRemove = players.get(i);
-                        System.out.println("Removing duplicate player: " + playerToRemove.getId() + " (name: " + playerToRemove.getName() + ")");
+                        logger.info("Removing duplicate player: {} (name: {})", playerToRemove.getId(), playerToRemove.getName());
                         playerService.deletePlayer(playerToRemove.getId());
                         duplicatesRemoved++;
                     }
