@@ -228,48 +228,97 @@ public class PlayerService {
     }
     
     public Optional<Player> findPlayerBySupabaseUserId(String supabaseUserId) {
-        return playerRepository.findBySupabaseUserId(supabaseUserId);
+        try {
+            return playerRepository.findBySupabaseUserId(supabaseUserId);
+        } catch (org.springframework.dao.IncorrectResultSizeDataAccessException e) {
+            // Handle case where there are multiple players with same Supabase ID
+            System.out.println("Multiple players found with Supabase ID: " + supabaseUserId + ", returning the first one");
+            List<Player> players = playerRepository.findAllBySupabaseUserId(supabaseUserId);
+            if (!players.isEmpty()) {
+                // Return the first player and log the issue
+                System.out.println("Found " + players.size() + " players with same Supabase ID, using player: " + players.get(0).getId());
+                return Optional.of(players.get(0));
+            }
+            return Optional.empty();
+        }
     }
     
     public Player createPlayerFromSupabase(String name, String email, String supabaseUserId) {
         // Validate input parameters
         validatePlayerCreationInput(name, email, supabaseUserId);
         
-        // Check for duplicate email
-        if (playerRepository.findByEmail(email).isPresent()) {
-            throw new IllegalArgumentException("Email already exists: " + email);
+        try {
+            // Use MongoDB's upsert-like behavior to prevent duplicates
+            // First check for existing user by Supabase ID - most reliable identifier
+            Optional<Player> existingBySupabaseId = playerRepository.findBySupabaseUserId(supabaseUserId);
+            if (existingBySupabaseId.isPresent()) {
+                return existingBySupabaseId.get();
+            }
+            
+            // Check for duplicate email
+            Optional<Player> existingByEmail = playerRepository.findByEmail(email);
+            if (existingByEmail.isPresent()) {
+                throw new IllegalArgumentException("Email already exists: " + email);
+            }
+            
+            // Check for duplicate username
+            Optional<Player> existingByName = playerRepository.findByName(name);
+            if (existingByName.isPresent()) {
+                throw new IllegalArgumentException("Username already exists: " + name);
+            }
+
+            // Create player with basic initialization
+            Player player = new Player();
+            player.setName(name);
+            player.setScore(0);
+            player.setLifetimeScore(0);
+            player.setHand(new ArrayList<>());
+            player.setPlacedCards(new HashMap<>());
+            player.setEmail(email);
+            player.setSupabaseUserId(supabaseUserId);
+
+            // Save player first to get the ID - this may throw DuplicateKeyException
+            player = playerRepository.save(player);
+
+            // Create a default deck for the player
+            List<Card> defaultCards = createDefaultDeck();
+            Deck defaultDeck = deckService.createDeck(player.getId(), defaultCards);
+
+            // Set the deck reference and save player again
+            player.setCurrentDeck(defaultDeck);
+
+            return playerRepository.save(player);
+            
+        } catch (org.springframework.dao.DuplicateKeyException e) {
+            // Handle MongoDB duplicate key error - likely a race condition
+            System.out.println("Duplicate key error during player creation, attempting to find existing player: " + e.getMessage());
+            
+            // Try to find the existing player by any of the unique fields
+            Optional<Player> existing = playerRepository.findBySupabaseUserId(supabaseUserId);
+            if (existing.isPresent()) {
+                return existing.get();
+            }
+            
+            existing = playerRepository.findByEmail(email);
+            if (existing.isPresent()) {
+                throw new IllegalArgumentException("Email already exists: " + email);
+            }
+            
+            existing = playerRepository.findByName(name);
+            if (existing.isPresent()) {
+                throw new IllegalArgumentException("Username already exists: " + name);
+            }
+            
+            // If we can't find the conflicting record, re-throw the original exception
+            throw new IllegalArgumentException("Player creation failed due to duplicate key: " + e.getMessage());
         }
-        
-        // Check for duplicate username
-        if (playerRepository.findByName(name).isPresent()) {
-            throw new IllegalArgumentException("Username already exists: " + name);
-        }
-        
-        // Check for duplicate Supabase user ID
-        if (playerRepository.findBySupabaseUserId(supabaseUserId).isPresent()) {
-            throw new IllegalArgumentException("Supabase user already exists: " + supabaseUserId);
-        }
-
-        // Create player with basic initialization
-        Player player = new Player();
-        player.setName(name);
-        player.setScore(0);
-        player.setLifetimeScore(0);
-        player.setHand(new ArrayList<>());
-        player.setPlacedCards(new HashMap<>());
-        player.setEmail(email);
-        player.setSupabaseUserId(supabaseUserId);
-
-        // Save player first to get the ID
-        player = playerRepository.save(player);
-
-        // Create a default deck for the player
-        List<Card> defaultCards = createDefaultDeck();
-        Deck defaultDeck = deckService.createDeck(player.getId(), defaultCards);
-
-        // Set the deck reference and save player again
-        player.setCurrentDeck(defaultDeck);
-
-        return playerRepository.save(player);
+    }
+    
+    public List<Player> getAllPlayers() {
+        return playerRepository.findAll();
+    }
+    
+    public void deletePlayer(String playerId) {
+        playerRepository.deleteById(playerId);
     }
 }

@@ -7,6 +7,7 @@ import com.cardgame.model.Card;
 import com.cardgame.model.Player;
 import com.cardgame.service.player.PlayerService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -48,16 +49,42 @@ public class PlayerController {
     }
 
     @GetMapping("/by-supabase-id/{supabaseUserId}")
-    public ResponseEntity<PlayerDto> getPlayerBySupabaseId(@PathVariable String supabaseUserId) {
+    public ResponseEntity<com.cardgame.dto.PlayerResponse> getPlayerBySupabaseId(@PathVariable String supabaseUserId) {
         Optional<Player> player = playerService.findPlayerBySupabaseUserId(supabaseUserId);
         if (player.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.ok(playerService.getPlayerDto(player.get().getId()));
+        
+        Player foundPlayer = player.get();
+        com.cardgame.dto.PlayerResponse response = new com.cardgame.dto.PlayerResponse(
+            foundPlayer.getId(),
+            foundPlayer.getName(),
+            foundPlayer.getEmail(),
+            foundPlayer.getSupabaseUserId()
+        );
+        
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/player/test")
     public String testEndpoint() {
         return "GameController is working!";
+    }
+    
+    @DeleteMapping("/all")
+    public ResponseEntity<String> deleteAllPlayers() {
+        try {
+            List<Player> allPlayers = playerService.getAllPlayers();
+            int playerCount = allPlayers.size();
+            
+            // Delete all players
+            for (Player player : allPlayers) {
+                playerService.deletePlayer(player.getId());
+            }
+            
+            return ResponseEntity.ok("Deleted " + playerCount + " players successfully");
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Failed to delete players: " + e.getMessage());
+        }
     }
 }

@@ -15,6 +15,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Date;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -200,7 +202,69 @@ public class AuthController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body("Failed to create player: " + e.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Internal server error");
+            return ResponseEntity.internalServerError().body("Internal server error: " + e.getMessage());
+        }
+    }
+    
+    @PostMapping("/integrate-supabase-with-nakama")
+    public ResponseEntity<?> integrateSupabaseWithNakama(@RequestBody CreatePlayerFromSupabaseRequest request) {
+        try {
+            // Validate input
+            if (request.getSupabaseUserId() == null || request.getSupabaseUserId().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("Supabase user ID is required");
+            }
+            if (request.getEmail() == null || request.getEmail().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("Email is required");
+            }
+            if (request.getUsername() == null || request.getUsername().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("Username is required");
+            }
+            
+            // Find existing Supabase player
+            Optional<Player> existingPlayer = playerService.findPlayerBySupabaseUserId(request.getSupabaseUserId());
+            if (existingPlayer.isEmpty()) {
+                return ResponseEntity.badRequest().body("Supabase player not found. Please create the player first.");
+            }
+            
+            Player player = existingPlayer.get();
+            
+            // Check if already has Nakama ID
+            if (player.getNakamaUserId() != null) {
+                return ResponseEntity.ok(ImmutableAuthDto.builder()
+                        .isSuccess(true)
+                        .message("Player already integrated with Nakama")
+                        .playerId(player.getId())
+                        .userId(player.getNakamaUserId())
+                        .username(player.getName())
+                        .build());
+            }
+            
+            // Create Nakama account for existing Supabase user
+            // Use a temporary password - in production you might want a different approach
+            String tempPassword = "temp" + System.currentTimeMillis();
+            Session session = nakamaAuthService.authenticateEmail(request.getEmail(), tempPassword, true, request.getUsername());
+            
+            if (session == null) {
+                return ResponseEntity.badRequest().body("Failed to create Nakama account");
+            }
+            
+            // Update existing player with Nakama ID
+            player.setNakamaUserId(session.getUserId());
+            playerService.savePlayer(player);
+            
+            return ResponseEntity.ok(ImmutableAuthDto.builder()
+                    .isSuccess(true)
+                    .token(session.getAuthToken())
+                    .userId(session.getUserId())
+                    .username(session.getUsername())
+                    .playerId(player.getId())
+                    .message("Successfully integrated Supabase user with Nakama")
+                    .build());
+            
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body("Failed to integrate: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Internal server error: " + e.getMessage());
         }
     }
     
@@ -211,6 +275,42 @@ public class AuthController {
             player.getEmail(),
             player.getSupabaseUserId()
         );
+    }
+    
+    @PostMapping("/cleanup-duplicates")
+    public ResponseEntity<?> cleanupDuplicateUsers() {
+        try {
+            // Get all players
+            List<com.cardgame.model.Player> allPlayers = playerService.getAllPlayers();
+            
+            // Group by Supabase ID and remove duplicates
+            Map<String, List<com.cardgame.model.Player>> playersBySupabaseId = allPlayers.stream()
+                    .filter(p -> p.getSupabaseUserId() != null && !p.getSupabaseUserId().trim().isEmpty())
+                    .collect(java.util.stream.Collectors.groupingBy(com.cardgame.model.Player::getSupabaseUserId));
+            
+            int duplicatesRemoved = 0;
+            for (Map.Entry<String, List<com.cardgame.model.Player>> entry : playersBySupabaseId.entrySet()) {
+                String supabaseId = entry.getKey();
+                List<com.cardgame.model.Player> players = entry.getValue();
+                
+                if (players.size() > 1) {
+                    System.out.println("Found " + players.size() + " players with Supabase ID: " + supabaseId);
+                    
+                    // Keep the first player, remove the rest
+                    for (int i = 1; i < players.size(); i++) {
+                        com.cardgame.model.Player playerToRemove = players.get(i);
+                        System.out.println("Removing duplicate player: " + playerToRemove.getId() + " (name: " + playerToRemove.getName() + ")");
+                        playerService.deletePlayer(playerToRemove.getId());
+                        duplicatesRemoved++;
+                    }
+                }
+            }
+            
+            return ResponseEntity.ok("Cleaned up " + duplicatesRemoved + " duplicate players");
+            
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Cleanup failed: " + e.getMessage());
+        }
     }
 
     @GetMapping("/validate")
