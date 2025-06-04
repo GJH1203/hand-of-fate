@@ -82,19 +82,7 @@ public class DefaultGameValidator implements GameValidator {
     }
 
     private void validateCardPlacement(GameModel gameModel, Player player, Position targetPos) {
-        // Check if player has any cards on the board
-        boolean playerHasCardsOnBoard = gameModel.getBoard().getPieces().entrySet().stream()
-                .anyMatch(entry -> {
-                    String cardId = entry.getValue();
-                    return player.getPlacedCards().values().stream()
-                            .anyMatch(card -> card.getId().equals(cardId));
-                });
-        
-        if (!playerHasCardsOnBoard) {
-            // Player has no cards on board yet - any empty position is valid
-            return;
-        }
-
+        // After game initialization, players always have cards on board, so adjacency rules always apply
         validateAdjacentPlacement(gameModel, player, targetPos);
     }
 
