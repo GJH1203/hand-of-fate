@@ -158,8 +158,6 @@ export default function GameBoard() {
         // Then track ownership based on who made subsequent moves
         
         // Get list of all players from the game
-        const allPlayerIds = [gameState.currentPlayerId]; // We know current player, need to infer others
-        
         // Use our tracked card ownership information
         const getCardOwnership = (posKey: string, cardId: string): string | null => {
             return cardOwnership[posKey] || null;
