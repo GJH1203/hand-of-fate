@@ -7,6 +7,7 @@ import PlayerHand from './PlayerHand';
 import { useGameState } from '@/hooks/useGameState';
 import { Card, Position, GameState } from '@/types/game';
 import { useAuth } from '@/hooks/useAuth';
+import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
 import { useRouter } from 'next/navigation';
 
 const DEFAULT_BOARD_WIDTH = 3;  // Adjusted to match backend
@@ -14,8 +15,17 @@ const DEFAULT_BOARD_HEIGHT = 5; // Adjusted to match backend
 
 export default function GameBoard() {
     const { gameState, isLoading, error, initializeGame, makeMove, requestWin, respondToWinRequest } = useGameState();
-    const { isAuthenticated, user } = useAuth();
+    const { isAuthenticated: isNakamaAuth, user: nakamaUser } = useAuth();
+    const { isAuthenticated: isSupabaseAuth, user: supabaseUser } = useSupabaseAuth();
     const router = useRouter();
+    
+    // User is authenticated if they're logged in with either Nakama OR Supabase
+    const isAuthenticated = isNakamaAuth || isSupabaseAuth;
+    const user = nakamaUser || (supabaseUser ? { 
+        username: supabaseUser.email?.split('@')[0] || 'User', 
+        playerId: supabaseUser.id,
+        userId: supabaseUser.id 
+    } : null);
     const [selectedCard, setSelectedCard] = useState<Card | null>(null);
     const [validMoves, setValidMoves] = useState<Position[]>([]);
     const [boardCards, setBoardCards] = useState<Record<string, Card>>({});
@@ -67,31 +77,27 @@ export default function GameBoard() {
         try {
             setIsCreatingGame(true);
             
-            // Get current player data
-            const currentPlayerResponse = await fetch(`http://localhost:8080/players/${user.playerId}`);
+            // Get current player data - for Supabase users, use supabase ID lookup
+            let currentPlayerResponse;
+            if (isSupabaseAuth && supabaseUser) {
+                currentPlayerResponse = await fetch(`http://localhost:8080/players/by-supabase-id/${supabaseUser.id}`);
+            } else {
+                currentPlayerResponse = await fetch(`http://localhost:8080/players/${user.playerId}`);
+            }
+            
             if (!currentPlayerResponse.ok) {
-                throw new Error('Failed to fetch current player data');
+                throw new Error('Failed to fetch current player data - make sure your account is properly synced');
             }
             const currentPlayerData = await currentPlayerResponse.json();
             
             // Check if opponent exists
             const opponentResponse = await fetch(`http://localhost:8080/players/by-name/${encodeURIComponent(opponentName)}`);
             
-            let opponentData;
             if (!opponentResponse.ok) {
-                // Create opponent if doesn't exist
-                const createOpponentResponse = await fetch(`http://localhost:8080/players?name=${encodeURIComponent(opponentName)}`, {
-                    method: 'POST',
-                });
-                
-                if (!createOpponentResponse.ok) {
-                    throw new Error('Failed to create opponent player');
-                }
-                
-                opponentData = await createOpponentResponse.json();
-            } else {
-                opponentData = await opponentResponse.json();
+                throw new Error(`Player "${opponentName}" not found. Please ask them to register first.`);
             }
+            
+            const opponentData = await opponentResponse.json();
             
             // Store player names
             setPlayers({
@@ -99,13 +105,61 @@ export default function GameBoard() {
                 [opponentData.id]: opponentData.name
             });
             
+            // Check player data structure
+            console.log('Current player data:', currentPlayerData);
+            console.log('Opponent data:', opponentData);
+            
+            // Check if players have decks, create them if missing
+            if (!currentPlayerData.currentDeck) {
+                console.log('Current player missing deck, creating default deck...');
+                const createDeckResponse = await fetch(`http://localhost:8080/players/${currentPlayerData.id}/create-deck`, {
+                    method: 'POST'
+                });
+                if (createDeckResponse.ok) {
+                    const updatedPlayerData = await createDeckResponse.json();
+                    Object.assign(currentPlayerData, updatedPlayerData);
+                } else {
+                    throw new Error('Failed to create deck for current player');
+                }
+            }
+            
+            if (!opponentData.currentDeck) {
+                console.log('Opponent missing deck, creating default deck...');
+                const createDeckResponse = await fetch(`http://localhost:8080/players/${opponentData.id}/create-deck`, {
+                    method: 'POST'
+                });
+                if (createDeckResponse.ok) {
+                    const updatedOpponentData = await createDeckResponse.json();
+                    Object.assign(opponentData, updatedOpponentData);
+                } else {
+                    throw new Error(`Failed to create deck for opponent "${opponentName}"`);
+                }
+            }
+            
+            // Final check that both players have valid decks
+            if (!currentPlayerData.currentDeck || !currentPlayerData.currentDeck.id) {
+                throw new Error('Current player still missing deck after creation attempt');
+            }
+            if (!opponentData.currentDeck || !opponentData.currentDeck.id) {
+                throw new Error('Opponent still missing deck after creation attempt');
+            }
+            
             // Start game with both players
+            console.log('Initializing game with:', {
+                player1: currentPlayerData.id,
+                player2: opponentData.id,
+                deck1: currentPlayerData.currentDeck.id,
+                deck2: opponentData.currentDeck.id
+            });
+            
             await initializeGame(
                 currentPlayerData.id, 
                 opponentData.id, 
                 currentPlayerData.currentDeck.id, 
                 opponentData.currentDeck.id
             );
+            
+            console.log('Game initialization completed');
             
             // Initialize card ownership tracking
             // Player1 starts with card at (1,3), Player2 at (1,1)
@@ -274,7 +328,7 @@ export default function GameBoard() {
                             className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
                         />
                         <p className="text-xs text-muted-foreground">
-                            If the opponent doesn&apos;t exist, they will be created automatically
+                            The opponent must be registered first to play
                         </p>
                     </div>
                     

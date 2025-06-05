@@ -5,19 +5,49 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { useAuth } from '@/hooks/useAuth'
+import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
-import Leaderboard from '@/components/leaderboard/Leaderboard'
+// import Leaderboard from '@/components/leaderboard/Leaderboard'
 
 export default function Home() {
-  const { isAuthenticated, user, logout, isLoading } = useAuth();
+  const { isAuthenticated: isNakamaAuth, user: nakamaUser, logout: nakamaLogout, isLoading: nakamaLoading } = useAuth();
+  const { isAuthenticated: isSupabaseAuth, user: supabaseUser, signOut: supabaseLogout, isLoading: supabaseLoading } = useSupabaseAuth();
   const router = useRouter();
 
+  // User is authenticated if they're logged in with either Nakama OR Supabase
+  const isAuthenticated = isNakamaAuth || isSupabaseAuth;
+  const isLoading = nakamaLoading || supabaseLoading;
+  const user = nakamaUser || (supabaseUser ? { 
+    username: supabaseUser.email?.split('@')[0] || 'User', 
+    playerId: supabaseUser.id,
+    userId: supabaseUser.id 
+  } : null);
+
+  const logout = async () => {
+    if (isNakamaAuth) {
+      nakamaLogout();
+    }
+    if (isSupabaseAuth) {
+      await supabaseLogout();
+    }
+  };
+
   useEffect(() => {
+    console.log('Main page auth check:', {
+      isNakamaAuth,
+      isSupabaseAuth,
+      isAuthenticated,
+      isLoading,
+      nakamaLoading,
+      supabaseLoading
+    });
+    
     if (!isLoading && !isAuthenticated) {
+      console.log('Not authenticated, redirecting to auth page');
       router.push('/auth');
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, isLoading, router, isNakamaAuth, isSupabaseAuth, nakamaLoading, supabaseLoading]);
 
   if (isLoading) {
     return (
@@ -52,9 +82,9 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="max-w-4xl mx-auto">
             {/* Main Content */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="space-y-6">
               <Card>
                 <CardHeader>
                   <CardTitle>Start Playing</CardTitle>
@@ -112,11 +142,6 @@ export default function Home() {
                   </div>
                 </CardContent>
               </Card>
-            </div>
-
-            {/* Leaderboard Sidebar */}
-            <div className="lg:col-span-1">
-              <Leaderboard />
             </div>
           </div>
         </main>
