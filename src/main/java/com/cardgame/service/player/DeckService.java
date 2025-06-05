@@ -29,6 +29,7 @@ public class DeckService {
         deck.setOwnerId(ownerId);
         deck.setCards(new ArrayList<>(cards)); // Create a new list to avoid reference issues
         deck.setRemainingCards(cards.size());
+        deck.validate(); // Set the isValid flag
 
         return deckRepository.save(deck);
     }

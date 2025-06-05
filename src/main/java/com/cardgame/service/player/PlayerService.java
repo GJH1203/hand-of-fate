@@ -7,6 +7,8 @@ import com.cardgame.model.Deck;
 import com.cardgame.model.Player;
 import com.cardgame.repository.CardRepository;
 import com.cardgame.repository.PlayerRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -18,6 +20,8 @@ import java.util.UUID;
 
 @Service
 public class PlayerService {
+    private static final Logger logger = LoggerFactory.getLogger(PlayerService.class);
+    
     private final PlayerActionService playerActionService;
     private final PlayerRepository playerRepository;
     private final DeckService deckService;
@@ -50,7 +54,7 @@ public class PlayerService {
         // Create a default deck for the player
         List<Card> defaultCards = createDefaultDeck();
         Deck defaultDeck = deckService.createDeck(player.getId(), defaultCards);
-        System.out.println("player id =========== " + player.getId());
+        logger.debug("Created player with ID: {}", player.getId());
 
         // Set the deck reference and save player again
         player.setCurrentDeck(defaultDeck);
@@ -80,7 +84,7 @@ public class PlayerService {
 
         // Convert the Deck to DeckDto
         DeckDto deckDto = null;
-        if (player.getCurrentDeck() != null) {
+        if (player.getCurrentDeck() != null && player.getCurrentDeck().getId() != null) {
             deckDto = ImmutableDeckDto.builder()
                     .id(player.getCurrentDeck().getId())
                     .ownerId(player.getCurrentDeck().getOwnerId())
@@ -148,6 +152,24 @@ public class PlayerService {
 
     // Update create player to take email and nakamaUserId
     public Player createPlayer(String name, String email, String nakamaUserId) {
+        // Validate input parameters
+        validatePlayerCreationInput(name, email, nakamaUserId);
+        
+        // Check for duplicate username
+        if (playerRepository.findByName(name).isPresent()) {
+            throw new IllegalArgumentException("Username already exists: " + name);
+        }
+        
+        // Check for duplicate email
+        if (playerRepository.findByEmail(email).isPresent()) {
+            throw new IllegalArgumentException("Email already exists: " + email);
+        }
+        
+        // Check for duplicate Nakama user ID
+        if (playerRepository.findByNakamaUserId(nakamaUserId).isPresent()) {
+            throw new IllegalArgumentException("Nakama user already exists: " + nakamaUserId);
+        }
+
         // Create player with basic initialization
         Player player = new Player();
         player.setName(name);
@@ -170,6 +192,24 @@ public class PlayerService {
 
         return playerRepository.save(player);
     }
+    
+    private void validatePlayerCreationInput(String name, String email, String nakamaUserId) {
+        if (name == null || name.trim().isEmpty()) {
+            throw new IllegalArgumentException("Player name cannot be null or empty");
+        }
+        if (email == null || email.trim().isEmpty()) {
+            throw new IllegalArgumentException("Email cannot be null or empty");
+        }
+        if (nakamaUserId == null || nakamaUserId.trim().isEmpty()) {
+            throw new IllegalArgumentException("Nakama user ID cannot be null or empty");
+        }
+        
+        // Basic email format validation using regex
+        String emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
+        if (!email.matches(emailRegex)) {
+            throw new IllegalArgumentException("Invalid email format: " + email);
+        }
+    }
 
     // Add methods to update lifetime score
     public void addToLifetimeScore(String playerId, int points) {
@@ -186,5 +226,118 @@ public class PlayerService {
     
     public Player findPlayerByName(String name) {
         return playerRepository.findByName(name).orElse(null);
+    }
+    
+    public Optional<Player> findPlayerByEmail(String email) {
+        return playerRepository.findByEmail(email);
+    }
+    
+    public Optional<Player> findPlayerBySupabaseUserId(String supabaseUserId) {
+        try {
+            return playerRepository.findBySupabaseUserId(supabaseUserId);
+        } catch (org.springframework.dao.IncorrectResultSizeDataAccessException e) {
+            // Handle case where there are multiple players with same Supabase ID
+            logger.warn("Multiple players found with Supabase ID: {}, returning the first one", supabaseUserId);
+            List<Player> players = playerRepository.findAllBySupabaseUserId(supabaseUserId);
+            if (!players.isEmpty()) {
+                // Return the first player and log the issue
+                logger.info("Found {} players with same Supabase ID, using player: {}", players.size(), players.get(0).getId());
+                return Optional.of(players.get(0));
+            }
+            return Optional.empty();
+        }
+    }
+    
+    public Player createPlayerFromSupabase(String name, String email, String supabaseUserId) {
+        // Validate input parameters
+        validatePlayerCreationInput(name, email, supabaseUserId);
+        
+        try {
+            // Use MongoDB's upsert-like behavior to prevent duplicates
+            // First check for existing user by Supabase ID - most reliable identifier
+            Optional<Player> existingBySupabaseId = playerRepository.findBySupabaseUserId(supabaseUserId);
+            if (existingBySupabaseId.isPresent()) {
+                return existingBySupabaseId.get();
+            }
+            
+            // Check for duplicate email
+            Optional<Player> existingByEmail = playerRepository.findByEmail(email);
+            if (existingByEmail.isPresent()) {
+                throw new IllegalArgumentException("Email already exists: " + email);
+            }
+            
+            // Check for duplicate username
+            Optional<Player> existingByName = playerRepository.findByName(name);
+            if (existingByName.isPresent()) {
+                throw new IllegalArgumentException("Username already exists: " + name);
+            }
+
+            // Create player with basic initialization
+            Player player = new Player();
+            player.setName(name);
+            player.setScore(0);
+            player.setLifetimeScore(0);
+            player.setHand(new ArrayList<>());
+            player.setPlacedCards(new HashMap<>());
+            player.setEmail(email);
+            player.setSupabaseUserId(supabaseUserId);
+
+            // Save player first to get the ID - this may throw DuplicateKeyException
+            player = playerRepository.save(player);
+
+            // Create a default deck for the player
+            List<Card> defaultCards = createDefaultDeck();
+            Deck defaultDeck = deckService.createDeck(player.getId(), defaultCards);
+
+            // Set the deck reference and save player again
+            player.setCurrentDeck(defaultDeck);
+
+            return playerRepository.save(player);
+            
+        } catch (org.springframework.dao.DuplicateKeyException e) {
+            // Handle MongoDB duplicate key error - likely a race condition
+            logger.warn("Duplicate key error during player creation, attempting to find existing player: {}", e.getMessage());
+            
+            // Try to find the existing player by any of the unique fields
+            Optional<Player> existing = playerRepository.findBySupabaseUserId(supabaseUserId);
+            if (existing.isPresent()) {
+                return existing.get();
+            }
+            
+            existing = playerRepository.findByEmail(email);
+            if (existing.isPresent()) {
+                throw new IllegalArgumentException("Email already exists: " + email);
+            }
+            
+            existing = playerRepository.findByName(name);
+            if (existing.isPresent()) {
+                throw new IllegalArgumentException("Username already exists: " + name);
+            }
+            
+            // If we can't find the conflicting record, re-throw the original exception
+            throw new IllegalArgumentException("Player creation failed due to a duplicate key error.");
+        }
+    }
+    
+    public List<Player> getAllPlayers() {
+        return playerRepository.findAll();
+    }
+    
+    public void deletePlayer(String playerId) {
+        playerRepository.deleteById(playerId);
+    }
+    
+    public void deleteAllPlayers() {
+        playerRepository.deleteAll();
+    }
+    
+    public void createDefaultDeckForPlayer(String playerId) {
+        Player player = getPlayer(playerId);
+        if (player.getCurrentDeck() == null) {
+            List<Card> defaultCards = createDefaultDeck();
+            Deck defaultDeck = deckService.createDeck(playerId, defaultCards);
+            player.setCurrentDeck(defaultDeck);
+            playerRepository.save(player);
+        }
     }
 }

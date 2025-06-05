@@ -17,13 +17,22 @@ public class Player {
     @Id
     private String id;
 
-    @Indexed(unique = true)  // Add this if names should be unique
+    @Indexed(unique = true)
     private String name;
 
-    @DBRef(lazy = true)  // Add lazy loading for better performance
+    @Indexed(unique = true)
+    private String email;
+
+    @Indexed(unique = true)
+    private String nakamaUserId;
+
+    @Indexed(unique = true)
+    private String supabaseUserId;
+
+    @DBRef(lazy = true)
     private Deck currentDeck;
 
-    @DBRef(lazy = true)  // Temporary storage for original deck during games
+    @DBRef(lazy = true)
     @Field("original_deck")
     private Deck originalDeck;
 
@@ -116,13 +125,6 @@ public class Player {
         this.lifetimeScore += points;
     }
 
-    /**
-     * Nakama
-     */
-    @Indexed
-    private String nakamaUserId;  // Link with Nakama
-
-    private String email;  // Store email for reference
 
     public String getNakamaUserId() {
         return nakamaUserId;
@@ -130,6 +132,14 @@ public class Player {
 
     public void setNakamaUserId(String nakamaUserId) {
         this.nakamaUserId = nakamaUserId;
+    }
+
+    public String getSupabaseUserId() {
+        return supabaseUserId;
+    }
+
+    public void setSupabaseUserId(String supabaseUserId) {
+        this.supabaseUserId = supabaseUserId;
     }
 
     public String getEmail() {
