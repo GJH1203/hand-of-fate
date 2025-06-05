@@ -264,21 +264,40 @@ public class PlayerService {
             // Handle MongoDB duplicate key error - likely a race condition
             logger.warn("Duplicate key error during player creation, attempting to find existing player: {}", e.getMessage());
             
-            // Try to find the existing player by any of the unique fields
-            if (supabaseUserId != null) {
-                Optional<Player> existing = playerRepository.findBySupabaseUserId(supabaseUserId);
-                if (existing.isPresent()) {
-                    return existing.get();
+            // Use the same logic as in the main flow for consistency
+            
+            // 1. Check by Supabase ID
+            if (supabaseUserId != null && !supabaseUserId.trim().isEmpty()) {
+                Optional<Player> existingBySupabaseId = playerRepository.findBySupabaseUserId(supabaseUserId);
+                if (existingBySupabaseId.isPresent()) {
+                    Player existing = existingBySupabaseId.get();
+                    // Update Nakama ID if provided and not already set
+                    if (nakamaUserId != null && existing.getNakamaUserId() == null) {
+                        existing.setNakamaUserId(nakamaUserId);
+                        return playerRepository.save(existing);
+                    }
+                    return existing;
                 }
             }
             
-            Optional<Player> existing = playerRepository.findByEmail(email);
-            if (existing.isPresent()) {
-                return existing.get();
+            // 2. Check by email and update IDs if needed
+            Optional<Player> existingByEmail = playerRepository.findByEmail(email);
+            if (existingByEmail.isPresent()) {
+                Player existing = existingByEmail.get();
+                boolean updated = false;
+                if (supabaseUserId != null && existing.getSupabaseUserId() == null) {
+                    existing.setSupabaseUserId(supabaseUserId);
+                    updated = true;
+                }
+                if (nakamaUserId != null && existing.getNakamaUserId() == null) {
+                    existing.setNakamaUserId(nakamaUserId);
+                    updated = true;
+                }
+                return updated ? playerRepository.save(existing) : existing;
             }
             
             // If we can't find the conflicting record, re-throw the original exception
-            throw new IllegalArgumentException("Player creation failed due to a duplicate key error.");
+            throw new IllegalArgumentException("Player creation failed due to a duplicate key error: " + e.getMessage());
         }
     }
     

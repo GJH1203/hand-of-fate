@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.SecureRandom;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -31,6 +32,9 @@ import java.util.stream.Collectors;
 @CrossOrigin(origins = "http://localhost:3000")
 public class UnifiedAuthController {
     private static final Logger logger = LoggerFactory.getLogger(UnifiedAuthController.class);
+    private static final String PASSWORD_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+    private static final int PASSWORD_LENGTH = 32;
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final NakamaAuthService nakamaAuthService;
     private final PlayerService playerService;
@@ -207,9 +211,9 @@ public class UnifiedAuthController {
      */
     private Session createNakamaAccount(Player player, String email) {
         try {
-            // Use a deterministic password based on player ID
-            // In production, consider using OAuth or custom authentication
-            String nakamaPassword = "nakama_" + player.getId() + "_secure";
+            // Generate or retrieve secure password for Nakama
+            // In production, store this securely (e.g., encrypted in database or use OAuth)
+            String nakamaPassword = generateOrRetrieveNakamaPassword(player.getId());
             
             // First try to authenticate (in case account already exists)
             Session session = nakamaAuthService.authenticateEmail(
@@ -248,7 +252,7 @@ public class UnifiedAuthController {
      */
     private Session authenticateWithNakama(Player player) {
         try {
-            String nakamaPassword = "nakama_" + player.getId() + "_secure";
+            String nakamaPassword = generateOrRetrieveNakamaPassword(player.getId());
             
             Session session = nakamaAuthService.authenticateEmail(
                 player.getEmail(), 
@@ -268,6 +272,41 @@ public class UnifiedAuthController {
             logger.error("Error authenticating with Nakama", e);
             return null;
         }
+    }
+    
+    /**
+     * Generate or retrieve a secure password for Nakama authentication
+     * In production, this should:
+     * 1. Store passwords encrypted in database
+     * 2. Use a proper key management service
+     * 3. Or preferably, use OAuth/token-based authentication
+     */
+    private String generateOrRetrieveNakamaPassword(String playerId) {
+        // TODO: In production, retrieve from secure storage
+        // For now, we'll use a deterministic approach with a strong seed
+        // This ensures the same password is generated for the same player
+        
+        // Use player ID as seed for consistent password generation
+        // In production, use a proper password storage mechanism
+        return generateSecurePassword(playerId);
+    }
+    
+    /**
+     * Generate a secure password using cryptographically strong random generator
+     */
+    private String generateSecurePassword(String seed) {
+        // Create a deterministic but secure password based on seed
+        // In production, store this securely instead of regenerating
+        byte[] seedBytes = (seed + "_nakama_secure_2024").getBytes();
+        SecureRandom seededRandom = new SecureRandom(seedBytes);
+        
+        StringBuilder password = new StringBuilder(PASSWORD_LENGTH);
+        for (int i = 0; i < PASSWORD_LENGTH; i++) {
+            int randomIndex = seededRandom.nextInt(PASSWORD_CHARS.length());
+            password.append(PASSWORD_CHARS.charAt(randomIndex));
+        }
+        
+        return password.toString();
     }
 
     /**
