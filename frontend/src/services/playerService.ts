@@ -65,6 +65,23 @@ class PlayerService {
             throw new Error(`Error fetching player hand: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
+
+    async getPlayerByUsername(username: string): Promise<PlayerDto> {
+        try {
+            const response = await fetch(`${API_BASE_URL}/by-name/${encodeURIComponent(username)}`);
+
+            if (!response.ok) {
+                if (response.status === 404) {
+                    throw new Error(`Player '${username}' not found`);
+                }
+                throw new Error('Failed to fetch player by username');
+            }
+
+            return await response.json();
+        } catch (error) {
+            throw new Error(`Error fetching player by username: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
 }
 
 export const playerService = new PlayerService();

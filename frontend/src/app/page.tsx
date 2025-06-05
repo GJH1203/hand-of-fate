@@ -4,50 +4,27 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
-import { useAuth } from '@/hooks/useAuth'
-import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
+import { useUnifiedAuth } from '@/hooks/useUnifiedAuth'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 // import Leaderboard from '@/components/leaderboard/Leaderboard'
 
 export default function Home() {
-  const { isAuthenticated: isNakamaAuth, user: nakamaUser, logout: nakamaLogout, isLoading: nakamaLoading } = useAuth();
-  const { isAuthenticated: isSupabaseAuth, user: supabaseUser, signOut: supabaseLogout, isLoading: supabaseLoading } = useSupabaseAuth();
+  const { isAuthenticated, user, logout, isLoading } = useUnifiedAuth();
   const router = useRouter();
-
-  // User is authenticated if they're logged in with either Nakama OR Supabase
-  const isAuthenticated = isNakamaAuth || isSupabaseAuth;
-  const isLoading = nakamaLoading || supabaseLoading;
-  const user = nakamaUser || (supabaseUser ? { 
-    username: supabaseUser.email?.split('@')[0] || 'User', 
-    playerId: supabaseUser.id,
-    userId: supabaseUser.id 
-  } : null);
-
-  const logout = async () => {
-    if (isNakamaAuth) {
-      nakamaLogout();
-    }
-    if (isSupabaseAuth) {
-      await supabaseLogout();
-    }
-  };
 
   useEffect(() => {
     console.log('Main page auth check:', {
-      isNakamaAuth,
-      isSupabaseAuth,
       isAuthenticated,
       isLoading,
-      nakamaLoading,
-      supabaseLoading
+      user
     });
     
     if (!isLoading && !isAuthenticated) {
-      console.log('Not authenticated, redirecting to auth page');
-      router.push('/auth');
+      console.log('Not authenticated, redirecting to login page');
+      router.push('/login');
     }
-  }, [isAuthenticated, isLoading, router, isNakamaAuth, isSupabaseAuth, nakamaLoading, supabaseLoading]);
+  }, [isAuthenticated, isLoading, router, user]);
 
   if (isLoading) {
     return (

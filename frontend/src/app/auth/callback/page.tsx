@@ -2,78 +2,92 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase, isSupabaseConfigured } from '@/lib/supabase'
+import { unifiedAuthService } from '@/services/unifiedAuthService'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Alert } from '@/components/ui/alert'
 
 export default function AuthCallback() {
   const router = useRouter()
+  const [message, setMessage] = useState('Verifying your account...')
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const handleAuthCallback = async () => {
-      if (!isSupabaseConfigured || !supabase) {
-        console.error('Supabase not configured')
-        router.push('/auth?error=supabase_not_configured')
-        return
-      }
-      
       try {
         console.log('Handling auth callback...')
         
-        // Handle the auth callback from Supabase
-        const { data, error: sessionError } = await supabase.auth.getSession()
+        // Get the current Supabase session
+        const { user, session } = await unifiedAuthService.getCurrentSession()
         
-        if (sessionError) {
-          console.error('Auth callback error:', sessionError)
-          setError(`Session error: ${sessionError.message}`)
-          setTimeout(() => router.push('/auth?error=callback_failed'), 3000)
+        if (!user || !session) {
+          setError('No authentication session found')
+          setTimeout(() => router.push('/login'), 3000)
           return
         }
 
-        if (data.session && data.session.user) {
-          console.log('Session found, user:', data.session.user.id, 'email confirmed:', data.session.user.email_confirmed_at)
-          
-          if (data.session.user.email_confirmed_at) {
-            console.log('Email is confirmed, will redirect to sign-in page for backend sync')
-            // Redirect to sign-in page instead of game to trigger proper sync
-            setTimeout(() => router.push('/auth/supabase?verified=true'), 1000)
-          } else {
-            console.log('Email not confirmed yet')
-            router.push('/auth/supabase?message=email_verification_pending')
-          }
-        } else {
-          console.log('No session found, redirecting to auth')
-          router.push('/auth')
+        console.log('Session found, user:', user.id, 'email confirmed:', user.email_confirmed_at)
+        
+        if (!user.email_confirmed_at) {
+          setError('Email not verified yet')
+          setTimeout(() => router.push('/login'), 3000)
+          return
         }
-      } catch (error) {
-        console.error('Callback handling error:', error)
-        setError(`Callback error: ${error instanceof Error ? error.message : 'Unknown error'}`)
-        setTimeout(() => router.push('/auth?error=callback_failed'), 3000)
+
+        setMessage('Email verified successfully! Setting up your account...')
+
+        // Sync user to backend (creates Player and Nakama account)
+        const syncResult = await unifiedAuthService.syncUserToBackend(user)
+        
+        if (syncResult.isSuccess) {
+          setMessage('Account setup complete! Redirecting to login...')
+          // Redirect to login with success message
+          setTimeout(() => {
+            router.push('/login?verified=true')
+          }, 2000)
+        } else {
+          setError('Failed to complete account setup: ' + syncResult.message)
+          setTimeout(() => router.push('/login'), 5000)
+        }
+      } catch (err: any) {
+        console.error('Callback handling error:', err)
+        setError(`Callback error: ${err.message || 'Unknown error'}`)
+        setTimeout(() => router.push('/login'), 3000)
       }
     }
 
     handleAuthCallback()
   }, [router])
 
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center max-w-md">
-          <div className="text-red-500 mb-4">❌</div>
-          <h2 className="text-lg font-semibold mb-2">Verification Failed</h2>
-          <p className="text-muted-foreground mb-4">{error}</p>
-          <p className="text-sm text-muted-foreground">Redirecting to sign in page...</p>
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-        <p className="text-muted-foreground">Verifying your account...</p>
-        <p className="text-sm text-muted-foreground mt-2">This may take a few moments</p>
-      </div>
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <CardTitle>
+            {error ? '❌ Verification Error' : '✅ Email Verification'}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="text-center space-y-4">
+          {message && !error && (
+            <Alert>
+              <p>{message}</p>
+            </Alert>
+          )}
+          
+          {error && (
+            <Alert className="border-red-200 bg-red-50 text-red-800">
+              <p>{error}</p>
+            </Alert>
+          )}
+
+          {!error && (
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          )}
+          
+          <p className="text-sm text-muted-foreground">
+            {error ? 'Redirecting to login page...' : 'Please wait...'}
+          </p>
+        </CardContent>
+      </Card>
     </div>
   )
 }
