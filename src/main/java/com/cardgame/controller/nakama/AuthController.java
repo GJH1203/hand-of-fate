@@ -21,6 +21,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * @deprecated Use UnifiedAuthController at /api/auth instead
+ * This controller is kept for backward compatibility but should not be used for new implementations
+ */
+@Deprecated
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
@@ -242,27 +247,8 @@ public class AuthController {
                         .build());
             }
             
-            // Create Nakama account for existing Supabase user
-            // Use a temporary password - in production you might want a different approach
-            String tempPassword = "temp" + System.currentTimeMillis();
-            Session session = nakamaAuthService.authenticateEmail(request.getEmail(), tempPassword, true, request.getUsername());
-            
-            if (session == null) {
-                return ResponseEntity.badRequest().body("Failed to create Nakama account");
-            }
-            
-            // Update existing player with Nakama ID
-            player.setNakamaUserId(session.getUserId());
-            playerService.savePlayer(player);
-            
-            return ResponseEntity.ok(ImmutableAuthDto.builder()
-                    .isSuccess(true)
-                    .token(session.getAuthToken())
-                    .userId(session.getUserId())
-                    .username(session.getUsername())
-                    .playerId(player.getId())
-                    .message("Successfully integrated Supabase user with Nakama")
-                    .build());
+            // This endpoint is deprecated - use UnifiedAuthController instead
+            return ResponseEntity.badRequest().body("This endpoint is deprecated. Please use /api/auth/sync-verified-user instead.");
             
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body("Failed to integrate: " + e.getMessage());
