@@ -6,26 +6,17 @@ import GameCell from './GameCell';
 import PlayerHand from './PlayerHand';
 import { useGameState } from '@/hooks/useGameState';
 import { Card, Position, GameState } from '@/types/game';
-import { useAuth } from '@/hooks/useAuth';
-import { useSupabaseAuth } from '@/hooks/useSupabaseAuth';
+import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
 import { useRouter } from 'next/navigation';
+import { playerService } from '@/services/playerService';
 
 const DEFAULT_BOARD_WIDTH = 3;  // Adjusted to match backend
 const DEFAULT_BOARD_HEIGHT = 5; // Adjusted to match backend
 
 export default function GameBoard() {
     const { gameState, isLoading, error, initializeGame, makeMove, requestWin, respondToWinRequest } = useGameState();
-    const { isAuthenticated: isNakamaAuth, user: nakamaUser } = useAuth();
-    const { isAuthenticated: isSupabaseAuth, user: supabaseUser } = useSupabaseAuth();
+    const { isAuthenticated, user } = useUnifiedAuth();
     const router = useRouter();
-    
-    // User is authenticated if they're logged in with either Nakama OR Supabase
-    const isAuthenticated = isNakamaAuth || isSupabaseAuth;
-    const user = nakamaUser || (supabaseUser ? { 
-        username: supabaseUser.email?.split('@')[0] || 'User', 
-        playerId: supabaseUser.id,
-        userId: supabaseUser.id 
-    } : null);
     const [selectedCard, setSelectedCard] = useState<Card | null>(null);
     const [validMoves, setValidMoves] = useState<Position[]>([]);
     const [boardCards, setBoardCards] = useState<Record<string, Card>>({});
@@ -77,27 +68,11 @@ export default function GameBoard() {
         try {
             setIsCreatingGame(true);
             
-            // Get current player data - for Supabase users, use supabase ID lookup
-            let currentPlayerResponse;
-            if (isSupabaseAuth && supabaseUser) {
-                currentPlayerResponse = await fetch(`http://localhost:8080/players/by-supabase-id/${supabaseUser.id}`);
-            } else {
-                currentPlayerResponse = await fetch(`http://localhost:8080/players/${user.playerId}`);
-            }
+            // Get current player data
+            const currentPlayerData = await playerService.getPlayer(user.playerId);
             
-            if (!currentPlayerResponse.ok) {
-                throw new Error('Failed to fetch current player data - make sure your account is properly synced');
-            }
-            const currentPlayerData = await currentPlayerResponse.json();
-            
-            // Check if opponent exists
-            const opponentResponse = await fetch(`http://localhost:8080/players/by-name/${encodeURIComponent(opponentName)}`);
-            
-            if (!opponentResponse.ok) {
-                throw new Error(`Player "${opponentName}" not found. Please ask them to register first.`);
-            }
-            
-            const opponentData = await opponentResponse.json();
+            // Get opponent data
+            const opponentData = await playerService.getPlayerByUsername(opponentName);
             
             // Store player names
             setPlayers({

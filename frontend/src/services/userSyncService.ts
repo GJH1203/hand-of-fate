@@ -66,7 +66,7 @@ export class UserSyncService {
         username: username
       })
       
-      const response = await fetch(`${this.backendUrl}/auth/create-from-supabase`, {
+      const response = await fetch(`${this.backendUrl}/api/auth/sync-verified-user`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -122,26 +122,11 @@ export class UserSyncService {
         username: username
       })
       
-      const response = await fetch(`${this.backendUrl}/auth/integrate-supabase-with-nakama`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          supabaseUserId: supabaseUser.id,
-          email: supabaseUser.email,
-          username: username
-        })
-      })
-
-      if (response.ok) {
-        const result = await response.json()
-        console.log('Successfully integrated with Nakama:', result)
-        return result
-      } else {
-        const errorText = await response.text()
-        console.error('Failed to integrate with Nakama:', response.status, errorText)
-        throw new Error(`Nakama integration failed: ${response.status} - ${errorText}`)
+      // Integration is now handled automatically by the unified auth controller
+      // Just return success since the sync endpoint handles both player and Nakama creation
+      return { 
+        isSuccess: true, 
+        message: 'Nakama integration handled by sync endpoint' 
       }
     } catch (error) {
       console.error('Failed to integrate with Nakama:', error)
