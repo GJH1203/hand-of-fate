@@ -5,8 +5,8 @@ import com.cardgame.exception.player.PlayerNotFoundException;
 import com.cardgame.model.Card;
 import com.cardgame.model.Deck;
 import com.cardgame.model.Player;
-import com.cardgame.repository.CardRepository;
 import com.cardgame.repository.PlayerRepository;
+import com.cardgame.service.DeckInitializationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -16,7 +16,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 public class PlayerService {
@@ -24,14 +23,14 @@ public class PlayerService {
     
     private final PlayerActionService playerActionService;
     private final PlayerRepository playerRepository;
-    private final DeckService deckService;
-    private final CardRepository cardRepository;
+    private final DeckInitializationService deckInitializationService;
 
-    public PlayerService(PlayerActionService playerActionService, PlayerRepository playerRepository, DeckService deckService, CardRepository cardRepository) {
+    public PlayerService(PlayerActionService playerActionService, 
+                        PlayerRepository playerRepository, 
+                        DeckInitializationService deckInitializationService) {
         this.playerActionService = playerActionService;
         this.playerRepository = playerRepository;
-        this.deckService = deckService;
-        this.cardRepository = cardRepository;
+        this.deckInitializationService = deckInitializationService;
     }
 
     public Player getPlayer(String playerId) {
@@ -39,45 +38,15 @@ public class PlayerService {
                 .orElseThrow(() -> new PlayerNotFoundException("Player not found: " + playerId));
     }
 
+    /**
+     * @deprecated Use createPlayer(String, String, String, String) instead
+     */
+    @Deprecated
     public Player createPlayer(String name) {
-        // Create player with basic initialization
-        Player player = new Player();
-        player.setName(name);
-        player.setScore(0);
-        player.setLifetimeScore(0); // Initialize lifetime score to 0
-        player.setHand(new ArrayList<>());
-        player.setPlacedCards(new HashMap<>());
-
-        // Save player first to get the ID
-        player = playerRepository.save(player);
-
-        // Create a default deck for the player
-        List<Card> defaultCards = createDefaultDeck();
-        Deck defaultDeck = deckService.createDeck(player.getId(), defaultCards);
-        logger.debug("Created player with ID: {}", player.getId());
-
-        // Set the deck reference and save player again
-        player.setCurrentDeck(defaultDeck);
-
-        return playerRepository.save(player);
+        // This method should not be used anymore
+        throw new UnsupportedOperationException("This method is deprecated. Use createPlayer with all required fields instead.");
     }
 
-    private List<Card> createDefaultDeck() {
-        List<Card> defaultCards = new ArrayList<>();
-        // Get the default card with id "1" from the database
-        Card defaultCard = cardRepository.findById("1")
-                .orElseThrow(() -> new RuntimeException("Default card with ID 1 not found"));
-
-        // Create unique card instances with different IDs
-        for (int i = 0; i < 15; i++) {
-            Card uniqueCard = new Card();
-            uniqueCard.setId("default_" + UUID.randomUUID().toString());
-            uniqueCard.setPower(defaultCard.getPower());
-            uniqueCard.setName(defaultCard.getName() + " #" + (i + 1));
-            defaultCards.add(uniqueCard);
-        }
-        return defaultCards;
-    }
 
     public PlayerDto getPlayerDto(String playerId) {
         Player player = getPlayer(playerId);
@@ -150,66 +119,15 @@ public class PlayerService {
         return playerRepository.findByNakamaUserId(nakamaUserId);
     }
 
-    // Update create player to take email and nakamaUserId
+    /**
+     * @deprecated Use createPlayer(String, String, String, String) instead
+     */
+    @Deprecated
     public Player createPlayer(String name, String email, String nakamaUserId) {
-        // Validate input parameters
-        validatePlayerCreationInput(name, email, nakamaUserId);
-        
-        // Check for duplicate username
-        if (playerRepository.findByName(name).isPresent()) {
-            throw new IllegalArgumentException("Username already exists: " + name);
-        }
-        
-        // Check for duplicate email
-        if (playerRepository.findByEmail(email).isPresent()) {
-            throw new IllegalArgumentException("Email already exists: " + email);
-        }
-        
-        // Check for duplicate Nakama user ID
-        if (playerRepository.findByNakamaUserId(nakamaUserId).isPresent()) {
-            throw new IllegalArgumentException("Nakama user already exists: " + nakamaUserId);
-        }
-
-        // Create player with basic initialization
-        Player player = new Player();
-        player.setName(name);
-        player.setScore(0);
-        player.setLifetimeScore(0); // Initialize lifetime score to 0
-        player.setHand(new ArrayList<>());
-        player.setPlacedCards(new HashMap<>());
-        player.setEmail(email);
-        player.setNakamaUserId(nakamaUserId);
-
-        // Save player first to get the ID
-        player = playerRepository.save(player);
-
-        // Create a default deck for the player
-        List<Card> defaultCards = createDefaultDeck();
-        Deck defaultDeck = deckService.createDeck(player.getId(), defaultCards);
-
-        // Set the deck reference and save player again
-        player.setCurrentDeck(defaultDeck);
-
-        return playerRepository.save(player);
+        // Redirect to the unified method with null supabaseUserId
+        return createPlayer(name, email, null, nakamaUserId);
     }
     
-    private void validatePlayerCreationInput(String name, String email, String nakamaUserId) {
-        if (name == null || name.trim().isEmpty()) {
-            throw new IllegalArgumentException("Player name cannot be null or empty");
-        }
-        if (email == null || email.trim().isEmpty()) {
-            throw new IllegalArgumentException("Email cannot be null or empty");
-        }
-        if (nakamaUserId == null || nakamaUserId.trim().isEmpty()) {
-            throw new IllegalArgumentException("Nakama user ID cannot be null or empty");
-        }
-        
-        // Basic email format validation using regex
-        String emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
-        if (!email.matches(emailRegex)) {
-            throw new IllegalArgumentException("Invalid email format: " + email);
-        }
-    }
 
     // Add methods to update lifetime score
     public void addToLifetimeScore(String playerId, int points) {
@@ -248,50 +166,98 @@ public class PlayerService {
         }
     }
     
-    public Player createPlayerFromSupabase(String name, String email, String supabaseUserId) {
-        // Validate input parameters
-        validatePlayerCreationInput(name, email, supabaseUserId);
+    /**
+     * Unified player creation method that handles all authentication providers
+     * @param name Username (must be unique)
+     * @param email Email address (must be unique)
+     * @param supabaseUserId Supabase user ID (can be null for legacy systems)
+     * @param nakamaUserId Nakama user ID (can be null, will be set later)
+     * @return Created or existing player
+     */
+    public Player createPlayer(String name, String email, String supabaseUserId, String nakamaUserId) {
+        // Validate required fields
+        if (name == null || name.trim().isEmpty()) {
+            throw new IllegalArgumentException("Player name cannot be null or empty");
+        }
+        if (email == null || email.trim().isEmpty()) {
+            throw new IllegalArgumentException("Email cannot be null or empty");
+        }
+        
+        // Validate email format
+        String emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
+        if (!email.matches(emailRegex)) {
+            throw new IllegalArgumentException("Invalid email format: " + email);
+        }
         
         try {
-            // Use MongoDB's upsert-like behavior to prevent duplicates
-            // First check for existing user by Supabase ID - most reliable identifier
-            Optional<Player> existingBySupabaseId = playerRepository.findBySupabaseUserId(supabaseUserId);
-            if (existingBySupabaseId.isPresent()) {
-                return existingBySupabaseId.get();
+            // Check for existing player by various IDs (in order of preference)
+            
+            // 1. Check by Supabase ID (most reliable for new system)
+            if (supabaseUserId != null && !supabaseUserId.trim().isEmpty()) {
+                Optional<Player> existingBySupabaseId = playerRepository.findBySupabaseUserId(supabaseUserId);
+                if (existingBySupabaseId.isPresent()) {
+                    Player existing = existingBySupabaseId.get();
+                    // Update Nakama ID if provided and not already set
+                    if (nakamaUserId != null && existing.getNakamaUserId() == null) {
+                        existing.setNakamaUserId(nakamaUserId);
+                        return playerRepository.save(existing);
+                    }
+                    return existing;
+                }
             }
             
-            // Check for duplicate email
+            // 2. Check by email (to prevent duplicates)
             Optional<Player> existingByEmail = playerRepository.findByEmail(email);
             if (existingByEmail.isPresent()) {
-                throw new IllegalArgumentException("Email already exists: " + email);
+                Player existing = existingByEmail.get();
+                // Update IDs if not set
+                boolean updated = false;
+                if (supabaseUserId != null && existing.getSupabaseUserId() == null) {
+                    existing.setSupabaseUserId(supabaseUserId);
+                    updated = true;
+                }
+                if (nakamaUserId != null && existing.getNakamaUserId() == null) {
+                    existing.setNakamaUserId(nakamaUserId);
+                    updated = true;
+                }
+                return updated ? playerRepository.save(existing) : existing;
             }
             
-            // Check for duplicate username
+            // 3. Check by username
             Optional<Player> existingByName = playerRepository.findByName(name);
             if (existingByName.isPresent()) {
                 throw new IllegalArgumentException("Username already exists: " + name);
             }
+            
+            // 4. Check by Nakama ID if provided
+            if (nakamaUserId != null && !nakamaUserId.trim().isEmpty()) {
+                Optional<Player> existingByNakamaId = playerRepository.findByNakamaUserId(nakamaUserId);
+                if (existingByNakamaId.isPresent()) {
+                    throw new IllegalArgumentException("Nakama user already exists: " + nakamaUserId);
+                }
+            }
 
-            // Create player with basic initialization
+            // Create new player
             Player player = new Player();
             player.setName(name);
+            player.setEmail(email);
+            player.setSupabaseUserId(supabaseUserId);
+            player.setNakamaUserId(nakamaUserId);
             player.setScore(0);
             player.setLifetimeScore(0);
             player.setHand(new ArrayList<>());
             player.setPlacedCards(new HashMap<>());
-            player.setEmail(email);
-            player.setSupabaseUserId(supabaseUserId);
 
-            // Save player first to get the ID - this may throw DuplicateKeyException
+            // Save player first to get the ID
             player = playerRepository.save(player);
+            logger.info("Created new player: {} (ID: {})", player.getName(), player.getId());
 
-            // Create a default deck for the player
-            List<Card> defaultCards = createDefaultDeck();
-            Deck defaultDeck = deckService.createDeck(player.getId(), defaultCards);
+            // Create a default deck for the player using the deck initialization service
+            Deck defaultDeck = deckInitializationService.createDefaultDeckForPlayer(player.getId());
+            logger.info("Created default deck for player: {}", player.getId());
 
             // Set the deck reference and save player again
             player.setCurrentDeck(defaultDeck);
-
             return playerRepository.save(player);
             
         } catch (org.springframework.dao.DuplicateKeyException e) {
@@ -299,24 +265,28 @@ public class PlayerService {
             logger.warn("Duplicate key error during player creation, attempting to find existing player: {}", e.getMessage());
             
             // Try to find the existing player by any of the unique fields
-            Optional<Player> existing = playerRepository.findBySupabaseUserId(supabaseUserId);
+            if (supabaseUserId != null) {
+                Optional<Player> existing = playerRepository.findBySupabaseUserId(supabaseUserId);
+                if (existing.isPresent()) {
+                    return existing.get();
+                }
+            }
+            
+            Optional<Player> existing = playerRepository.findByEmail(email);
             if (existing.isPresent()) {
                 return existing.get();
-            }
-            
-            existing = playerRepository.findByEmail(email);
-            if (existing.isPresent()) {
-                throw new IllegalArgumentException("Email already exists: " + email);
-            }
-            
-            existing = playerRepository.findByName(name);
-            if (existing.isPresent()) {
-                throw new IllegalArgumentException("Username already exists: " + name);
             }
             
             // If we can't find the conflicting record, re-throw the original exception
             throw new IllegalArgumentException("Player creation failed due to a duplicate key error.");
         }
+    }
+    
+    /**
+     * Convenience method for creating players from Supabase (maintains backward compatibility)
+     */
+    public Player createPlayerFromSupabase(String name, String email, String supabaseUserId) {
+        return createPlayer(name, email, supabaseUserId, null);
     }
     
     public List<Player> getAllPlayers() {
@@ -334,8 +304,7 @@ public class PlayerService {
     public void createDefaultDeckForPlayer(String playerId) {
         Player player = getPlayer(playerId);
         if (player.getCurrentDeck() == null) {
-            List<Card> defaultCards = createDefaultDeck();
-            Deck defaultDeck = deckService.createDeck(playerId, defaultCards);
+            Deck defaultDeck = deckInitializationService.createDefaultDeckForPlayer(playerId);
             player.setCurrentDeck(defaultDeck);
             playerRepository.save(player);
         }

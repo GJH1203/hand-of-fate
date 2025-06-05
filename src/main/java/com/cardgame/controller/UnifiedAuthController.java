@@ -78,11 +78,12 @@ public class UnifiedAuthController {
                 return ResponseEntity.ok(buildAuthResponse(player));
             }
             
-            // Create new player
-            Player newPlayer = playerService.createPlayerFromSupabase(
+            // Create new player using unified method
+            Player newPlayer = playerService.createPlayer(
                 request.getUsername(), 
                 request.getEmail(), 
-                request.getSupabaseUserId()
+                request.getSupabaseUserId(),
+                null  // Nakama ID will be set later
             );
             
             // Create Nakama account for the new player
@@ -206,9 +207,9 @@ public class UnifiedAuthController {
      */
     private Session createNakamaAccount(Player player, String email) {
         try {
-            // Generate a secure random password
-            // In production, ensure the password is stored securely for reuse
-            String nakamaPassword = generateSecureRandomPassword();
+            // Use a deterministic password based on player ID
+            // In production, consider using OAuth or custom authentication
+            String nakamaPassword = "nakama_" + player.getId() + "_secure";
             
             // First try to authenticate (in case account already exists)
             Session session = nakamaAuthService.authenticateEmail(
