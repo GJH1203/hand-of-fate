@@ -3,7 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useLeaderboard } from '@/hooks/useLeaderboard';
-import { useAuth } from '@/hooks/useAuth';
+import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
 import { LeaderboardRecord } from '@/services/leaderboardService';
 
 interface LeaderboardProps {
@@ -19,14 +19,14 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ className }) => {
         fetchLeaderboardAroundPlayer,
         refreshLeaderboards 
     } = useLeaderboard();
-    const { user } = useAuth();
+    const { user } = useUnifiedAuth();
     const [activeTab, setActiveTab] = useState<'weekly' | 'all-time'>('weekly');
 
     const currentLeaderboard = activeTab === 'weekly' ? weeklyLeaderboard : allTimeLeaderboard;
 
     const handleShowAroundMe = async () => {
-        if (user?.userId) {
-            await fetchLeaderboardAroundPlayer(user.userId, activeTab);
+        if (user?.nakamaUserId) {
+            await fetchLeaderboardAroundPlayer(user.nakamaUserId, activeTab);
         }
     };
 
@@ -137,7 +137,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ className }) => {
                                     ))}
                                 </div>
 
-                                {user?.userId && (
+                                {user?.nakamaUserId && (
                                     <div className="border-t pt-4">
                                         <Button 
                                             variant="outline" 

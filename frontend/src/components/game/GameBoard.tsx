@@ -56,7 +56,7 @@ export default function GameBoard() {
     // Redirect if not authenticated
     useEffect(() => {
         if (!isAuthenticated) {
-            router.push('/auth');
+            router.push('/login');
         }
     }, [isAuthenticated, router]);
 
