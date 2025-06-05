@@ -206,9 +206,9 @@ public class UnifiedAuthController {
      */
     private Session createNakamaAccount(Player player, String email) {
         try {
-            // Use a deterministic password based on player ID
-            // In production, consider using OAuth or custom authentication
-            String nakamaPassword = "nakama_" + player.getId() + "_secure";
+            // Generate a secure random password
+            // In production, ensure the password is stored securely for reuse
+            String nakamaPassword = generateSecureRandomPassword();
             
             // First try to authenticate (in case account already exists)
             Session session = nakamaAuthService.authenticateEmail(
