@@ -377,7 +377,31 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         message.setType(MessageType.GAME_STATE_UPDATE);
         message.setData(gameState);
         
-        broadcastToMatch(matchId, message, null);
+        // Find all sessions in this match and send appropriate game state to each
+        Set<WebSocketSession> sessions = matchSessions.get(matchId);
+        if (sessions != null && !sessions.isEmpty()) {
+            logger.info("Broadcasting game update to {} players in match {}", sessions.size(), matchId);
+            
+            // If gameState is a GameDto, we need to send player-specific views
+            if (gameState instanceof com.cardgame.dto.GameDto) {
+                com.cardgame.dto.GameDto gameDto = (com.cardgame.dto.GameDto) gameState;
+                
+                // Send to all sessions in the match
+                for (WebSocketSession session : sessions) {
+                    SessionInfo sInfo = sessionInfoMap.get(session.getId());
+                    if (sInfo != null) {
+                        // For the player whose data we have, send it directly
+                        // For others, they'll need to request their own view
+                        sendMessage(session, message);
+                    }
+                }
+            } else {
+                // For non-GameDto data, broadcast to all
+                broadcastToMatch(matchId, message, null);
+            }
+        } else {
+            logger.warn("No sessions found for match {} when trying to broadcast", matchId);
+        }
     }
     
     /**

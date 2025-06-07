@@ -11,9 +11,12 @@ import com.cardgame.dto.game.PlayerMoveRequest;
 import com.cardgame.dto.game.WinRequestRequest;
 import com.cardgame.dto.game.WinResponseRequest;
 import com.cardgame.model.GameModel;
+import com.cardgame.model.GameMode;
 import com.cardgame.service.GameService;
+import com.cardgame.websocket.GameWebSocketHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,6 +33,9 @@ public class GameController {
     private static final Logger log = LoggerFactory.getLogger(GameController.class.getName());
 
     private final GameService gameService;
+    
+    @Autowired
+    private GameWebSocketHandler gameWebSocketHandler;
 
     public GameController(GameService gameService) {
         this.gameService = gameService;
@@ -89,6 +95,10 @@ public class GameController {
             @RequestBody PlayerMoveRequest moveRequest) {
         PlayerAction action = convertToPlayerAction(moveRequest);
         GameDto updatedGame = gameService.processMove(gameId, action);
+        
+        // Broadcast the update via WebSocket for online games
+        broadcastGameUpdateIfOnline(gameId, updatedGame);
+        
         return ResponseEntity.ok(updatedGame);
     }
 
@@ -102,6 +112,10 @@ public class GameController {
                 .timestamp(System.currentTimeMillis())
                 .build();
         GameDto updatedGame = gameService.processMove(gameId, action);
+        
+        // Broadcast the update via WebSocket for online games
+        broadcastGameUpdateIfOnline(gameId, updatedGame);
+        
         return ResponseEntity.ok(updatedGame);
     }
 
@@ -138,6 +152,10 @@ public class GameController {
                 .timestamp(System.currentTimeMillis())
                 .build();
         GameDto updatedGame = gameService.processMove(gameId, action);
+        
+        // Broadcast the update via WebSocket for online games
+        broadcastGameUpdateIfOnline(gameId, updatedGame);
+        
         return ResponseEntity.ok(updatedGame);
     }
 
@@ -155,6 +173,39 @@ public class GameController {
                 .timestamp(System.currentTimeMillis())
                 .build();
         GameDto updatedGame = gameService.processMove(gameId, action);
+        
+        // Broadcast the update via WebSocket for online games
+        broadcastGameUpdateIfOnline(gameId, updatedGame);
+        
         return ResponseEntity.ok(updatedGame);
+    }
+    
+    /**
+     * Helper method to broadcast game updates via WebSocket for online games ONLY
+     * This method is safe for local mode - it checks if the game is online before broadcasting
+     */
+    private void broadcastGameUpdateIfOnline(String gameId, GameDto updatedGame) {
+        try {
+            // Get the game model to check if it's an online game
+            GameModel gameModel = gameService.getGameModel(gameId);
+            
+            // SAFETY CHECK: Only broadcast for online games
+            if (gameModel.getGameMode() == GameMode.ONLINE && gameModel.getNakamaMatchId() != null) {
+                // Extract match ID from Nakama match ID (format: "nakama_XXXXXX")
+                String matchId = gameModel.getNakamaMatchId().replace("nakama_", "");
+                
+                // Broadcast to all players in the match
+                // The WebSocket handler will take care of sending to all connected sessions
+                gameWebSocketHandler.broadcastGameUpdate(matchId, updatedGame);
+                
+                log.info("Broadcasted game update for online match {} after REST API move", matchId);
+            } else {
+                // Local mode game - no broadcast needed
+                log.debug("Game {} is in local mode, skipping WebSocket broadcast", gameId);
+            }
+        } catch (Exception e) {
+            log.error("Failed to broadcast game update for game {}", gameId, e);
+            // Don't fail the request if broadcast fails - this ensures local mode continues to work
+        }
     }
 }
