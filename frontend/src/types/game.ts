@@ -32,6 +32,8 @@ export interface GameState {
     isTie?: boolean;
     hasPendingWinRequest?: boolean;
     pendingWinRequestPlayerId?: string | null;
+    cardOwnership?: Record<string, string>; // Map of position to player ID
+    playerIds?: string[]; // List of player IDs in the game
 }
 
 export interface InitializePayload {
