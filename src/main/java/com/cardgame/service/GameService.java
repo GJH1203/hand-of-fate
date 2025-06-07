@@ -78,6 +78,7 @@ public class GameService {
                 .currentPlayerHand(currentPlayer.getHand().stream()
                         .map(this::convertCardToDto)
                         .collect(Collectors.toList()))
+                .playerIds(gameModel.getPlayerIds())
                 .createdAt(gameModel.getCreatedAt())
                 .updatedAt(gameModel.getUpdatedAt());
 

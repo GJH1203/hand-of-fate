@@ -58,4 +58,9 @@ public interface GameDto {
      */
     @Nullable
     String getPendingWinRequestPlayerId();
+    
+    /**
+     * List of player IDs in the game (in order)
+     */
+    List<String> getPlayerIds();
 }

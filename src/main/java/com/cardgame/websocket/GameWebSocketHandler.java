@@ -203,9 +203,16 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         }
         
         try {
-            Map<String, Object> actionData = (Map<String, Object>) message.getData();
+            Map<String, Object> data = (Map<String, Object>) message.getData();
+            String matchId = (String) data.get("matchId");
+            Map<String, Object> actionData = (Map<String, Object>) data.get("action");
+            
+            if (actionData == null) {
+                sendError(session, "No action data provided");
+                return;
+            }
+            
             String actionType = (String) actionData.get("type");
-            String gameId = (String) actionData.get("gameId");
             
             // Build PlayerAction
             PlayerAction playerAction = null;
@@ -219,7 +226,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                 card.setPower(((Number) cardData.get("power")).intValue());
                 
                 // Extract position
-                Map<String, Object> posData = (Map<String, Object>) actionData.get("position");
+                Map<String, Object> posData = (Map<String, Object>) actionData.get("targetPosition");
                 Position position = new Position(
                     ((Number) posData.get("x")).intValue(),
                     ((Number) posData.get("y")).intValue()
@@ -244,11 +251,18 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                 return;
             }
             
+            // Get the game from the match
+            NakamaMatchService.MatchMetadata metadata = nakamaMatchService.getMatchMetadata(matchId);
+            if (metadata == null || metadata.gameId == null) {
+                sendError(session, "Game not found for match");
+                return;
+            }
+            
             // Process the move
-            gameService.processMove(gameId, playerAction);
+            gameService.processMove(metadata.gameId, playerAction);
             
             // Get the updated game model for checking end state
-            var updatedGame = gameService.getGameModel(gameId);
+            var updatedGame = gameService.getGameModel(metadata.gameId);
             
             // Broadcast updated game state to all players in the match
             Set<WebSocketSession> sessions = matchSessions.get(info.matchId);
