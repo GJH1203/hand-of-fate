@@ -432,6 +432,12 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
             if (response) {
                 console.log('Move successful, updating local state');
                 setIsMyTurn(response.currentPlayerId === user!.playerId);
+                
+                // Update the board display with the new game state
+                updateBoardCards(response);
+                
+                // Also update the full game state
+                setGameState(response);
             }
         } catch (err) {
             setError('Failed to make move');
