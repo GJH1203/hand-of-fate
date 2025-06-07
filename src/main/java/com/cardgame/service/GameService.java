@@ -58,8 +58,12 @@ public class GameService {
         this.nakamaLeaderBoardService = nakamaLeaderBoardService;
     }
 
-    private GameDto convertToDto(GameModel gameModel) {
-        Player currentPlayer = playerService.getPlayer(gameModel.getCurrentPlayerId());
+    public GameDto convertToDto(GameModel gameModel) {
+        return convertToDto(gameModel, gameModel.getCurrentPlayerId());
+    }
+    
+    public GameDto convertToDto(GameModel gameModel, String forPlayerId) {
+        Player currentPlayer = playerService.getPlayer(forPlayerId);
 
         // Create the builder first
         ImmutableGameDto.Builder builder = ImmutableGameDto.builder()
@@ -422,6 +426,11 @@ public class GameService {
     public GameDto getGame(String gameId) {
         return convertToDto(gameRepository.findById(gameId)
                 .orElseThrow(() -> new GameNotFoundException("Game not found: " + gameId)));
+    }
+    
+    public GameModel getGameModel(String gameId) {
+        return gameRepository.findById(gameId)
+                .orElseThrow(() -> new GameNotFoundException("Game not found: " + gameId));
     }
 
     /**

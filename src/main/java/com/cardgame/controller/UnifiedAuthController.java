@@ -295,18 +295,26 @@ public class UnifiedAuthController {
      * Generate a secure password using cryptographically strong random generator
      */
     private String generateSecurePassword(String seed) {
-        // Create a deterministic but secure password based on seed
-        // In production, store this securely instead of regenerating
-        byte[] seedBytes = (seed + "_nakama_secure_2024").getBytes();
-        SecureRandom seededRandom = new SecureRandom(seedBytes);
-        
-        StringBuilder password = new StringBuilder(PASSWORD_LENGTH);
-        for (int i = 0; i < PASSWORD_LENGTH; i++) {
-            int randomIndex = seededRandom.nextInt(PASSWORD_CHARS.length());
-            password.append(PASSWORD_CHARS.charAt(randomIndex));
+        // Create a deterministic password based on seed
+        // Using SHA-256 hash to ensure consistency across JVM runs
+        try {
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] hash = md.digest((seed + "_nakama_secure_2024_fixed").getBytes());
+            
+            // Convert hash bytes to password characters deterministically
+            StringBuilder password = new StringBuilder(PASSWORD_LENGTH);
+            for (int i = 0; i < PASSWORD_LENGTH; i++) {
+                // Use modulo to map byte values to character set
+                int index = Math.abs(hash[i % hash.length]) % PASSWORD_CHARS.length();
+                password.append(PASSWORD_CHARS.charAt(index));
+            }
+            
+            return password.toString();
+        } catch (Exception e) {
+            // Fallback to a simple deterministic password
+            logger.error("Failed to generate password with SHA-256", e);
+            return "Player_" + seed + "_DefaultPass2024!";
         }
-        
-        return password.toString();
     }
 
     /**
