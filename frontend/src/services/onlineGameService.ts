@@ -93,6 +93,24 @@ class OnlineGameService {
       method: 'POST',
     });
   }
+
+  /**
+   * Leave all matches for a player (useful before creating/joining new matches)
+   */
+  async leaveAllMatches(playerId: string): Promise<void> {
+    try {
+      const response = await fetch(`${API_URL}/api/online-game/leave-all/${playerId}`, {
+        method: 'POST',
+      });
+      
+      if (!response.ok) {
+        console.warn('Failed to leave all matches, but continuing anyway');
+      }
+    } catch (error) {
+      console.warn('Error leaving matches:', error);
+      // Don't throw - allow the user to continue
+    }
+  }
 }
 
 export const onlineGameService = new OnlineGameService();

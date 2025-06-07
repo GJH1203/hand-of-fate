@@ -166,17 +166,25 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
 
     // Track if match has been initialized
     const [matchInitialized, setMatchInitialized] = useState(false);
+    const [isJoining, setIsJoining] = useState(false);
     
     // Initialize or join match
     useEffect(() => {
-        if (!user || !isConnected || matchInitialized) return;
+        if (!user || !isConnected || matchInitialized || isJoining) return;
 
         const initializeMatch = async () => {
             try {
+                setIsJoining(true);
                 setIsLoading(true);
                 setError(null);
 
                 if (matchId) {
+                    // Leave any existing matches first
+                    await onlineGameService.leaveAllMatches(user.playerId);
+                    
+                    // Small delay to ensure cleanup completes
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    
                     // Join existing match
                     const joinResponse = await onlineGameService.joinMatch(matchId, user.playerId);
                     
@@ -219,6 +227,9 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                         }, 100);
                     }
                 } else {
+                    // Leave any existing matches first
+                    await onlineGameService.leaveAllMatches(user.playerId);
+                    
                     // Create new match
                     const createResponse = await onlineGameService.createMatch(user.playerId);
                     
@@ -241,11 +252,12 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                 console.error(err);
             } finally {
                 setIsLoading(false);
+                setIsJoining(false);
             }
         };
 
         initializeMatch();
-    }, [user, matchId, isConnected, matchInitialized]);
+    }, [user, matchId, isConnected, matchInitialized, isJoining]);
 
     // Handle lobby events
     const handleGameStart = useCallback(() => {
