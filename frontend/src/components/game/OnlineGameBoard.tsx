@@ -433,6 +433,12 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                 console.log('Move successful, updating local state');
                 setIsMyTurn(response.currentPlayerId === user!.playerId);
                 
+                // Update card ownership for the newly placed card
+                const newOwnership = { ...cardOwnership };
+                newOwnership[`${x},${y}`] = user!.playerId;
+                setCardOwnership(newOwnership);
+                console.log('Updated card ownership after move:', newOwnership);
+                
                 // Update the board display with the new game state
                 updateBoardCards(response);
                 
@@ -465,17 +471,8 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                 throw new Error('Failed to pass');
             }
             
-            // Also notify via WebSocket
-            const action = {
-                type: 'PASS',
-                playerId: user!.playerId
-            };
-            gameWebSocketService.sendGameAction(action);
-            
-            // Request updated game state
-            setTimeout(() => {
-                gameWebSocketService.requestGameState();
-            }, 100);
+            // Backend will broadcast the update via WebSocket
+            // No need to send duplicate WebSocket action
         } catch (err) {
             setError('Failed to pass turn');
             console.error(err);
@@ -501,10 +498,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                 throw new Error('Failed to request win');
             }
             
-            // Request updated game state
-            setTimeout(() => {
-                gameWebSocketService.requestGameState();
-            }, 100);
+            // Backend will broadcast the update via WebSocket
         } catch (err) {
             setError('Failed to request win');
             console.error(err);
@@ -531,10 +525,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                 throw new Error('Failed to respond to win request');
             }
             
-            // Request updated game state
-            setTimeout(() => {
-                gameWebSocketService.requestGameState();
-            }, 100);
+            // Backend will broadcast the update via WebSocket
         } catch (err) {
             setError('Failed to respond to win request');
             console.error(err);
