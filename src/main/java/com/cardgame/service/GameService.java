@@ -65,6 +65,17 @@ public class GameService {
     public GameDto convertToDto(GameModel gameModel, String forPlayerId) {
         Player currentPlayer = playerService.getPlayer(forPlayerId);
 
+        // Build card ownership map from all players' placed cards
+        Map<String, String> cardOwnership = new HashMap<>();
+        for (String playerId : gameModel.getPlayerIds()) {
+            Player player = playerService.getPlayer(playerId);
+            if (player.getPlacedCards() != null) {
+                for (String position : player.getPlacedCards().keySet()) {
+                    cardOwnership.put(position, playerId);
+                }
+            }
+        }
+
         // Create the builder first
         ImmutableGameDto.Builder builder = ImmutableGameDto.builder()
                 .id(gameModel.getId())
@@ -79,6 +90,7 @@ public class GameService {
                         .map(this::convertCardToDto)
                         .collect(Collectors.toList()))
                 .playerIds(gameModel.getPlayerIds())
+                .cardOwnership(cardOwnership)
                 .createdAt(gameModel.getCreatedAt())
                 .updatedAt(gameModel.getUpdatedAt());
 
