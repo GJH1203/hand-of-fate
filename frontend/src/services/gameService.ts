@@ -136,6 +136,28 @@ class GameService {
         }
     }
 
+    async processMove(action: any, gameId: string): Promise<GameState> {
+        try {
+            const response = await fetch(`${API_BASE_URL}/${gameId}/actions`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(action),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => null);
+                throw new Error(errorData?.message || 'Failed to process action');
+            }
+
+            const gameData = await response.json();
+            return await this.transformGameResponse(gameData, action.playerId);
+        } catch (error) {
+            throw new Error(`Error processing action: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
+
     private async transformGameResponse(backendData: any, currentPlayerId: string): Promise<GameState> {
         console.log('Backend response:', backendData);
         
