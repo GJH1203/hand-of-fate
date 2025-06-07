@@ -39,6 +39,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
     const [selectedCard, setSelectedCard] = useState<Card | null>(null);
     const [validMoves, setValidMoves] = useState<Position[]>([]);
     const [boardCards, setBoardCards] = useState<Record<string, Card>>({});
+    const [cardOwnership, setCardOwnership] = useState<Record<string, string>>({});
     const [players, setPlayers] = useState<{[key: string]: string}>({});
     const [isMyTurn, setIsMyTurn] = useState(false);
     const [opponentConnected, setOpponentConnected] = useState(true);
@@ -105,13 +106,54 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                         setIsMyTurn(state.currentPlayerId === user.playerId);
                         updateBoardCards(mappedState);
                         
-                        // Update player names if available
-                        if (state.playerIds && state.playerIds.length > 0) {
-                            const playerMap: {[key: string]: string} = {};
-                            state.playerIds.forEach((id: string, index: number) => {
-                                playerMap[id] = `Player ${index + 1}`;
-                            });
-                            setPlayers(playerMap);
+                        // Debug logging
+                        console.log('Current player ID:', state.currentPlayerId);
+                        console.log('My player ID:', user.playerId);
+                        console.log('Is my turn:', state.currentPlayerId === user.playerId);
+                        console.log('Current player hand:', state.currentPlayerHand);
+                        
+                        // Initialize card ownership based on game state
+                        // Since backend doesn't send playerIds, we need to track ownership ourselves
+                        console.log('Checking card ownership initialization...');
+                        console.log('Current cardOwnership:', cardOwnership);
+                        console.log('MatchInfo:', matchInfo);
+                        
+                        if (Object.keys(cardOwnership).length === 0 && state.board?.pieces && Object.keys(state.board.pieces).length > 0) {
+                            const ownership: Record<string, string> = {};
+                            
+                            console.log('Initializing card ownership...');
+                            console.log('Board pieces:', state.board.pieces);
+                            console.log('Current player:', state.currentPlayerId);
+                            console.log('My player ID:', user.playerId);
+                            
+                            // We need to determine who owns which initial cards
+                            // In this game, Player 1 starts at (1,3) and Player 2 starts at (1,1)
+                            // We need to figure out which player we are
+                            
+                            // Get the game ID to fetch full game state
+                            if (state.id) {
+                                // For now, let's use a simple approach:
+                                // Assume the first player to join is player 1 (owns 1,3)
+                                // And the second player is player 2 (owns 1,1)
+                                
+                                // Check if we joined first or second based on match info
+                                let myInitialPosition: string | null = null;
+                                let opponentInitialPosition: string | null = null;
+                                
+                                // Simple heuristic: if current player matches our ID on first load,
+                                // we're likely player 1 (who goes first)
+                                const amIPlayer1 = true; // This is a simplification, we'd need backend support
+                                
+                                if (state.board.pieces['1,3']) {
+                                    ownership['1,3'] = amIPlayer1 ? user.playerId : 'opponent';
+                                }
+                                if (state.board.pieces['1,1']) {
+                                    ownership['1,1'] = amIPlayer1 ? 'opponent' : user.playerId;
+                                }
+                                
+                                console.log('Setting initial card ownership:', ownership);
+                                setCardOwnership(ownership);
+                            }
                         }
                     },
                     onPlayerJoined: (playerId) => {
@@ -294,49 +336,67 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
         setBoardCards(cardMap);
     };
 
-    // Calculate valid moves
+    // Calculate valid moves - must be adjacent to current player's own cards
     useEffect(() => {
-        if (!selectedCard || !gameState || !isMyTurn) {
+        if (!selectedCard || !gameState || !isMyTurn || !user) {
             setValidMoves([]);
             return;
         }
 
         const moves: Position[] = [];
+        const boardPieces = gameState.board.pieces || {};
+        
+        console.log('Calculating valid moves, card ownership:', cardOwnership);
         
         // Check if board is empty (first move)
-        const boardIsEmpty = Object.keys(gameState.board.pieces).length === 0;
+        const boardIsEmpty = Object.keys(boardPieces).length === 0;
         
-        // Find positions where the current player can place cards
-        for (let y = 0; y < DEFAULT_BOARD_HEIGHT; y++) {
-            for (let x = 0; x < DEFAULT_BOARD_WIDTH; x++) {
-                const posKey = `${x},${y}`;
-                
-                // Skip if position is occupied
-                if (gameState.board.pieces[posKey]) continue;
-                
-                if (boardIsEmpty) {
-                    // If board is empty, all positions are valid
+        if (boardIsEmpty) {
+            // If board is empty, all positions are valid
+            for (let y = 0; y < DEFAULT_BOARD_HEIGHT; y++) {
+                for (let x = 0; x < DEFAULT_BOARD_WIDTH; x++) {
                     moves.push({ x, y });
-                } else {
-                    // Check if adjacent to any card (simplified for online play)
-                    const adjacentPositions = [
-                        `${x-1},${y}`, `${x+1},${y}`,
-                        `${x},${y-1}`, `${x},${y+1}`
-                    ];
-                    
-                    const hasAdjacentCard = adjacentPositions.some(adjKey => {
-                        return gameState.board.pieces[adjKey] !== undefined;
-                    });
-                    
-                    if (hasAdjacentCard) {
-                        moves.push({ x, y });
-                    }
                 }
             }
+        } else {
+            // Find positions adjacent to current player's own cards
+            Object.entries(boardPieces).forEach(([posKey, cardId]) => {
+                const [x, y] = posKey.split(',').map(Number);
+                
+                // Check if this card belongs to the current player
+                const cardOwner = cardOwnership[posKey];
+                if (cardOwner !== user.playerId) {
+                    console.log(`Skipping card at ${posKey} - owned by ${cardOwner}, not ${user.playerId}`);
+                    return;
+                }
+                
+                console.log(`Found own card at ${posKey}`);
+                
+                // Check orthogonal adjacent positions (no diagonals)
+                const adjacentPositions = [
+                    { x: x-1, y: y }, // left
+                    { x: x+1, y: y }, // right
+                    { x: x, y: y-1 }, // top
+                    { x: x, y: y+1 }  // bottom
+                ];
+                
+                adjacentPositions.forEach(pos => {
+                    // Check if position is valid (within bounds and empty)
+                    if (pos.x >= 0 && pos.x < DEFAULT_BOARD_WIDTH &&
+                        pos.y >= 0 && pos.y < DEFAULT_BOARD_HEIGHT &&
+                        !boardPieces[`${pos.x},${pos.y}`]) {
+                        // Add to moves if not already included
+                        if (!moves.some(m => m.x === pos.x && m.y === pos.y)) {
+                            moves.push(pos);
+                            console.log(`Added valid position: ${pos.x},${pos.y}`);
+                        }
+                    }
+                });
+            });
         }
         
         setValidMoves(moves);
-    }, [selectedCard, gameState, isMyTurn, user]);
+    }, [selectedCard, gameState, isMyTurn, user, cardOwnership]);
 
     // Handle card placement
     const handleCellClick = async (x: number, y: number) => {
@@ -346,6 +406,12 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
         if (!isValid) return;
 
         try {
+            // Update card ownership for this position
+            setCardOwnership(prev => ({
+                ...prev,
+                [`${x},${y}`]: user!.playerId
+            }));
+            
             // Send move through REST API
             await gameService.makeMove(gameState.id, {
                 playerId: user!.playerId,
@@ -573,9 +639,9 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                             {/* Your Hand (only visible when it's your turn) */}
                             <PlayerHand
                                 cards={gameState.currentPlayerHand}
+                                isCurrentTurn={isMyTurn}
                                 selectedCard={selectedCard}
-                                onCardSelect={isMyTurn ? setSelectedCard : undefined}
-                                disabled={!isMyTurn}
+                                onCardSelect={setSelectedCard}
                             />
 
                             {/* Action Buttons */}
