@@ -1,3 +1,10 @@
+export enum ActionType {
+    PLACE_CARD = 'PLACE_CARD',
+    PASS = 'PASS',
+    REQUEST_WIN_CALCULATION = 'REQUEST_WIN_CALCULATION',
+    RESPOND_TO_WIN_REQUEST = 'RESPOND_TO_WIN_REQUEST'
+}
+
 export interface Position {
     x: number;
     y: number;
@@ -25,6 +32,8 @@ export interface GameState {
     isTie?: boolean;
     hasPendingWinRequest?: boolean;
     pendingWinRequestPlayerId?: string | null;
+    cardOwnership?: Record<string, string>; // Map of position to player ID
+    playerIds?: string[]; // List of player IDs in the game
 }
 
 export interface InitializePayload {

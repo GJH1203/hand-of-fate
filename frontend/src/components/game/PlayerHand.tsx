@@ -19,11 +19,25 @@ export default function PlayerHand({
                                        className
                                    }: PlayerHandProps) {
     const handleCardClick = (card: GameCard) => {
-        if (!isCurrentTurn) return;
+        if (process.env.NODE_ENV === 'development') {
+            console.log('Card clicked:', card, 'isCurrentTurn:', isCurrentTurn);
+        }
+        if (!isCurrentTurn) {
+            if (process.env.NODE_ENV === 'development') {
+                console.log('Not current turn, ignoring click');
+            }
+            return;
+        }
 
         if (selectedCard?.id === card.id) {
+            if (process.env.NODE_ENV === 'development') {
+                console.log('Deselecting card');
+            }
             onCardSelect(null); // Deselect if already selected
         } else {
+            if (process.env.NODE_ENV === 'development') {
+                console.log('Selecting card:', card);
+            }
             onCardSelect(card); // Select new card
         }
     };
