@@ -548,6 +548,11 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                             <Badge variant={isMyTurn ? "default" : "secondary"}>
                                 {isMyTurn ? "Your Turn" : `${players[gameState.currentPlayerId] || 'Opponent'}'s Turn`}
                             </Badge>
+                            {gameState.hasPendingWinRequest && (
+                                <Badge variant="destructive">
+                                    Early End Requested
+                                </Badge>
+                            )}
                             {matchInfo && (
                                 <Badge variant="outline">
                                     Room: {matchInfo.matchId.slice(-6).toUpperCase()}
@@ -617,32 +622,41 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                                     Pass Turn
                                 </Button>
                                 
-                                {gameState.currentPlayerHand.length === 0 && isMyTurn && (
+                                {isMyTurn && !gameState.hasPendingWinRequest && (
                                     <Button
                                         variant="default"
                                         onClick={handleWinRequest}
                                         disabled={!isMyTurn}
                                     >
-                                        Request Win
+                                        Request Early End
                                     </Button>
                                 )}
                                 
                                 {gameState.hasPendingWinRequest && 
                                  gameState.pendingWinRequestPlayerId !== user!.playerId && 
                                  isMyTurn && (
-                                    <div className="flex gap-2">
-                                        <Button
-                                            variant="default"
-                                            onClick={() => handleWinResponse(true)}
-                                        >
-                                            Accept Win
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            onClick={() => handleWinResponse(false)}
-                                        >
-                                            Reject Win
-                                        </Button>
+                                    <div className="space-y-2">
+                                        <Alert>
+                                            <AlertCircle className="h-4 w-4" />
+                                            <AlertDescription>
+                                                Your opponent has requested to end the game early. 
+                                                Do you accept?
+                                            </AlertDescription>
+                                        </Alert>
+                                        <div className="flex gap-2">
+                                            <Button
+                                                variant="default"
+                                                onClick={() => handleWinResponse(true)}
+                                            >
+                                                Accept & Calculate Winner
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                onClick={() => handleWinResponse(false)}
+                                            >
+                                                Continue Playing
+                                            </Button>
+                                        </div>
                                     </div>
                                 )}
                             </div>
