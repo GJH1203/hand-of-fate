@@ -30,7 +30,8 @@ class OnlineGameService {
     });
 
     if (!response.ok) {
-      throw new Error('Failed to create match');
+      const errorText = await response.text();
+      throw new Error(`Failed to create match with status ${response.status}: ${errorText}`);
     }
 
     return response.json();
