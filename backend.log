@@ -5,10 +5,10 @@
 
 > Task :bootRun
 SLF4J(W): Class path contains multiple SLF4J providers.
-SLF4J(W): Found provider [ch.qos.logback.classic.spi.LogbackServiceProvider@7e0b0338]
-SLF4J(W): Found provider [org.slf4j.simple.SimpleServiceProvider@617faa95]
+SLF4J(W): Found provider [ch.qos.logback.classic.spi.LogbackServiceProvider@2038ae61]
+SLF4J(W): Found provider [org.slf4j.simple.SimpleServiceProvider@3c0f93f1]
 SLF4J(W): See https://www.slf4j.org/codes.html#multiple_bindings for an explanation.
-SLF4J(I): Actual provider is of type [ch.qos.logback.classic.spi.LogbackServiceProvider@7e0b0338]
+SLF4J(I): Actual provider is of type [ch.qos.logback.classic.spi.LogbackServiceProvider@2038ae61]
 
   .   ____          _            __ _ _
  /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
@@ -19,608 +19,57 @@ SLF4J(I): Actual provider is of type [ch.qos.logback.classic.spi.LogbackServiceP
 
  :: Spring Boot ::                (v3.4.1)
 
-2025-06-01T15:45:20.209-07:00  INFO 46010 --- [card-game] [           main] com.cardgame.CardGameApplication         : Starting CardGameApplication using Java 17.0.4.1 with PID 46010 (/Users/simongao/Desktop/Hand-of-Fate/card-game/build/classes/java/main started by simongao in /Users/simongao/Desktop/Hand-of-Fate/card-game)
-2025-06-01T15:45:20.211-07:00  INFO 46010 --- [card-game] [           main] com.cardgame.CardGameApplication         : No active profile set, falling back to 1 default profile: "default"
-2025-06-01T15:45:20.593-07:00  INFO 46010 --- [card-game] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data MongoDB repositories in DEFAULT mode.
-2025-06-01T15:45:20.624-07:00  INFO 46010 --- [card-game] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 28 ms. Found 6 MongoDB repository interfaces.
-2025-06-01T15:45:20.810-07:00  INFO 46010 --- [card-game] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
-2025-06-01T15:45:20.816-07:00  INFO 46010 --- [card-game] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
-2025-06-01T15:45:20.816-07:00  INFO 46010 --- [card-game] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.34]
-2025-06-01T15:45:20.841-07:00  INFO 46010 --- [card-game] [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
-2025-06-01T15:45:20.842-07:00  INFO 46010 --- [card-game] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 612 ms
-2025-06-01T15:45:20.919-07:00 DEBUG 46010 --- [card-game] [           main] o.s.w.f.ServerHttpObservationFilter      : Filter 'webMvcObservationFilter' configured for use
-2025-06-01T15:45:20.989-07:00  INFO 46010 --- [card-game] [           main] org.mongodb.driver.client                : MongoClient with metadata {"driver": {"name": "mongo-java-driver|sync", "version": "5.2.1"}, "os": {"type": "Darwin", "name": "Mac OS X", "architecture": "aarch64", "version": "13.1"}, "platform": "Java/Eclipse Adoptium/17.0.4.1+1"} created with settings MongoClientSettings{readPreference=primary, writeConcern=WriteConcern{w=null, wTimeout=null ms, journal=null}, retryWrites=true, retryReads=true, readConcern=ReadConcern{level=null}, credential=null, transportSettings=null, commandListeners=[], codecRegistry=ProvidersCodecRegistry{codecProviders=[ValueCodecProvider{}, BsonValueCodecProvider{}, DBRefCodecProvider{}, DBObjectCodecProvider{}, DocumentCodecProvider{}, CollectionCodecProvider{}, IterableCodecProvider{}, MapCodecProvider{}, GeoJsonCodecProvider{}, GridFSFileCodecProvider{}, Jsr310CodecProvider{}, JsonObjectCodecProvider{}, BsonCodecProvider{}, EnumCodecProvider{}, com.mongodb.client.model.mql.ExpressionCodecProvider@307cf964, com.mongodb.Jep395RecordCodecProvider@374ccb9, com.mongodb.KotlinCodecProvider@66713605]}, loggerSettings=LoggerSettings{maxDocumentLength=1000}, clusterSettings={hosts=[localhost:27017], srvServiceName=mongodb, mode=SINGLE, requiredClusterType=UNKNOWN, requiredReplicaSetName='null', serverSelector='null', clusterListeners='[]', serverSelectionTimeout='30000 ms', localThreshold='15 ms'}, socketSettings=SocketSettings{connectTimeoutMS=10000, readTimeoutMS=0, receiveBufferSize=0, proxySettings=ProxySettings{host=null, port=null, username=null, password=null}}, heartbeatSocketSettings=SocketSettings{connectTimeoutMS=10000, readTimeoutMS=10000, receiveBufferSize=0, proxySettings=ProxySettings{host=null, port=null, username=null, password=null}}, connectionPoolSettings=ConnectionPoolSettings{maxSize=100, minSize=0, maxWaitTimeMS=120000, maxConnectionLifeTimeMS=0, maxConnectionIdleTimeMS=0, maintenanceInitialDelayMS=0, maintenanceFrequencyMS=60000, connectionPoolListeners=[], maxConnecting=2}, serverSettings=ServerSettings{heartbeatFrequencyMS=10000, minHeartbeatFrequencyMS=500, serverMonitoringMode=AUTO, serverListeners='[]', serverMonitorListeners='[]'}, sslSettings=SslSettings{enabled=false, invalidHostNameAllowed=false, context=null}, applicationName='null', compressorList=[], uuidRepresentation=UNSPECIFIED, serverApi=null, autoEncryptionSettings=null, dnsClient=null, inetAddressResolver=null, contextProvider=null, timeoutMS=null}
-2025-06-01T15:45:21.005-07:00  INFO 46010 --- [card-game] [localhost:27017] org.mongodb.driver.cluster               : Monitor thread successfully connected to server with description ServerDescription{address=localhost:27017, type=STANDALONE, cryptd=false, state=CONNECTED, ok=true, minWireVersion=0, maxWireVersion=21, maxDocumentSize=16777216, logicalSessionTimeoutMinutes=30, roundTripTimeNanos=9490250, minRoundTripTimeNanos=0}
-2025-06-01T15:45:21.125-07:00  INFO 46010 --- [card-game] [           main] c.c.s.nakama.NakamaLeaderBoardService    : Initializing Nakama client with host: localhost, port: 7349, ssl: false
-2025-06-01T15:45:21.185-07:00  INFO 46010 --- [card-game] [           main] c.c.s.nakama.NakamaLeaderBoardService    : Authenticating with device ID: f88ff520-5acc-464f-8f24-d268560c65b5
-2025-06-01T15:45:21.424-07:00  INFO 46010 --- [card-game] [           main] c.c.s.nakama.NakamaLeaderBoardService    : Nakama client initialized successfully with device ID: f88ff520-5acc-464f-8f24-d268560c65b5
-2025-06-01T15:45:21.532-07:00 DEBUG 46010 --- [card-game] [           main] s.w.s.m.m.a.RequestMappingHandlerMapping : 37 mappings in 'requestMappingHandlerMapping'
-2025-06-01T15:45:21.561-07:00 DEBUG 46010 --- [card-game] [           main] o.s.w.s.handler.SimpleUrlHandlerMapping  : Patterns [/webjars/**, /**] in 'resourceHandlerMapping'
-2025-06-01T15:45:21.572-07:00 DEBUG 46010 --- [card-game] [           main] s.w.s.m.m.a.RequestMappingHandlerAdapter : ControllerAdvice beans: 0 @ModelAttribute, 0 @InitBinder, 1 RequestBodyAdvice, 1 ResponseBodyAdvice
-2025-06-01T15:45:21.590-07:00 DEBUG 46010 --- [card-game] [           main] .m.m.a.ExceptionHandlerExceptionResolver : ControllerAdvice beans: 0 @ExceptionHandler, 1 ResponseBodyAdvice
-2025-06-01T15:45:21.671-07:00  INFO 46010 --- [card-game] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 1 endpoint beneath base path '/actuator'
-2025-06-01T15:45:21.699-07:00  INFO 46010 --- [card-game] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path '/'
-2025-06-01T15:45:21.708-07:00  INFO 46010 --- [card-game] [           main] com.cardgame.CardGameApplication         : Started CardGameApplication in 1.673 seconds (process running for 1.848)
-Created default card with ID: 1
-2025-06-01T15:45:41.895-07:00  INFO 46010 --- [card-game] [nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
-2025-06-01T15:45:41.895-07:00  INFO 46010 --- [card-game] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
-2025-06-01T15:45:41.896-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Detected StandardServletMultipartResolver
-2025-06-01T15:45:41.896-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Detected AcceptHeaderLocaleResolver
-2025-06-01T15:45:41.896-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Detected FixedThemeResolver
-2025-06-01T15:45:41.899-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Detected org.springframework.web.servlet.view.DefaultRequestToViewNameTranslator@5d42513d
-2025-06-01T15:45:41.899-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Detected org.springframework.web.servlet.support.SessionFlashMapManager@2ccce428
-2025-06-01T15:45:41.899-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : enableLoggingRequestDetails='false': request parameters and headers will be masked to prevent unsafe logging of potentially sensitive data
-2025-06-01T15:45:41.900-07:00  INFO 46010 --- [card-game] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 4 ms
-2025-06-01T15:45:41.913-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : POST "/players?name=Alice", parameters={masked}
-2025-06-01T15:45:41.917-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-1] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.cardgame.controller.player.PlayerController#createPlayer(String)
-player id =========== 683cd815a446b340524db273
-2025-06-01T15:45:42.040-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-1] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
-2025-06-01T15:45:42.044-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-1] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [PlayerDto{id=683cd815a446b340524db273, name=Alice, score=0, handSize=0, lifetimeScore=0, currentDeck (truncated)...]
-2025-06-01T15:45:42.060-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
-2025-06-01T15:45:42.063-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-3] o.s.web.servlet.DispatcherServlet        : POST "/players?name=Bob", parameters={masked}
-2025-06-01T15:45:42.063-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-3] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.cardgame.controller.player.PlayerController#createPlayer(String)
-player id =========== 683cd816a446b340524db274
-2025-06-01T15:45:42.080-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-3] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
-2025-06-01T15:45:42.081-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-3] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [PlayerDto{id=683cd816a446b340524db274, name=Bob, score=0, handSize=0, lifetimeScore=0, currentDeck=D (truncated)...]
-2025-06-01T15:45:42.081-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-3] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
-2025-06-01T15:45:42.084-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-4] o.s.web.servlet.DispatcherServlet        : POST "/game/initialize", parameters={}
-2025-06-01T15:45:42.085-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-4] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.cardgame.controller.GameController#initializeGame(GameInitializationRequest)
-2025-06-01T15:45:42.108-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-4] m.m.a.RequestResponseBodyMethodProcessor : Read "application/json;charset=UTF-8" to [GameInitializationRequest{playerIds=[683cd815a446b340524db273, 683cd816a446b340524db274], deckIds=[b (truncated)...]
-2025-06-01T15:45:42.152-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-4] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
-2025-06-01T15:45:42.153-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-4] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [GameDto{id=7736de16-f86c-4ac2-8988-b45ada33d12c, state=IN_PROGRESS, board=BoardDto{width=3, height=5 (truncated)...]
-2025-06-01T15:45:42.156-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-4] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
-2025-06-01T15:45:46.176-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-2] o.s.web.servlet.DispatcherServlet        : OPTIONS "/game/7736de16-f86c-4ac2-8988-b45ada33d12c/moves", parameters={}
-2025-06-01T15:45:46.177-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-2] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.cardgame.controller.GameController#makeMove(String, PlayerMoveRequest)
-2025-06-01T15:45:46.178-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-2] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
-2025-06-01T15:45:46.181-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-6] o.s.web.servlet.DispatcherServlet        : POST "/game/7736de16-f86c-4ac2-8988-b45ada33d12c/moves", parameters={}
-2025-06-01T15:45:46.182-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-6] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.cardgame.controller.GameController#makeMove(String, PlayerMoveRequest)
-2025-06-01T15:45:46.231-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-6] m.m.a.RequestResponseBodyMethodProcessor : Read "application/json;charset=UTF-8" to [PlayerMoveRequest{playerId=683cd815a446b340524db273, card=com.cardgame.model.Card@25a59af2, position (truncated)...]
-2025-06-01T15:45:46.297-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-6] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
-2025-06-01T15:45:46.297-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-6] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [GameDto{id=7736de16-f86c-4ac2-8988-b45ada33d12c, state=IN_PROGRESS, board=BoardDto{width=3, height=5 (truncated)...]
-2025-06-01T15:45:46.298-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-6] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
-2025-06-01T15:45:48.929-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-7] o.s.web.servlet.DispatcherServlet        : POST "/game/7736de16-f86c-4ac2-8988-b45ada33d12c/moves", parameters={}
-2025-06-01T15:45:48.930-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-7] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.cardgame.controller.GameController#makeMove(String, PlayerMoveRequest)
-2025-06-01T15:45:48.932-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-7] m.m.a.RequestResponseBodyMethodProcessor : Read "application/json;charset=UTF-8" to [PlayerMoveRequest{playerId=683cd816a446b340524db274, card=com.cardgame.model.Card@318afecc, position (truncated)...]
-2025-06-01T15:45:48.980-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-7] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
-2025-06-01T15:45:48.981-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-7] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [GameDto{id=7736de16-f86c-4ac2-8988-b45ada33d12c, state=IN_PROGRESS, board=BoardDto{width=3, height=5 (truncated)...]
-2025-06-01T15:45:48.982-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-7] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
-2025-06-01T15:45:53.036-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-9] o.s.web.servlet.DispatcherServlet        : POST "/game/7736de16-f86c-4ac2-8988-b45ada33d12c/moves", parameters={}
-2025-06-01T15:45:53.037-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-9] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.cardgame.controller.GameController#makeMove(String, PlayerMoveRequest)
-2025-06-01T15:45:53.038-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-9] m.m.a.RequestResponseBodyMethodProcessor : Read "application/json;charset=UTF-8" to [PlayerMoveRequest{playerId=683cd815a446b340524db273, card=com.cardgame.model.Card@2209adc8, position (truncated)...]
-2025-06-01T15:45:53.058-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-9] o.s.web.servlet.DispatcherServlet        : Failed to complete request: com.cardgame.exception.game.InvalidMoveException: Must place card adjacent to your existing cards
-2025-06-01T15:45:53.059-07:00 ERROR 46010 --- [card-game] [nio-8080-exec-9] o.a.c.c.C.[.[.[/].[dispatcherServlet]    : Servlet.service() for servlet [dispatcherServlet] in context with path [] threw exception [Request processing failed: com.cardgame.exception.game.InvalidMoveException: Must place card adjacent to your existing cards] with root cause
-
-com.cardgame.exception.game.InvalidMoveException: Must place card adjacent to your existing cards
-	at com.cardgame.service.validator.DefaultGameValidator.validateAdjacentPlacement(DefaultGameValidator.java:116) ~[main/:na]
-	at com.cardgame.service.validator.DefaultGameValidator.validateCardPlacement(DefaultGameValidator.java:98) ~[main/:na]
-	at com.cardgame.service.validator.DefaultGameValidator.validateMove(DefaultGameValidator.java:81) ~[main/:na]
-	at com.cardgame.service.GameService.processMove(GameService.java:207) ~[main/:na]
-	at com.cardgame.controller.GameController.makeMove(GameController.java:91) ~[main/:na]
-	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[na:na]
-	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77) ~[na:na]
-	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[na:na]
-	at java.base/java.lang.reflect.Method.invoke(Method.java:568) ~[na:na]
-	at org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:257) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.springframework.web.method.support.InvocableHandlerMethod.invokeForRequest(InvocableHandlerMethod.java:190) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle(ServletInvocableHandlerMethod.java:118) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.invokeHandlerMethod(RequestMappingHandlerAdapter.java:986) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.handleInternal(RequestMappingHandlerAdapter.java:891) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at org.springframework.web.servlet.mvc.method.AbstractHandlerMethodAdapter.handle(AbstractHandlerMethodAdapter.java:87) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:1088) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at org.springframework.web.servlet.DispatcherServlet.doService(DispatcherServlet.java:978) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1014) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at org.springframework.web.servlet.FrameworkServlet.doPost(FrameworkServlet.java:914) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:590) ~[tomcat-embed-core-10.1.34.jar:6.0]
-	at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:885) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:658) ~[tomcat-embed-core-10.1.34.jar:6.0]
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:195) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:51) ~[tomcat-embed-websocket-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.springframework.web.filter.RequestContextFilter.doFilterInternal(RequestContextFilter.java:100) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.springframework.web.filter.FormContentFilter.doFilterInternal(FormContentFilter.java:93) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.springframework.web.filter.ServerHttpObservationFilter.doFilterInternal(ServerHttpObservationFilter.java:114) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.springframework.web.filter.CharacterEncodingFilter.doFilterInternal(CharacterEncodingFilter.java:201) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:167) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.StandardContextValve.invoke(StandardContextValve.java:90) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.authenticator.AuthenticatorBase.invoke(AuthenticatorBase.java:483) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.StandardHostValve.invoke(StandardHostValve.java:115) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:93) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.StandardEngineValve.invoke(StandardEngineValve.java:74) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:344) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.coyote.http11.Http11Processor.service(Http11Processor.java:397) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.coyote.AbstractProcessorLight.process(AbstractProcessorLight.java:63) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.coyote.AbstractProtocol$ConnectionHandler.process(AbstractProtocol.java:905) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1741) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:52) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.tomcat.util.threads.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1190) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.tomcat.util.threads.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:659) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:63) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at java.base/java.lang.Thread.run(Thread.java:833) ~[na:na]
-
-2025-06-01T15:45:53.069-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-9] o.s.web.servlet.DispatcherServlet        : "ERROR" dispatch for POST "/error", parameters={}
-2025-06-01T15:45:53.069-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-9] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to org.springframework.boot.autoconfigure.web.servlet.error.BasicErrorController#error(HttpServletRequest)
-2025-06-01T15:45:53.072-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-9] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
-2025-06-01T15:45:53.072-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-9] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [{timestamp=Sun Jun 01 15:45:53 PDT 2025, status=500, error=Internal Server Error, path=/game/7736de1 (truncated)...]
-2025-06-01T15:45:53.076-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-9] o.s.web.servlet.DispatcherServlet        : Exiting from "ERROR" dispatch, status 500
-2025-06-01T15:45:55.081-07:00 DEBUG 46010 --- [card-game] [io-8080-exec-10] o.s.web.servlet.DispatcherServlet        : POST "/game/7736de16-f86c-4ac2-8988-b45ada33d12c/moves", parameters={}
-2025-06-01T15:45:55.081-07:00 DEBUG 46010 --- [card-game] [io-8080-exec-10] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.cardgame.controller.GameController#makeMove(String, PlayerMoveRequest)
-2025-06-01T15:45:55.082-07:00 DEBUG 46010 --- [card-game] [io-8080-exec-10] m.m.a.RequestResponseBodyMethodProcessor : Read "application/json;charset=UTF-8" to [PlayerMoveRequest{playerId=683cd815a446b340524db273, card=com.cardgame.model.Card@2209adc8, position (truncated)...]
-2025-06-01T15:45:55.132-07:00 DEBUG 46010 --- [card-game] [io-8080-exec-10] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
-2025-06-01T15:45:55.133-07:00 DEBUG 46010 --- [card-game] [io-8080-exec-10] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [GameDto{id=7736de16-f86c-4ac2-8988-b45ada33d12c, state=IN_PROGRESS, board=BoardDto{width=3, height=5 (truncated)...]
-2025-06-01T15:45:55.134-07:00 DEBUG 46010 --- [card-game] [io-8080-exec-10] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
-2025-06-01T15:45:57.562-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-3] o.s.web.servlet.DispatcherServlet        : POST "/game/7736de16-f86c-4ac2-8988-b45ada33d12c/moves", parameters={}
-2025-06-01T15:45:57.563-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-3] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.cardgame.controller.GameController#makeMove(String, PlayerMoveRequest)
-2025-06-01T15:45:57.568-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-3] m.m.a.RequestResponseBodyMethodProcessor : Read "application/json;charset=UTF-8" to [PlayerMoveRequest{playerId=683cd816a446b340524db274, card=com.cardgame.model.Card@7530a0f3, position (truncated)...]
-2025-06-01T15:45:57.627-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-3] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
-2025-06-01T15:45:57.628-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-3] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [GameDto{id=7736de16-f86c-4ac2-8988-b45ada33d12c, state=IN_PROGRESS, board=BoardDto{width=3, height=5 (truncated)...]
-2025-06-01T15:45:57.629-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-3] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
-2025-06-01T15:45:59.759-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-4] o.s.web.servlet.DispatcherServlet        : POST "/game/7736de16-f86c-4ac2-8988-b45ada33d12c/moves", parameters={}
-2025-06-01T15:45:59.764-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-4] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.cardgame.controller.GameController#makeMove(String, PlayerMoveRequest)
-2025-06-01T15:45:59.765-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-4] m.m.a.RequestResponseBodyMethodProcessor : Read "application/json;charset=UTF-8" to [PlayerMoveRequest{playerId=683cd815a446b340524db273, card=com.cardgame.model.Card@704de2e6, position (truncated)...]
-2025-06-01T15:45:59.798-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-4] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
-2025-06-01T15:45:59.799-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-4] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [GameDto{id=7736de16-f86c-4ac2-8988-b45ada33d12c, state=IN_PROGRESS, board=BoardDto{width=3, height=5 (truncated)...]
-2025-06-01T15:45:59.799-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-4] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
-2025-06-01T15:46:03.705-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-6] o.s.web.servlet.DispatcherServlet        : POST "/game/7736de16-f86c-4ac2-8988-b45ada33d12c/moves", parameters={}
-2025-06-01T15:46:03.706-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-6] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.cardgame.controller.GameController#makeMove(String, PlayerMoveRequest)
-2025-06-01T15:46:03.707-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-6] m.m.a.RequestResponseBodyMethodProcessor : Read "application/json;charset=UTF-8" to [PlayerMoveRequest{playerId=683cd816a446b340524db274, card=com.cardgame.model.Card@d7ada8f9, position (truncated)...]
-2025-06-01T15:46:03.753-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-6] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
-2025-06-01T15:46:03.753-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-6] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [GameDto{id=7736de16-f86c-4ac2-8988-b45ada33d12c, state=IN_PROGRESS, board=BoardDto{width=3, height=5 (truncated)...]
-2025-06-01T15:46:03.757-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-6] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
-2025-06-01T15:46:05.931-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-5] o.s.web.servlet.DispatcherServlet        : POST "/game/7736de16-f86c-4ac2-8988-b45ada33d12c/moves", parameters={}
-2025-06-01T15:46:05.932-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-5] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.cardgame.controller.GameController#makeMove(String, PlayerMoveRequest)
-2025-06-01T15:46:05.933-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-5] m.m.a.RequestResponseBodyMethodProcessor : Read "application/json;charset=UTF-8" to [PlayerMoveRequest{playerId=683cd815a446b340524db273, card=com.cardgame.model.Card@76a5a82d, position (truncated)...]
-2025-06-01T15:46:05.939-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-5] o.s.web.servlet.DispatcherServlet        : Failed to complete request: com.cardgame.exception.game.InvalidMoveException: Must place card adjacent to your existing cards
-2025-06-01T15:46:05.939-07:00 ERROR 46010 --- [card-game] [nio-8080-exec-5] o.a.c.c.C.[.[.[/].[dispatcherServlet]    : Servlet.service() for servlet [dispatcherServlet] in context with path [] threw exception [Request processing failed: com.cardgame.exception.game.InvalidMoveException: Must place card adjacent to your existing cards] with root cause
-
-com.cardgame.exception.game.InvalidMoveException: Must place card adjacent to your existing cards
-	at com.cardgame.service.validator.DefaultGameValidator.validateAdjacentPlacement(DefaultGameValidator.java:116) ~[main/:na]
-	at com.cardgame.service.validator.DefaultGameValidator.validateCardPlacement(DefaultGameValidator.java:98) ~[main/:na]
-	at com.cardgame.service.validator.DefaultGameValidator.validateMove(DefaultGameValidator.java:81) ~[main/:na]
-	at com.cardgame.service.GameService.processMove(GameService.java:207) ~[main/:na]
-	at com.cardgame.controller.GameController.makeMove(GameController.java:91) ~[main/:na]
-	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[na:na]
-	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77) ~[na:na]
-	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[na:na]
-	at java.base/java.lang.reflect.Method.invoke(Method.java:568) ~[na:na]
-	at org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:257) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.springframework.web.method.support.InvocableHandlerMethod.invokeForRequest(InvocableHandlerMethod.java:190) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle(ServletInvocableHandlerMethod.java:118) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.invokeHandlerMethod(RequestMappingHandlerAdapter.java:986) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.handleInternal(RequestMappingHandlerAdapter.java:891) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at org.springframework.web.servlet.mvc.method.AbstractHandlerMethodAdapter.handle(AbstractHandlerMethodAdapter.java:87) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:1088) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at org.springframework.web.servlet.DispatcherServlet.doService(DispatcherServlet.java:978) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1014) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at org.springframework.web.servlet.FrameworkServlet.doPost(FrameworkServlet.java:914) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:590) ~[tomcat-embed-core-10.1.34.jar:6.0]
-	at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:885) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:658) ~[tomcat-embed-core-10.1.34.jar:6.0]
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:195) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:51) ~[tomcat-embed-websocket-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.springframework.web.filter.RequestContextFilter.doFilterInternal(RequestContextFilter.java:100) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.springframework.web.filter.FormContentFilter.doFilterInternal(FormContentFilter.java:93) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.springframework.web.filter.ServerHttpObservationFilter.doFilterInternal(ServerHttpObservationFilter.java:114) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.springframework.web.filter.CharacterEncodingFilter.doFilterInternal(CharacterEncodingFilter.java:201) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:167) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.StandardContextValve.invoke(StandardContextValve.java:90) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.authenticator.AuthenticatorBase.invoke(AuthenticatorBase.java:483) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.StandardHostValve.invoke(StandardHostValve.java:115) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:93) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.StandardEngineValve.invoke(StandardEngineValve.java:74) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:344) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.coyote.http11.Http11Processor.service(Http11Processor.java:397) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.coyote.AbstractProcessorLight.process(AbstractProcessorLight.java:63) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.coyote.AbstractProtocol$ConnectionHandler.process(AbstractProtocol.java:905) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1741) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:52) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.tomcat.util.threads.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1190) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.tomcat.util.threads.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:659) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:63) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at java.base/java.lang.Thread.run(Thread.java:833) ~[na:na]
-
-2025-06-01T15:46:05.940-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-5] o.s.web.servlet.DispatcherServlet        : "ERROR" dispatch for POST "/error", parameters={}
-2025-06-01T15:46:05.941-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-5] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to org.springframework.boot.autoconfigure.web.servlet.error.BasicErrorController#error(HttpServletRequest)
-2025-06-01T15:46:05.941-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-5] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
-2025-06-01T15:46:05.941-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-5] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [{timestamp=Sun Jun 01 15:46:05 PDT 2025, status=500, error=Internal Server Error, path=/game/7736de1 (truncated)...]
-2025-06-01T15:46:05.942-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-5] o.s.web.servlet.DispatcherServlet        : Exiting from "ERROR" dispatch, status 500
-2025-06-01T15:46:07.160-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-7] o.s.web.servlet.DispatcherServlet        : POST "/game/7736de16-f86c-4ac2-8988-b45ada33d12c/moves", parameters={}
-2025-06-01T15:46:07.161-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-7] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.cardgame.controller.GameController#makeMove(String, PlayerMoveRequest)
-2025-06-01T15:46:07.163-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-7] m.m.a.RequestResponseBodyMethodProcessor : Read "application/json;charset=UTF-8" to [PlayerMoveRequest{playerId=683cd815a446b340524db273, card=com.cardgame.model.Card@76a5a82d, position (truncated)...]
-2025-06-01T15:46:07.178-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-7] o.s.web.servlet.DispatcherServlet        : Failed to complete request: com.cardgame.exception.game.InvalidMoveException: Must place card adjacent to your existing cards
-2025-06-01T15:46:07.178-07:00 ERROR 46010 --- [card-game] [nio-8080-exec-7] o.a.c.c.C.[.[.[/].[dispatcherServlet]    : Servlet.service() for servlet [dispatcherServlet] in context with path [] threw exception [Request processing failed: com.cardgame.exception.game.InvalidMoveException: Must place card adjacent to your existing cards] with root cause
-
-com.cardgame.exception.game.InvalidMoveException: Must place card adjacent to your existing cards
-	at com.cardgame.service.validator.DefaultGameValidator.validateAdjacentPlacement(DefaultGameValidator.java:116) ~[main/:na]
-	at com.cardgame.service.validator.DefaultGameValidator.validateCardPlacement(DefaultGameValidator.java:98) ~[main/:na]
-	at com.cardgame.service.validator.DefaultGameValidator.validateMove(DefaultGameValidator.java:81) ~[main/:na]
-	at com.cardgame.service.GameService.processMove(GameService.java:207) ~[main/:na]
-	at com.cardgame.controller.GameController.makeMove(GameController.java:91) ~[main/:na]
-	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[na:na]
-	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77) ~[na:na]
-	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[na:na]
-	at java.base/java.lang.reflect.Method.invoke(Method.java:568) ~[na:na]
-	at org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:257) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.springframework.web.method.support.InvocableHandlerMethod.invokeForRequest(InvocableHandlerMethod.java:190) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle(ServletInvocableHandlerMethod.java:118) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.invokeHandlerMethod(RequestMappingHandlerAdapter.java:986) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.handleInternal(RequestMappingHandlerAdapter.java:891) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at org.springframework.web.servlet.mvc.method.AbstractHandlerMethodAdapter.handle(AbstractHandlerMethodAdapter.java:87) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:1088) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at org.springframework.web.servlet.DispatcherServlet.doService(DispatcherServlet.java:978) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1014) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at org.springframework.web.servlet.FrameworkServlet.doPost(FrameworkServlet.java:914) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:590) ~[tomcat-embed-core-10.1.34.jar:6.0]
-	at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:885) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:658) ~[tomcat-embed-core-10.1.34.jar:6.0]
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:195) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:51) ~[tomcat-embed-websocket-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.springframework.web.filter.RequestContextFilter.doFilterInternal(RequestContextFilter.java:100) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.springframework.web.filter.FormContentFilter.doFilterInternal(FormContentFilter.java:93) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.springframework.web.filter.ServerHttpObservationFilter.doFilterInternal(ServerHttpObservationFilter.java:114) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.springframework.web.filter.CharacterEncodingFilter.doFilterInternal(CharacterEncodingFilter.java:201) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:167) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.StandardContextValve.invoke(StandardContextValve.java:90) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.authenticator.AuthenticatorBase.invoke(AuthenticatorBase.java:483) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.StandardHostValve.invoke(StandardHostValve.java:115) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:93) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.StandardEngineValve.invoke(StandardEngineValve.java:74) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:344) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.coyote.http11.Http11Processor.service(Http11Processor.java:397) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.coyote.AbstractProcessorLight.process(AbstractProcessorLight.java:63) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.coyote.AbstractProtocol$ConnectionHandler.process(AbstractProtocol.java:905) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1741) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:52) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.tomcat.util.threads.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1190) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.tomcat.util.threads.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:659) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:63) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at java.base/java.lang.Thread.run(Thread.java:833) ~[na:na]
-
-2025-06-01T15:46:07.179-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-7] o.s.web.servlet.DispatcherServlet        : "ERROR" dispatch for POST "/error", parameters={}
-2025-06-01T15:46:07.179-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-7] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to org.springframework.boot.autoconfigure.web.servlet.error.BasicErrorController#error(HttpServletRequest)
-2025-06-01T15:46:07.179-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-7] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
-2025-06-01T15:46:07.180-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-7] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [{timestamp=Sun Jun 01 15:46:07 PDT 2025, status=500, error=Internal Server Error, path=/game/7736de1 (truncated)...]
-2025-06-01T15:46:07.180-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-7] o.s.web.servlet.DispatcherServlet        : Exiting from "ERROR" dispatch, status 500
-2025-06-01T15:46:07.784-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-8] o.s.web.servlet.DispatcherServlet        : POST "/game/7736de16-f86c-4ac2-8988-b45ada33d12c/moves", parameters={}
-2025-06-01T15:46:07.785-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-8] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.cardgame.controller.GameController#makeMove(String, PlayerMoveRequest)
-2025-06-01T15:46:07.786-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-8] m.m.a.RequestResponseBodyMethodProcessor : Read "application/json;charset=UTF-8" to [PlayerMoveRequest{playerId=683cd815a446b340524db273, card=com.cardgame.model.Card@76a5a82d, position (truncated)...]
-2025-06-01T15:46:07.795-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-8] o.s.web.servlet.DispatcherServlet        : Failed to complete request: com.cardgame.exception.game.InvalidMoveException: Must place card adjacent to your existing cards
-2025-06-01T15:46:07.795-07:00 ERROR 46010 --- [card-game] [nio-8080-exec-8] o.a.c.c.C.[.[.[/].[dispatcherServlet]    : Servlet.service() for servlet [dispatcherServlet] in context with path [] threw exception [Request processing failed: com.cardgame.exception.game.InvalidMoveException: Must place card adjacent to your existing cards] with root cause
-
-com.cardgame.exception.game.InvalidMoveException: Must place card adjacent to your existing cards
-	at com.cardgame.service.validator.DefaultGameValidator.validateAdjacentPlacement(DefaultGameValidator.java:116) ~[main/:na]
-	at com.cardgame.service.validator.DefaultGameValidator.validateCardPlacement(DefaultGameValidator.java:98) ~[main/:na]
-	at com.cardgame.service.validator.DefaultGameValidator.validateMove(DefaultGameValidator.java:81) ~[main/:na]
-	at com.cardgame.service.GameService.processMove(GameService.java:207) ~[main/:na]
-	at com.cardgame.controller.GameController.makeMove(GameController.java:91) ~[main/:na]
-	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[na:na]
-	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77) ~[na:na]
-	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[na:na]
-	at java.base/java.lang.reflect.Method.invoke(Method.java:568) ~[na:na]
-	at org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:257) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.springframework.web.method.support.InvocableHandlerMethod.invokeForRequest(InvocableHandlerMethod.java:190) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle(ServletInvocableHandlerMethod.java:118) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.invokeHandlerMethod(RequestMappingHandlerAdapter.java:986) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.handleInternal(RequestMappingHandlerAdapter.java:891) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at org.springframework.web.servlet.mvc.method.AbstractHandlerMethodAdapter.handle(AbstractHandlerMethodAdapter.java:87) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:1088) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at org.springframework.web.servlet.DispatcherServlet.doService(DispatcherServlet.java:978) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1014) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at org.springframework.web.servlet.FrameworkServlet.doPost(FrameworkServlet.java:914) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:590) ~[tomcat-embed-core-10.1.34.jar:6.0]
-	at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:885) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:658) ~[tomcat-embed-core-10.1.34.jar:6.0]
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:195) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:51) ~[tomcat-embed-websocket-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.springframework.web.filter.RequestContextFilter.doFilterInternal(RequestContextFilter.java:100) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.springframework.web.filter.FormContentFilter.doFilterInternal(FormContentFilter.java:93) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.springframework.web.filter.ServerHttpObservationFilter.doFilterInternal(ServerHttpObservationFilter.java:114) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.springframework.web.filter.CharacterEncodingFilter.doFilterInternal(CharacterEncodingFilter.java:201) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:167) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.StandardContextValve.invoke(StandardContextValve.java:90) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.authenticator.AuthenticatorBase.invoke(AuthenticatorBase.java:483) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.StandardHostValve.invoke(StandardHostValve.java:115) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:93) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.StandardEngineValve.invoke(StandardEngineValve.java:74) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:344) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.coyote.http11.Http11Processor.service(Http11Processor.java:397) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.coyote.AbstractProcessorLight.process(AbstractProcessorLight.java:63) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.coyote.AbstractProtocol$ConnectionHandler.process(AbstractProtocol.java:905) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1741) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:52) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.tomcat.util.threads.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1190) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.tomcat.util.threads.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:659) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:63) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at java.base/java.lang.Thread.run(Thread.java:833) ~[na:na]
-
-2025-06-01T15:46:07.797-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-8] o.s.web.servlet.DispatcherServlet        : "ERROR" dispatch for POST "/error", parameters={}
-2025-06-01T15:46:07.798-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-8] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to org.springframework.boot.autoconfigure.web.servlet.error.BasicErrorController#error(HttpServletRequest)
-2025-06-01T15:46:07.799-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-8] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
-2025-06-01T15:46:07.800-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-8] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [{timestamp=Sun Jun 01 15:46:07 PDT 2025, status=500, error=Internal Server Error, path=/game/7736de1 (truncated)...]
-2025-06-01T15:46:07.800-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-8] o.s.web.servlet.DispatcherServlet        : Exiting from "ERROR" dispatch, status 500
-2025-06-01T15:46:08.316-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-9] o.s.web.servlet.DispatcherServlet        : POST "/game/7736de16-f86c-4ac2-8988-b45ada33d12c/moves", parameters={}
-2025-06-01T15:46:08.317-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-9] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.cardgame.controller.GameController#makeMove(String, PlayerMoveRequest)
-2025-06-01T15:46:08.319-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-9] m.m.a.RequestResponseBodyMethodProcessor : Read "application/json;charset=UTF-8" to [PlayerMoveRequest{playerId=683cd815a446b340524db273, card=com.cardgame.model.Card@76a5a82d, position (truncated)...]
-2025-06-01T15:46:08.364-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-9] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
-2025-06-01T15:46:08.365-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-9] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [GameDto{id=7736de16-f86c-4ac2-8988-b45ada33d12c, state=IN_PROGRESS, board=BoardDto{width=3, height=5 (truncated)...]
-2025-06-01T15:46:08.366-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-9] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
-2025-06-01T15:46:11.854-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : POST "/game/7736de16-f86c-4ac2-8988-b45ada33d12c/moves", parameters={}
-2025-06-01T15:46:11.854-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-1] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.cardgame.controller.GameController#makeMove(String, PlayerMoveRequest)
-2025-06-01T15:46:11.856-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-1] m.m.a.RequestResponseBodyMethodProcessor : Read "application/json;charset=UTF-8" to [PlayerMoveRequest{playerId=683cd816a446b340524db274, card=com.cardgame.model.Card@6e77409a, position (truncated)...]
-2025-06-01T15:46:11.894-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-1] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
-2025-06-01T15:46:11.894-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-1] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [GameDto{id=7736de16-f86c-4ac2-8988-b45ada33d12c, state=COMPLETED, board=BoardDto{width=3, height=5,  (truncated)...]
-2025-06-01T15:46:11.895-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
-2025-06-01T15:46:11.902-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-3] o.s.web.servlet.DispatcherServlet        : GET "/game/players/683cd816a446b340524db274/hand", parameters={}
-2025-06-01T15:46:11.907-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-3] o.s.w.s.handler.SimpleUrlHandlerMapping  : Mapped to ResourceHttpRequestHandler [classpath [META-INF/resources/], classpath [resources/], classpath [static/], classpath [public/], ServletContext [/]]
-2025-06-01T15:46:11.910-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-3] o.s.w.s.r.ResourceHttpRequestHandler     : Resource not found
-2025-06-01T15:46:11.912-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-3] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.web.servlet.resource.NoResourceFoundException: No static resource game/players/683cd816a446b340524db274/hand.]
-2025-06-01T15:46:11.912-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-3] o.s.web.servlet.DispatcherServlet        : Completed 404 NOT_FOUND
-2025-06-01T15:46:11.913-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-3] o.s.web.servlet.DispatcherServlet        : "ERROR" dispatch for GET "/error", parameters={}
-2025-06-01T15:46:11.913-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-3] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to org.springframework.boot.autoconfigure.web.servlet.error.BasicErrorController#error(HttpServletRequest)
-2025-06-01T15:46:11.914-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-3] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
-2025-06-01T15:46:11.914-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-3] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [{timestamp=Sun Jun 01 15:46:11 PDT 2025, status=404, error=Not Found, path=/game/players/683cd816a44 (truncated)...]
-2025-06-01T15:46:11.914-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-3] o.s.web.servlet.DispatcherServlet        : Exiting from "ERROR" dispatch, status 404
-2025-06-01T15:46:23.110-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-2] o.s.web.servlet.DispatcherServlet        : POST "/players?name=Alice", parameters={masked}
-2025-06-01T15:46:23.110-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-2] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.cardgame.controller.player.PlayerController#createPlayer(String)
-player id =========== 683cd83fa446b340524db275
-2025-06-01T15:46:23.122-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-2] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
-2025-06-01T15:46:23.122-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-2] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [PlayerDto{id=683cd83fa446b340524db275, name=Alice, score=0, handSize=0, lifetimeScore=0, currentDeck (truncated)...]
-2025-06-01T15:46:23.123-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-2] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
-2025-06-01T15:46:34.896-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-5] o.s.web.servlet.DispatcherServlet        : POST "/players?name=Bob", parameters={masked}
-2025-06-01T15:46:34.896-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-5] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.cardgame.controller.player.PlayerController#createPlayer(String)
-player id =========== 683cd84aa446b340524db276
-2025-06-01T15:46:34.908-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-5] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
-2025-06-01T15:46:34.908-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-5] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [PlayerDto{id=683cd84aa446b340524db276, name=Bob, score=0, handSize=0, lifetimeScore=0, currentDeck=D (truncated)...]
-2025-06-01T15:46:34.909-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-5] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
-2025-06-01T15:56:26.516-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-8] o.s.web.servlet.DispatcherServlet        : POST "/players?name=Alice%20", parameters={masked}
-2025-06-01T15:56:26.521-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-8] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.cardgame.controller.player.PlayerController#createPlayer(String)
-player id =========== 683cda9aa446b340524db277
-2025-06-01T15:56:26.583-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-8] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
-2025-06-01T15:56:26.584-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-8] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [PlayerDto{id=683cda9aa446b340524db277, name=Alice , score=0, handSize=0, lifetimeScore=0, currentDec (truncated)...]
-2025-06-01T15:56:26.586-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-8] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
-2025-06-01T15:56:26.587-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-9] o.s.web.servlet.DispatcherServlet        : POST "/players?name=Bob", parameters={masked}
-2025-06-01T15:56:26.588-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-9] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.cardgame.controller.player.PlayerController#createPlayer(String)
-player id =========== 683cda9aa446b340524db278
-2025-06-01T15:56:26.599-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-9] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
-2025-06-01T15:56:26.599-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-9] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [PlayerDto{id=683cda9aa446b340524db278, name=Bob, score=0, handSize=0, lifetimeScore=0, currentDeck=D (truncated)...]
-2025-06-01T15:56:26.600-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-9] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
-2025-06-01T15:56:26.602-07:00 DEBUG 46010 --- [card-game] [io-8080-exec-10] o.s.web.servlet.DispatcherServlet        : POST "/game/initialize", parameters={}
-2025-06-01T15:56:26.602-07:00 DEBUG 46010 --- [card-game] [io-8080-exec-10] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.cardgame.controller.GameController#initializeGame(GameInitializationRequest)
-2025-06-01T15:56:26.603-07:00 DEBUG 46010 --- [card-game] [io-8080-exec-10] m.m.a.RequestResponseBodyMethodProcessor : Read "application/json;charset=UTF-8" to [GameInitializationRequest{playerIds=[683cda9aa446b340524db277, 683cda9aa446b340524db278], deckIds=[7 (truncated)...]
-2025-06-01T15:56:26.634-07:00 DEBUG 46010 --- [card-game] [io-8080-exec-10] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
-2025-06-01T15:56:26.634-07:00 DEBUG 46010 --- [card-game] [io-8080-exec-10] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [GameDto{id=31d78b86-631e-4f87-ad5c-22b8b338363a, state=IN_PROGRESS, board=BoardDto{width=3, height=5 (truncated)...]
-2025-06-01T15:56:26.634-07:00 DEBUG 46010 --- [card-game] [io-8080-exec-10] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
-2025-06-01T16:09:55.570-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-3] o.s.web.servlet.DispatcherServlet        : POST "/players?name=Alice", parameters={masked}
-2025-06-01T16:09:55.573-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-3] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.cardgame.controller.player.PlayerController#createPlayer(String)
-player id =========== 683cddc3a446b340524db279
-2025-06-01T16:09:55.608-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-3] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
-2025-06-01T16:09:55.608-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-3] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [PlayerDto{id=683cddc3a446b340524db279, name=Alice, score=0, handSize=0, lifetimeScore=0, currentDeck (truncated)...]
-2025-06-01T16:09:55.609-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-3] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
-2025-06-01T16:09:55.611-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-4] o.s.web.servlet.DispatcherServlet        : POST "/players?name=Bob", parameters={masked}
-2025-06-01T16:09:55.611-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-4] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.cardgame.controller.player.PlayerController#createPlayer(String)
-player id =========== 683cddc3a446b340524db27a
-2025-06-01T16:09:55.623-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-4] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
-2025-06-01T16:09:55.623-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-4] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [PlayerDto{id=683cddc3a446b340524db27a, name=Bob, score=0, handSize=0, lifetimeScore=0, currentDeck=D (truncated)...]
-2025-06-01T16:09:55.624-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-4] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
-2025-06-01T16:09:55.626-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-2] o.s.web.servlet.DispatcherServlet        : POST "/game/initialize", parameters={}
-2025-06-01T16:09:55.626-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-2] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.cardgame.controller.GameController#initializeGame(GameInitializationRequest)
-2025-06-01T16:09:55.628-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-2] m.m.a.RequestResponseBodyMethodProcessor : Read "application/json;charset=UTF-8" to [GameInitializationRequest{playerIds=[683cddc3a446b340524db279, 683cddc3a446b340524db27a], deckIds=[7 (truncated)...]
-2025-06-01T16:09:55.673-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-2] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
-2025-06-01T16:09:55.673-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-2] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [GameDto{id=dc401b50-7557-4d1c-8bf1-584d0f12dd0e, state=IN_PROGRESS, board=BoardDto{width=3, height=5 (truncated)...]
-2025-06-01T16:09:55.674-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-2] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
-2025-06-01T16:10:01.643-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-5] o.s.web.servlet.DispatcherServlet        : OPTIONS "/game/dc401b50-7557-4d1c-8bf1-584d0f12dd0e/moves", parameters={}
-2025-06-01T16:10:01.644-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-5] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.cardgame.controller.GameController#makeMove(String, PlayerMoveRequest)
-2025-06-01T16:10:01.652-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-5] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
-2025-06-01T16:10:01.657-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-7] o.s.web.servlet.DispatcherServlet        : POST "/game/dc401b50-7557-4d1c-8bf1-584d0f12dd0e/moves", parameters={}
-2025-06-01T16:10:01.657-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-7] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.cardgame.controller.GameController#makeMove(String, PlayerMoveRequest)
-2025-06-01T16:10:01.660-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-7] m.m.a.RequestResponseBodyMethodProcessor : Read "application/json;charset=UTF-8" to [PlayerMoveRequest{playerId=683cddc3a446b340524db279, card=com.cardgame.model.Card@61a1750d, position (truncated)...]
-2025-06-01T16:10:01.670-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-7] o.s.web.servlet.DispatcherServlet        : Failed to complete request: com.cardgame.exception.game.InvalidMoveException: Must place card adjacent to your existing cards
-2025-06-01T16:10:01.671-07:00 ERROR 46010 --- [card-game] [nio-8080-exec-7] o.a.c.c.C.[.[.[/].[dispatcherServlet]    : Servlet.service() for servlet [dispatcherServlet] in context with path [] threw exception [Request processing failed: com.cardgame.exception.game.InvalidMoveException: Must place card adjacent to your existing cards] with root cause
-
-com.cardgame.exception.game.InvalidMoveException: Must place card adjacent to your existing cards
-	at com.cardgame.service.validator.DefaultGameValidator.validateAdjacentPlacement(DefaultGameValidator.java:116) ~[main/:na]
-	at com.cardgame.service.validator.DefaultGameValidator.validateCardPlacement(DefaultGameValidator.java:98) ~[main/:na]
-	at com.cardgame.service.validator.DefaultGameValidator.validateMove(DefaultGameValidator.java:81) ~[main/:na]
-	at com.cardgame.service.GameService.processMove(GameService.java:207) ~[main/:na]
-	at com.cardgame.controller.GameController.makeMove(GameController.java:91) ~[main/:na]
-	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[na:na]
-	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77) ~[na:na]
-	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[na:na]
-	at java.base/java.lang.reflect.Method.invoke(Method.java:568) ~[na:na]
-	at org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:257) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.springframework.web.method.support.InvocableHandlerMethod.invokeForRequest(InvocableHandlerMethod.java:190) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle(ServletInvocableHandlerMethod.java:118) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.invokeHandlerMethod(RequestMappingHandlerAdapter.java:986) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.handleInternal(RequestMappingHandlerAdapter.java:891) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at org.springframework.web.servlet.mvc.method.AbstractHandlerMethodAdapter.handle(AbstractHandlerMethodAdapter.java:87) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:1088) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at org.springframework.web.servlet.DispatcherServlet.doService(DispatcherServlet.java:978) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1014) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at org.springframework.web.servlet.FrameworkServlet.doPost(FrameworkServlet.java:914) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:590) ~[tomcat-embed-core-10.1.34.jar:6.0]
-	at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:885) ~[spring-webmvc-6.2.1.jar:6.2.1]
-	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:658) ~[tomcat-embed-core-10.1.34.jar:6.0]
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:195) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:51) ~[tomcat-embed-websocket-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.springframework.web.filter.RequestContextFilter.doFilterInternal(RequestContextFilter.java:100) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.springframework.web.filter.FormContentFilter.doFilterInternal(FormContentFilter.java:93) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.springframework.web.filter.ServerHttpObservationFilter.doFilterInternal(ServerHttpObservationFilter.java:114) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.springframework.web.filter.CharacterEncodingFilter.doFilterInternal(CharacterEncodingFilter.java:201) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.2.1.jar:6.2.1]
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:167) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.StandardContextValve.invoke(StandardContextValve.java:90) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.authenticator.AuthenticatorBase.invoke(AuthenticatorBase.java:483) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.StandardHostValve.invoke(StandardHostValve.java:115) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:93) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.core.StandardEngineValve.invoke(StandardEngineValve.java:74) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:344) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.coyote.http11.Http11Processor.service(Http11Processor.java:397) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.coyote.AbstractProcessorLight.process(AbstractProcessorLight.java:63) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.coyote.AbstractProtocol$ConnectionHandler.process(AbstractProtocol.java:905) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1741) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:52) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.tomcat.util.threads.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1190) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.tomcat.util.threads.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:659) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:63) ~[tomcat-embed-core-10.1.34.jar:10.1.34]
-	at java.base/java.lang.Thread.run(Thread.java:833) ~[na:na]
-
-2025-06-01T16:10:01.677-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-7] o.s.web.servlet.DispatcherServlet        : "ERROR" dispatch for POST "/error", parameters={}
-2025-06-01T16:10:01.678-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-7] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to org.springframework.boot.autoconfigure.web.servlet.error.BasicErrorController#error(HttpServletRequest)
-2025-06-01T16:10:01.679-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-7] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
-2025-06-01T16:10:01.679-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-7] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [{timestamp=Sun Jun 01 16:10:01 PDT 2025, status=500, error=Internal Server Error, path=/game/dc401b5 (truncated)...]
-2025-06-01T16:10:01.680-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-7] o.s.web.servlet.DispatcherServlet        : Exiting from "ERROR" dispatch, status 500
-2025-06-01T16:10:11.789-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-8] o.s.web.servlet.DispatcherServlet        : POST "/game/dc401b50-7557-4d1c-8bf1-584d0f12dd0e/moves", parameters={}
-2025-06-01T16:10:11.792-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-8] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.cardgame.controller.GameController#makeMove(String, PlayerMoveRequest)
-2025-06-01T16:10:11.795-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-8] m.m.a.RequestResponseBodyMethodProcessor : Read "application/json;charset=UTF-8" to [PlayerMoveRequest{playerId=683cddc3a446b340524db279, card=com.cardgame.model.Card@61a1750d, position (truncated)...]
-2025-06-01T16:10:11.855-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-8] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
-2025-06-01T16:10:11.855-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-8] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [GameDto{id=dc401b50-7557-4d1c-8bf1-584d0f12dd0e, state=IN_PROGRESS, board=BoardDto{width=3, height=5 (truncated)...]
-2025-06-01T16:10:11.857-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-8] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
-2025-06-01T16:10:14.197-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-9] o.s.web.servlet.DispatcherServlet        : POST "/game/dc401b50-7557-4d1c-8bf1-584d0f12dd0e/moves", parameters={}
-2025-06-01T16:10:14.197-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-9] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.cardgame.controller.GameController#makeMove(String, PlayerMoveRequest)
-2025-06-01T16:10:14.199-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-9] m.m.a.RequestResponseBodyMethodProcessor : Read "application/json;charset=UTF-8" to [PlayerMoveRequest{playerId=683cddc3a446b340524db27a, card=com.cardgame.model.Card@ccaa548b, position (truncated)...]
-2025-06-01T16:10:14.253-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-9] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
-2025-06-01T16:10:14.253-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-9] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [GameDto{id=dc401b50-7557-4d1c-8bf1-584d0f12dd0e, state=IN_PROGRESS, board=BoardDto{width=3, height=5 (truncated)...]
-2025-06-01T16:10:14.254-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-9] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
-2025-06-01T16:10:15.877-07:00 DEBUG 46010 --- [card-game] [io-8080-exec-10] o.s.web.servlet.DispatcherServlet        : POST "/game/dc401b50-7557-4d1c-8bf1-584d0f12dd0e/moves", parameters={}
-2025-06-01T16:10:15.879-07:00 DEBUG 46010 --- [card-game] [io-8080-exec-10] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.cardgame.controller.GameController#makeMove(String, PlayerMoveRequest)
-2025-06-01T16:10:15.893-07:00 DEBUG 46010 --- [card-game] [io-8080-exec-10] m.m.a.RequestResponseBodyMethodProcessor : Read "application/json;charset=UTF-8" to [PlayerMoveRequest{playerId=683cddc3a446b340524db279, card=com.cardgame.model.Card@8e51df29, position (truncated)...]
-2025-06-01T16:10:15.941-07:00 DEBUG 46010 --- [card-game] [io-8080-exec-10] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
-2025-06-01T16:10:15.942-07:00 DEBUG 46010 --- [card-game] [io-8080-exec-10] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [GameDto{id=dc401b50-7557-4d1c-8bf1-584d0f12dd0e, state=IN_PROGRESS, board=BoardDto{width=3, height=5 (truncated)...]
-2025-06-01T16:10:15.942-07:00 DEBUG 46010 --- [card-game] [io-8080-exec-10] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
-2025-06-01T16:10:17.267-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-3] o.s.web.servlet.DispatcherServlet        : OPTIONS "/game/dc401b50-7557-4d1c-8bf1-584d0f12dd0e/request-win", parameters={}
-2025-06-01T16:10:17.269-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-3] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.cardgame.controller.GameController#requestWinCalculation(String, WinRequestRequest)
-2025-06-01T16:10:17.269-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-3] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
-2025-06-01T16:10:17.275-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-4] o.s.web.servlet.DispatcherServlet        : POST "/game/dc401b50-7557-4d1c-8bf1-584d0f12dd0e/request-win", parameters={}
-2025-06-01T16:10:17.275-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-4] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.cardgame.controller.GameController#requestWinCalculation(String, WinRequestRequest)
-2025-06-01T16:10:17.305-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-4] m.m.a.RequestResponseBodyMethodProcessor : Read "application/json;charset=UTF-8" to [WinRequestRequest{playerId=683cddc3a446b340524db27a}]
-2025-06-01T16:10:17.315-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-4] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
-2025-06-01T16:10:17.316-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-4] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [GameDto{id=dc401b50-7557-4d1c-8bf1-584d0f12dd0e, state=IN_PROGRESS, board=BoardDto{width=3, height=5 (truncated)...]
-2025-06-01T16:10:17.316-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-4] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
-2025-06-01T16:10:22.235-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-6] o.s.web.servlet.DispatcherServlet        : OPTIONS "/game/dc401b50-7557-4d1c-8bf1-584d0f12dd0e/respond-win-request", parameters={}
-2025-06-01T16:10:22.237-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-6] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.cardgame.controller.GameController#respondToWinRequest(String, WinResponseRequest)
-2025-06-01T16:10:22.238-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-6] o.s.web.servlet.DispatcherServlet        : Completed 200 OK
-2025-06-01T16:10:22.243-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-5] o.s.web.servlet.DispatcherServlet        : POST "/game/dc401b50-7557-4d1c-8bf1-584d0f12dd0e/respond-win-request", parameters={}
-2025-06-01T16:10:22.245-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-5] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.cardgame.controller.GameController#respondToWinRequest(String, WinResponseRequest)
-2025-06-01T16:10:22.260-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-5] o.s.web.method.HandlerMethod             : Could not resolve parameter [1] in public org.springframework.http.ResponseEntity<com.cardgame.dto.GameDto> com.cardgame.controller.GameController.respondToWinRequest(java.lang.String,com.cardgame.dto.game.WinResponseRequest): JSON parse error: Cannot construct instance of `com.cardgame.dto.game.ImmutableWinResponseRequest`, problem: Cannot build WinResponseRequest, some of required attributes are not set [isAccepted]
-2025-06-01T16:10:22.261-07:00  WARN 46010 --- [card-game] [nio-8080-exec-5] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.http.converter.HttpMessageNotReadableException: JSON parse error: Cannot construct instance of `com.cardgame.dto.game.ImmutableWinResponseRequest`, problem: Cannot build WinResponseRequest, some of required attributes are not set [isAccepted]]
-2025-06-01T16:10:22.261-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-5] o.s.web.servlet.DispatcherServlet        : Completed 400 BAD_REQUEST
-2025-06-01T16:10:22.262-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-5] o.s.web.servlet.DispatcherServlet        : "ERROR" dispatch for POST "/error", parameters={}
-2025-06-01T16:10:22.262-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-5] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to org.springframework.boot.autoconfigure.web.servlet.error.BasicErrorController#error(HttpServletRequest)
-2025-06-01T16:10:22.263-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-5] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
-2025-06-01T16:10:22.263-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-5] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [{timestamp=Sun Jun 01 16:10:22 PDT 2025, status=400, error=Bad Request, path=/game/dc401b50-7557-4d1 (truncated)...]
-2025-06-01T16:10:22.264-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-5] o.s.web.servlet.DispatcherServlet        : Exiting from "ERROR" dispatch, status 400
-2025-06-01T16:10:25.909-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-7] o.s.web.servlet.DispatcherServlet        : POST "/game/dc401b50-7557-4d1c-8bf1-584d0f12dd0e/respond-win-request", parameters={}
-2025-06-01T16:10:25.911-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-7] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.cardgame.controller.GameController#respondToWinRequest(String, WinResponseRequest)
-2025-06-01T16:10:25.916-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-7] o.s.web.method.HandlerMethod             : Could not resolve parameter [1] in public org.springframework.http.ResponseEntity<com.cardgame.dto.GameDto> com.cardgame.controller.GameController.respondToWinRequest(java.lang.String,com.cardgame.dto.game.WinResponseRequest): JSON parse error: Cannot construct instance of `com.cardgame.dto.game.ImmutableWinResponseRequest`, problem: Cannot build WinResponseRequest, some of required attributes are not set [isAccepted]
-2025-06-01T16:10:25.916-07:00  WARN 46010 --- [card-game] [nio-8080-exec-7] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.http.converter.HttpMessageNotReadableException: JSON parse error: Cannot construct instance of `com.cardgame.dto.game.ImmutableWinResponseRequest`, problem: Cannot build WinResponseRequest, some of required attributes are not set [isAccepted]]
-2025-06-01T16:10:25.916-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-7] o.s.web.servlet.DispatcherServlet        : Completed 400 BAD_REQUEST
-2025-06-01T16:10:25.918-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-7] o.s.web.servlet.DispatcherServlet        : "ERROR" dispatch for POST "/error", parameters={}
-2025-06-01T16:10:25.918-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-7] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to org.springframework.boot.autoconfigure.web.servlet.error.BasicErrorController#error(HttpServletRequest)
-2025-06-01T16:10:25.919-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-7] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
-2025-06-01T16:10:25.919-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-7] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [{timestamp=Sun Jun 01 16:10:25 PDT 2025, status=400, error=Bad Request, path=/game/dc401b50-7557-4d1 (truncated)...]
-2025-06-01T16:10:25.920-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-7] o.s.web.servlet.DispatcherServlet        : Exiting from "ERROR" dispatch, status 400
-2025-06-01T16:10:26.739-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-8] o.s.web.servlet.DispatcherServlet        : POST "/game/dc401b50-7557-4d1c-8bf1-584d0f12dd0e/respond-win-request", parameters={}
-2025-06-01T16:10:26.739-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-8] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.cardgame.controller.GameController#respondToWinRequest(String, WinResponseRequest)
-2025-06-01T16:10:26.740-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-8] o.s.web.method.HandlerMethod             : Could not resolve parameter [1] in public org.springframework.http.ResponseEntity<com.cardgame.dto.GameDto> com.cardgame.controller.GameController.respondToWinRequest(java.lang.String,com.cardgame.dto.game.WinResponseRequest): JSON parse error: Cannot construct instance of `com.cardgame.dto.game.ImmutableWinResponseRequest`, problem: Cannot build WinResponseRequest, some of required attributes are not set [isAccepted]
-2025-06-01T16:10:26.740-07:00  WARN 46010 --- [card-game] [nio-8080-exec-8] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.http.converter.HttpMessageNotReadableException: JSON parse error: Cannot construct instance of `com.cardgame.dto.game.ImmutableWinResponseRequest`, problem: Cannot build WinResponseRequest, some of required attributes are not set [isAccepted]]
-2025-06-01T16:10:26.740-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-8] o.s.web.servlet.DispatcherServlet        : Completed 400 BAD_REQUEST
-2025-06-01T16:10:26.740-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-8] o.s.web.servlet.DispatcherServlet        : "ERROR" dispatch for POST "/error", parameters={}
-2025-06-01T16:10:26.740-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-8] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to org.springframework.boot.autoconfigure.web.servlet.error.BasicErrorController#error(HttpServletRequest)
-2025-06-01T16:10:26.740-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-8] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
-2025-06-01T16:10:26.741-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-8] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [{timestamp=Sun Jun 01 16:10:26 PDT 2025, status=400, error=Bad Request, path=/game/dc401b50-7557-4d1 (truncated)...]
-2025-06-01T16:10:26.741-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-8] o.s.web.servlet.DispatcherServlet        : Exiting from "ERROR" dispatch, status 400
-2025-06-01T16:10:37.891-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-9] o.s.web.servlet.DispatcherServlet        : POST "/game/dc401b50-7557-4d1c-8bf1-584d0f12dd0e/respond-win-request", parameters={}
-2025-06-01T16:10:37.892-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-9] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.cardgame.controller.GameController#respondToWinRequest(String, WinResponseRequest)
-2025-06-01T16:10:37.894-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-9] o.s.web.method.HandlerMethod             : Could not resolve parameter [1] in public org.springframework.http.ResponseEntity<com.cardgame.dto.GameDto> com.cardgame.controller.GameController.respondToWinRequest(java.lang.String,com.cardgame.dto.game.WinResponseRequest): JSON parse error: Cannot construct instance of `com.cardgame.dto.game.ImmutableWinResponseRequest`, problem: Cannot build WinResponseRequest, some of required attributes are not set [isAccepted]
-2025-06-01T16:10:37.896-07:00  WARN 46010 --- [card-game] [nio-8080-exec-9] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.http.converter.HttpMessageNotReadableException: JSON parse error: Cannot construct instance of `com.cardgame.dto.game.ImmutableWinResponseRequest`, problem: Cannot build WinResponseRequest, some of required attributes are not set [isAccepted]]
-2025-06-01T16:10:37.896-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-9] o.s.web.servlet.DispatcherServlet        : Completed 400 BAD_REQUEST
-2025-06-01T16:10:37.897-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-9] o.s.web.servlet.DispatcherServlet        : "ERROR" dispatch for POST "/error", parameters={}
-2025-06-01T16:10:37.898-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-9] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to org.springframework.boot.autoconfigure.web.servlet.error.BasicErrorController#error(HttpServletRequest)
-2025-06-01T16:10:37.898-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-9] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
-2025-06-01T16:10:37.899-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-9] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [{timestamp=Sun Jun 01 16:10:37 PDT 2025, status=400, error=Bad Request, path=/game/dc401b50-7557-4d1 (truncated)...]
-2025-06-01T16:10:37.900-07:00 DEBUG 46010 --- [card-game] [nio-8080-exec-9] o.s.web.servlet.DispatcherServlet        : Exiting from "ERROR" dispatch, status 400
-2025-06-01T16:10:38.829-07:00 DEBUG 46010 --- [card-game] [io-8080-exec-10] o.s.web.servlet.DispatcherServlet        : POST "/game/dc401b50-7557-4d1c-8bf1-584d0f12dd0e/respond-win-request", parameters={}
-2025-06-01T16:10:38.832-07:00 DEBUG 46010 --- [card-game] [io-8080-exec-10] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.cardgame.controller.GameController#respondToWinRequest(String, WinResponseRequest)
-2025-06-01T16:10:38.835-07:00 DEBUG 46010 --- [card-game] [io-8080-exec-10] o.s.web.method.HandlerMethod             : Could not resolve parameter [1] in public org.springframework.http.ResponseEntity<com.cardgame.dto.GameDto> com.cardgame.controller.GameController.respondToWinRequest(java.lang.String,com.cardgame.dto.game.WinResponseRequest): JSON parse error: Cannot construct instance of `com.cardgame.dto.game.ImmutableWinResponseRequest`, problem: Cannot build WinResponseRequest, some of required attributes are not set [isAccepted]
-2025-06-01T16:10:38.836-07:00  WARN 46010 --- [card-game] [io-8080-exec-10] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.http.converter.HttpMessageNotReadableException: JSON parse error: Cannot construct instance of `com.cardgame.dto.game.ImmutableWinResponseRequest`, problem: Cannot build WinResponseRequest, some of required attributes are not set [isAccepted]]
-2025-06-01T16:10:38.836-07:00 DEBUG 46010 --- [card-game] [io-8080-exec-10] o.s.web.servlet.DispatcherServlet        : Completed 400 BAD_REQUEST
-2025-06-01T16:10:38.837-07:00 DEBUG 46010 --- [card-game] [io-8080-exec-10] o.s.web.servlet.DispatcherServlet        : "ERROR" dispatch for POST "/error", parameters={}
-2025-06-01T16:10:38.838-07:00 DEBUG 46010 --- [card-game] [io-8080-exec-10] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to org.springframework.boot.autoconfigure.web.servlet.error.BasicErrorController#error(HttpServletRequest)
-2025-06-01T16:10:38.838-07:00 DEBUG 46010 --- [card-game] [io-8080-exec-10] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
-2025-06-01T16:10:38.838-07:00 DEBUG 46010 --- [card-game] [io-8080-exec-10] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [{timestamp=Sun Jun 01 16:10:38 PDT 2025, status=400, error=Bad Request, path=/game/dc401b50-7557-4d1 (truncated)...]
-2025-06-01T16:10:38.839-07:00 DEBUG 46010 --- [card-game] [io-8080-exec-10] o.s.web.servlet.DispatcherServlet        : Exiting from "ERROR" dispatch, status 400
+2025-06-06T18:32:42.596-07:00  INFO 49975 --- [card-game] [           main] com.cardgame.CardGameApplication         : Starting CardGameApplication using Java 17.0.4.1 with PID 49975 (/Users/simongao/Desktop/Hand-of-Fate/card-game/build/classes/java/main started by simongao in /Users/simongao/Desktop/Hand-of-Fate/card-game)
+2025-06-06T18:32:42.599-07:00  INFO 49975 --- [card-game] [           main] com.cardgame.CardGameApplication         : No active profile set, falling back to 1 default profile: "default"
+2025-06-06T18:32:43.198-07:00  INFO 49975 --- [card-game] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data MongoDB repositories in DEFAULT mode.
+2025-06-06T18:32:43.247-07:00  INFO 49975 --- [card-game] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 45 ms. Found 6 MongoDB repository interfaces.
+2025-06-06T18:32:43.481-07:00  INFO 49975 --- [card-game] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2025-06-06T18:32:43.487-07:00  INFO 49975 --- [card-game] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2025-06-06T18:32:43.488-07:00  INFO 49975 --- [card-game] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.34]
+2025-06-06T18:32:43.524-07:00  INFO 49975 --- [card-game] [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2025-06-06T18:32:43.525-07:00  INFO 49975 --- [card-game] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 897 ms
+2025-06-06T18:32:43.643-07:00 DEBUG 49975 --- [card-game] [           main] o.s.w.f.ServerHttpObservationFilter      : Filter 'webMvcObservationFilter' configured for use
+2025-06-06T18:32:43.799-07:00  INFO 49975 --- [card-game] [           main] org.mongodb.driver.client                : MongoClient with metadata {"driver": {"name": "mongo-java-driver|sync", "version": "5.2.1"}, "os": {"type": "Darwin", "name": "Mac OS X", "architecture": "aarch64", "version": "13.1"}, "platform": "Java/Eclipse Adoptium/17.0.4.1+1"} created with settings MongoClientSettings{readPreference=primary, writeConcern=WriteConcern{w=null, wTimeout=null ms, journal=null}, retryWrites=true, retryReads=true, readConcern=ReadConcern{level=null}, credential=null, transportSettings=null, commandListeners=[], codecRegistry=ProvidersCodecRegistry{codecProviders=[ValueCodecProvider{}, BsonValueCodecProvider{}, DBRefCodecProvider{}, DBObjectCodecProvider{}, DocumentCodecProvider{}, CollectionCodecProvider{}, IterableCodecProvider{}, MapCodecProvider{}, GeoJsonCodecProvider{}, GridFSFileCodecProvider{}, Jsr310CodecProvider{}, JsonObjectCodecProvider{}, BsonCodecProvider{}, EnumCodecProvider{}, com.mongodb.client.model.mql.ExpressionCodecProvider@41bb1f09, com.mongodb.Jep395RecordCodecProvider@349f0ca4, com.mongodb.KotlinCodecProvider@66f2ec1c]}, loggerSettings=LoggerSettings{maxDocumentLength=1000}, clusterSettings={hosts=[localhost:27017], srvServiceName=mongodb, mode=SINGLE, requiredClusterType=UNKNOWN, requiredReplicaSetName='null', serverSelector='null', clusterListeners='[]', serverSelectionTimeout='30000 ms', localThreshold='15 ms'}, socketSettings=SocketSettings{connectTimeoutMS=10000, readTimeoutMS=0, receiveBufferSize=0, proxySettings=ProxySettings{host=null, port=null, username=null, password=null}}, heartbeatSocketSettings=SocketSettings{connectTimeoutMS=10000, readTimeoutMS=10000, receiveBufferSize=0, proxySettings=ProxySettings{host=null, port=null, username=null, password=null}}, connectionPoolSettings=ConnectionPoolSettings{maxSize=100, minSize=0, maxWaitTimeMS=120000, maxConnectionLifeTimeMS=0, maxConnectionIdleTimeMS=0, maintenanceInitialDelayMS=0, maintenanceFrequencyMS=60000, connectionPoolListeners=[], maxConnecting=2}, serverSettings=ServerSettings{heartbeatFrequencyMS=10000, minHeartbeatFrequencyMS=500, serverMonitoringMode=AUTO, serverListeners='[]', serverMonitorListeners='[]'}, sslSettings=SslSettings{enabled=false, invalidHostNameAllowed=false, context=null}, applicationName='null', compressorList=[], uuidRepresentation=UNSPECIFIED, serverApi=null, autoEncryptionSettings=null, dnsClient=null, inetAddressResolver=null, contextProvider=null, timeoutMS=null}
+2025-06-06T18:32:43.822-07:00  INFO 49975 --- [card-game] [localhost:27017] org.mongodb.driver.cluster               : Monitor thread successfully connected to server with description ServerDescription{address=localhost:27017, type=STANDALONE, cryptd=false, state=CONNECTED, ok=true, minWireVersion=0, maxWireVersion=21, maxDocumentSize=16777216, logicalSessionTimeoutMinutes=30, roundTripTimeNanos=13048750, minRoundTripTimeNanos=0}
+2025-06-06T18:32:43.977-07:00  INFO 49975 --- [card-game] [           main] c.c.s.nakama.NakamaLeaderBoardService    : Initializing Nakama client with host: localhost, port: 7349, ssl: false
+2025-06-06T18:32:43.978-07:00  INFO 49975 --- [card-game] [           main] c.c.s.nakama.NakamaLeaderBoardService    : Authenticating with device ID: 44f76bf1-cf46-4bfe-be45-5fc553675819
+2025-06-06T18:32:44.145-07:00  INFO 49975 --- [card-game] [           main] c.c.s.nakama.NakamaLeaderBoardService    : Nakama client initialized successfully with device ID: 44f76bf1-cf46-4bfe-be45-5fc553675819
+2025-06-06T18:32:44.192-07:00 DEBUG 49975 --- [card-game] [           main] o.s.w.s.s.s.WebSocketHandlerMapping      : Patterns [/ws/game] in 'webSocketHandlerMapping'
+2025-06-06T18:32:44.247-07:00 DEBUG 49975 --- [card-game] [           main] s.w.s.m.m.a.RequestMappingHandlerMapping : 60 mappings in 'requestMappingHandlerMapping'
+2025-06-06T18:32:44.261-07:00 DEBUG 49975 --- [card-game] [           main] o.s.w.s.handler.SimpleUrlHandlerMapping  : Patterns [/webjars/**, /**] in 'resourceHandlerMapping'
+2025-06-06T18:32:44.274-07:00 DEBUG 49975 --- [card-game] [           main] s.w.s.m.m.a.RequestMappingHandlerAdapter : ControllerAdvice beans: 0 @ModelAttribute, 0 @InitBinder, 1 RequestBodyAdvice, 1 ResponseBodyAdvice
+2025-06-06T18:32:44.295-07:00 DEBUG 49975 --- [card-game] [           main] .m.m.a.ExceptionHandlerExceptionResolver : ControllerAdvice beans: 0 @ExceptionHandler, 1 ResponseBodyAdvice
+2025-06-06T18:32:44.412-07:00  INFO 49975 --- [card-game] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 1 endpoint beneath base path '/actuator'
+2025-06-06T18:32:44.444-07:00  INFO 49975 --- [card-game] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path '/'
+2025-06-06T18:32:44.454-07:00  INFO 49975 --- [card-game] [           main] com.cardgame.CardGameApplication         : Started CardGameApplication in 2.048 seconds (process running for 2.24)
+Default card already exists
+2025-06-06T18:32:46.214-07:00  INFO 49975 --- [card-game] [nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-06-06T18:32:46.214-07:00  INFO 49975 --- [card-game] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2025-06-06T18:32:46.214-07:00 DEBUG 49975 --- [card-game] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Detected StandardServletMultipartResolver
+2025-06-06T18:32:46.214-07:00 DEBUG 49975 --- [card-game] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Detected AcceptHeaderLocaleResolver
+2025-06-06T18:32:46.214-07:00 DEBUG 49975 --- [card-game] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Detected FixedThemeResolver
+2025-06-06T18:32:46.215-07:00 DEBUG 49975 --- [card-game] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Detected org.springframework.web.servlet.view.DefaultRequestToViewNameTranslator@7f2b5cc0
+2025-06-06T18:32:46.215-07:00 DEBUG 49975 --- [card-game] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Detected org.springframework.web.servlet.support.SessionFlashMapManager@3fb4e840
+2025-06-06T18:32:46.215-07:00 DEBUG 49975 --- [card-game] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : enableLoggingRequestDetails='false': request parameters and headers will be masked to prevent unsafe logging of potentially sensitive data
+2025-06-06T18:32:46.215-07:00  INFO 49975 --- [card-game] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
+2025-06-06T18:32:46.224-07:00 DEBUG 49975 --- [card-game] [nio-8080-exec-2] o.s.web.servlet.DispatcherServlet        : GET "/ws/game", parameters={}
+2025-06-06T18:32:46.224-07:00 DEBUG 49975 --- [card-game] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : GET "/ws/game", parameters={}
+2025-06-06T18:32:46.227-07:00 DEBUG 49975 --- [card-game] [nio-8080-exec-2] o.s.w.s.s.s.WebSocketHandlerMapping      : Mapped to org.springframework.web.socket.server.support.WebSocketHttpRequestHandler@75bf9e67
+2025-06-06T18:32:46.227-07:00 DEBUG 49975 --- [card-game] [nio-8080-exec-1] o.s.w.s.s.s.WebSocketHandlerMapping      : Mapped to org.springframework.web.socket.server.support.WebSocketHttpRequestHandler@75bf9e67
+2025-06-06T18:32:46.229-07:00 DEBUG 49975 --- [card-game] [nio-8080-exec-2] o.s.w.s.s.s.WebSocketHttpRequestHandler  : GET /ws/game
+2025-06-06T18:32:46.229-07:00 DEBUG 49975 --- [card-game] [nio-8080-exec-1] o.s.w.s.s.s.WebSocketHttpRequestHandler  : GET /ws/game
+2025-06-06T18:32:46.243-07:00 DEBUG 49975 --- [card-game] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed 101 SWITCHING_PROTOCOLS
+2025-06-06T18:32:46.243-07:00 DEBUG 49975 --- [card-game] [nio-8080-exec-2] o.s.web.servlet.DispatcherServlet        : Completed 101 SWITCHING_PROTOCOLS
+2025-06-06T18:32:46.250-07:00 DEBUG 49975 --- [card-game] [nio-8080-exec-2] s.w.s.h.LoggingWebSocketHandlerDecorator : New StandardWebSocketSession[id=e689cfc4-8873-765e-b2d5-dab7c7efb3d6, uri=ws://localhost:8080/ws/game]
+2025-06-06T18:32:46.250-07:00 DEBUG 49975 --- [card-game] [nio-8080-exec-1] s.w.s.h.LoggingWebSocketHandlerDecorator : New StandardWebSocketSession[id=4d34de20-b758-36ec-1883-7ad7a68b9d1d, uri=ws://localhost:8080/ws/game]
+2025-06-06T18:32:46.250-07:00  INFO 49975 --- [card-game] [nio-8080-exec-2] c.c.websocket.GameWebSocketHandler       : WebSocket connection established: e689cfc4-8873-765e-b2d5-dab7c7efb3d6
+2025-06-06T18:32:46.250-07:00  INFO 49975 --- [card-game] [nio-8080-exec-1] c.c.websocket.GameWebSocketHandler       : WebSocket connection established: 4d34de20-b758-36ec-1883-7ad7a68b9d1d
+2025-06-06T18:32:46.296-07:00  INFO 49975 --- [card-game] [nio-8080-exec-1] c.c.websocket.GameWebSocketHandler       : handleJoinMatch - matchId: B78A03, playerId: 6843864add37ca0d3198c475
+2025-06-06T18:32:46.296-07:00  INFO 49975 --- [card-game] [nio-8080-exec-2] c.c.websocket.GameWebSocketHandler       : handleJoinMatch - matchId: 1472D6, playerId: 68438fb33811043029a54fbd
+2025-06-06T18:32:46.297-07:00  INFO 49975 --- [card-game] [nio-8080-exec-1] c.c.websocket.GameWebSocketHandler       : Player 6843864add37ca0d3198c475 joined match B78A03 - total players in match: 1
+2025-06-06T18:32:46.297-07:00  INFO 49975 --- [card-game] [nio-8080-exec-2] c.c.websocket.GameWebSocketHandler       : Player 68438fb33811043029a54fbd joined match 1472D6 - total players in match: 1
+2025-06-06T18:32:46.298-07:00  INFO 49975 --- [card-game] [nio-8080-exec-2] c.c.websocket.GameWebSocketHandler       : Broadcasting PLAYER_JOINED to other players in match 1472D6
+2025-06-06T18:32:46.298-07:00  INFO 49975 --- [card-game] [nio-8080-exec-1] c.c.websocket.GameWebSocketHandler       : Broadcasting PLAYER_JOINED to other players in match B78A03
 
 > Task :bootRun FAILED
 
@@ -636,5 +85,5 @@ Execution failed for task ':bootRun'.
 > Run with --scan to get full insights.
 > Get more help at https://help.gradle.org.
 
-BUILD FAILED in 25m 46s
+BUILD FAILED in 33s
 4 actionable tasks: 1 executed, 3 up-to-date

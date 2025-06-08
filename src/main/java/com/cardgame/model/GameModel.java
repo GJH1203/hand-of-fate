@@ -34,6 +34,12 @@ public class GameModel {
     // Win request fields
     private boolean hasPendingWinRequest;
     private String pendingWinRequestPlayerId;
+    
+    // Online mode fields
+    private GameMode gameMode = GameMode.LOCAL;
+    private String nakamaMatchId;
+    private Map<String, ConnectionStatus> playerConnections;
+    private Instant lastSyncTime;
 
     // constructor, getters, and setters
     public GameModel() {
@@ -201,5 +207,38 @@ public class GameModel {
 
     public void setScores(Map<String, Integer> scores) {
         this.playerScores = scores;
+    }
+    
+    // Online mode getters and setters
+    public GameMode getGameMode() {
+        return gameMode;
+    }
+    
+    public void setGameMode(GameMode gameMode) {
+        this.gameMode = gameMode;
+    }
+    
+    public String getNakamaMatchId() {
+        return nakamaMatchId;
+    }
+    
+    public void setNakamaMatchId(String nakamaMatchId) {
+        this.nakamaMatchId = nakamaMatchId;
+    }
+    
+    public Map<String, ConnectionStatus> getPlayerConnections() {
+        return playerConnections;
+    }
+    
+    public void setPlayerConnections(Map<String, ConnectionStatus> playerConnections) {
+        this.playerConnections = playerConnections;
+    }
+    
+    public Instant getLastSyncTime() {
+        return lastSyncTime;
+    }
+    
+    public void setLastSyncTime(Instant lastSyncTime) {
+        this.lastSyncTime = lastSyncTime;
     }
 }

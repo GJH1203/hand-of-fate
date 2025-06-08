@@ -58,8 +58,23 @@ public class GameService {
         this.nakamaLeaderBoardService = nakamaLeaderBoardService;
     }
 
-    private GameDto convertToDto(GameModel gameModel) {
-        Player currentPlayer = playerService.getPlayer(gameModel.getCurrentPlayerId());
+    public GameDto convertToDto(GameModel gameModel) {
+        return convertToDto(gameModel, gameModel.getCurrentPlayerId());
+    }
+    
+    public GameDto convertToDto(GameModel gameModel, String forPlayerId) {
+        Player currentPlayer = playerService.getPlayer(forPlayerId);
+
+        // Build card ownership map from all players' placed cards
+        Map<String, String> cardOwnership = new HashMap<>();
+        for (String playerId : gameModel.getPlayerIds()) {
+            Player player = playerService.getPlayer(playerId);
+            if (player.getPlacedCards() != null) {
+                for (String position : player.getPlacedCards().keySet()) {
+                    cardOwnership.put(position, playerId);
+                }
+            }
+        }
 
         // Create the builder first
         ImmutableGameDto.Builder builder = ImmutableGameDto.builder()
@@ -74,6 +89,8 @@ public class GameService {
                 .currentPlayerHand(currentPlayer.getHand().stream()
                         .map(this::convertCardToDto)
                         .collect(Collectors.toList()))
+                .playerIds(gameModel.getPlayerIds())
+                .cardOwnership(cardOwnership)
                 .createdAt(gameModel.getCreatedAt())
                 .updatedAt(gameModel.getUpdatedAt());
 
@@ -422,6 +439,11 @@ public class GameService {
     public GameDto getGame(String gameId) {
         return convertToDto(gameRepository.findById(gameId)
                 .orElseThrow(() -> new GameNotFoundException("Game not found: " + gameId)));
+    }
+    
+    public GameModel getGameModel(String gameId) {
+        return gameRepository.findById(gameId)
+                .orElseThrow(() -> new GameNotFoundException("Game not found: " + gameId));
     }
 
     /**

@@ -58,4 +58,17 @@ public interface GameDto {
      */
     @Nullable
     String getPendingWinRequestPlayerId();
+    
+    /**
+     * List of player IDs in the game (in order)
+     */
+    List<String> getPlayerIds();
+    
+    /**
+     * Map of position to player ID, showing which player owns each card on the board
+     */
+    @Value.Default
+    default Map<String, String> getCardOwnership() {
+        return Map.of();
+    }
 }
