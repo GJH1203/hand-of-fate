@@ -120,8 +120,8 @@ public class DeckService {
     }
 
     private void validateDeckSize(List<Card> cards) {
-        if (cards == null || cards.size() != 15) {
-            throw new InvalidDeckException("Deck must contain exactly 15 cards");
+        if (cards == null || cards.size() != 5) {
+            throw new InvalidDeckException("Deck must contain exactly 5 cards");
         }
     }
 

@@ -49,8 +49,8 @@ public class DefaultGameValidator implements GameValidator {
             throw new IllegalArgumentException("Deck ownership mismatch");
         }
 
-        if (deck1.getCards().size() != 15 || deck2.getCards().size() != 15) {
-            throw new IllegalArgumentException("Decks must contain exactly 15 cards");
+        if (deck1.getCards().size() != 5 || deck2.getCards().size() != 5) {
+            throw new IllegalArgumentException("Decks must contain exactly 5 cards");
         }
     }
 

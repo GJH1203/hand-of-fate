@@ -65,13 +65,17 @@ public class GameService {
     public GameDto convertToDto(GameModel gameModel, String forPlayerId) {
         Player currentPlayer = playerService.getPlayer(forPlayerId);
 
-        // Build card ownership map from all players' placed cards
+        // Build card ownership map and collect all placed cards
         Map<String, String> cardOwnership = new HashMap<>();
+        Map<String, CardDto> placedCards = new HashMap<>();
         for (String playerId : gameModel.getPlayerIds()) {
             Player player = playerService.getPlayer(playerId);
             if (player.getPlacedCards() != null) {
-                for (String position : player.getPlacedCards().keySet()) {
+                for (Map.Entry<String, Card> entry : player.getPlacedCards().entrySet()) {
+                    String position = entry.getKey();
+                    Card card = entry.getValue();
                     cardOwnership.put(position, playerId);
+                    placedCards.put(card.getId(), convertCardToDto(card));
                 }
             }
         }
@@ -91,6 +95,7 @@ public class GameService {
                         .collect(Collectors.toList()))
                 .playerIds(gameModel.getPlayerIds())
                 .cardOwnership(cardOwnership)
+                .placedCards(placedCards)
                 .createdAt(gameModel.getCreatedAt())
                 .updatedAt(gameModel.getUpdatedAt());
 
@@ -198,7 +203,9 @@ public class GameService {
 
     private void placeInitialCardForPlayer(String playerId, Position position, Board board) {
         Player player = playerService.getPlayer(playerId);
-        Card card = player.getHand().remove(0);
+        // Randomly select a card from the player's hand
+        int randomIndex = (int) (Math.random() * player.getHand().size());
+        Card card = player.getHand().remove(randomIndex);
         boardManager.placeCard(board, position, card.getId());
         player.getPlacedCards().put(position.toStorageString(), card);
         playerService.savePlayer(player);
