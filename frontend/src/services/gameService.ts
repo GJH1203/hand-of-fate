@@ -163,7 +163,12 @@ class GameService {
         
         // Transform the backend pieces format to our frontend format
         const pieces: Record<string, string> = {};
-        const placedCards: Record<string, Card> = {};
+        let placedCards: Record<string, Card> = {};
+        
+        // Use placedCards from backend if available
+        if (backendData.placedCards) {
+            placedCards = backendData.placedCards;
+        }
         
         if (backendData.board && backendData.board.pieces) {
             // Backend sends pieces as a Map<PositionDto, String>
@@ -178,14 +183,16 @@ class GameService {
                     const positionKey = `${pos.x},${pos.y}`;
                     pieces[positionKey] = String(cardId);
                     
-                    // For now, create mock card data - ideally we'd fetch this from backend
-                    const cardIdParts = String(cardId).split('_');
-                    const cardNumber = cardIdParts.length > 2 ? parseInt(cardIdParts[2]) || 1 : 1;
-                    placedCards[String(cardId)] = {
-                        id: String(cardId),
-                        name: `Card #${cardNumber}`,
-                        power: 1  // Default cards have power 1
-                    };
+                    // Only create mock card data if we don't have real card data from backend
+                    if (!placedCards[String(cardId)]) {
+                        const cardIdParts = String(cardId).split('_');
+                        const cardNumber = cardIdParts.length > 2 ? parseInt(cardIdParts[2]) || 1 : 1;
+                        placedCards[String(cardId)] = {
+                            id: String(cardId),
+                            name: `Card #${cardNumber}`,
+                            power: 1  // Default cards have power 1
+                        };
+                    }
                 });
             } else {
                 // If it's an object with string keys
@@ -196,14 +203,16 @@ class GameService {
                     
                     pieces[positionKey] = String(value);
                     
-                    // For now, create mock card data - ideally we'd fetch this from backend
-                    const valueIdParts = String(value).split('_');
-                    const cardNumber = valueIdParts.length > 2 ? parseInt(valueIdParts[2]) || 1 : 1;
-                    placedCards[String(value)] = {
-                        id: String(value),
-                        name: `Card #${cardNumber}`,
-                        power: 1  // Default cards have power 1
-                    };
+                    // Only create mock card data if we don't have real card data from backend
+                    if (!placedCards[String(value)]) {
+                        const valueIdParts = String(value).split('_');
+                        const cardNumber = valueIdParts.length > 2 ? parseInt(valueIdParts[2]) || 1 : 1;
+                        placedCards[String(value)] = {
+                            id: String(value),
+                            name: `Card #${cardNumber}`,
+                            power: 1  // Default cards have power 1
+                        };
+                    }
                 });
             }
         }
