@@ -167,9 +167,21 @@ class GameWebSocketService {
       this.ws.send(JSON.stringify(message));
       
       // Add timeout
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         reject(new Error('Join match timeout'));
       }, 5000);
+      
+      // Clear timeout in success handler
+      this.callbacks.onJoinSuccess = (data) => {
+        console.log('JOIN_SUCCESS received:', data);
+        clearTimeout(timeoutId); // Clear the timeout
+        // Restore original callback
+        this.callbacks.onJoinSuccess = originalOnJoinSuccess;
+        // Call original callback if exists
+        originalOnJoinSuccess?.(data);
+        // Resolve the promise
+        resolve();
+      };
     });
   }
 
