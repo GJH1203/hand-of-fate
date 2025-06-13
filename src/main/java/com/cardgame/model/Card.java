@@ -13,6 +13,8 @@ public class Card {
     private int power;
 
     private String name;
+    
+    private String imageUrl;
 
     public Card() {
     }
@@ -21,6 +23,13 @@ public class Card {
         this.id = id;
         this.power = power;
         this.name = name;
+    }
+    
+    public Card(String id, int power, String name, String imageUrl) {
+        this.id = id;
+        this.power = power;
+        this.name = name;
+        this.imageUrl = imageUrl;
     }
 
     public String getId() {
@@ -45,6 +54,14 @@ public class Card {
 
     public void setName(String name) {
         this.name = name;
+    }
+    
+    public String getImageUrl() {
+        return imageUrl;
+    }
+    
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 
     @Override

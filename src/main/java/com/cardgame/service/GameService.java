@@ -122,11 +122,16 @@ public class GameService {
     }
 
     private CardDto convertCardToDto(Card card) {
-        return ImmutableCardDto.builder()
+        ImmutableCardDto.Builder builder = ImmutableCardDto.builder()
                 .id(card.getId())
                 .power(card.getPower())
-                .name(card.getName())
-                .build();
+                .name(card.getName());
+        
+        if (card.getImageUrl() != null) {
+            builder.imageUrl(card.getImageUrl());
+        }
+        
+        return builder.build();
     }
 
 

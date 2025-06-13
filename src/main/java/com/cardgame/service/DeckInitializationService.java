@@ -66,6 +66,7 @@ public class DeckInitializationService {
             uniqueCard.setId("spark_" + UUID.randomUUID().toString());
             uniqueCard.setPower(sparkCard.getPower());
             uniqueCard.setName(sparkCard.getName());
+            uniqueCard.setImageUrl(sparkCard.getImageUrl());
             defaultCards.add(uniqueCard);
         }
         
@@ -75,6 +76,7 @@ public class DeckInitializationService {
             uniqueCard.setId("lightning_" + UUID.randomUUID().toString());
             uniqueCard.setPower(lightningCard.getPower());
             uniqueCard.setName(lightningCard.getName());
+            uniqueCard.setImageUrl(lightningCard.getImageUrl());
             defaultCards.add(uniqueCard);
         }
         
@@ -83,6 +85,7 @@ public class DeckInitializationService {
         uniqueCard.setId("thunder_" + UUID.randomUUID().toString());
         uniqueCard.setPower(thunderCard.getPower());
         uniqueCard.setName(thunderCard.getName());
+        uniqueCard.setImageUrl(thunderCard.getImageUrl());
         defaultCards.add(uniqueCard);
         
         logger.debug("Created {} default cards for new deck (2 Spark, 2 Lightning, 1 Thunder)", defaultCards.size());

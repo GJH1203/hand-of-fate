@@ -12,48 +12,36 @@ public class DataInitializer {
     @Bean
     CommandLineRunner initDatabase(CardRepository cardRepository) {
         return args -> {
-            // Check and update default card
-            Card sparkCard = cardRepository.findById("1").orElse(null);
-            if (sparkCard == null) {
-                // Create new card
-                sparkCard = new Card();
-                sparkCard.setId("1");
-                sparkCard.setName("Spark");
-                sparkCard.setPower(1);
-                cardRepository.save(sparkCard);
-                System.out.println("Created Spark card with ID: 1");
-            } else if (!sparkCard.getName().equals("Spark")) {
-                // Update existing card name
-                sparkCard.setName("Spark");
-                cardRepository.save(sparkCard);
-                System.out.println("Updated card ID 1 to Spark");
-            } else {
-                System.out.println("Spark card already exists");
-            }
+            // Delete all existing cards first to ensure clean state
+            cardRepository.deleteAll();
+            System.out.println("Cleared all existing cards");
             
-            // Check if power 3 card exists
-            if (!cardRepository.existsById("3")) {
-                Card powerCard3 = new Card();
-                powerCard3.setId("3");
-                powerCard3.setName("Lightning");
-                powerCard3.setPower(3);
-                cardRepository.save(powerCard3);
-                System.out.println("Created card with ID: 3");
-            } else {
-                System.out.println("Power 3 card already exists");
-            }
+            // Create Spark card
+            Card sparkCard = new Card();
+            sparkCard.setId("1");
+            sparkCard.setName("Spark");
+            sparkCard.setPower(1);
+            sparkCard.setImageUrl("/gifs/spark.png");
+            cardRepository.save(sparkCard);
+            System.out.println("Created Spark card with ID: 1");
             
-            // Check if power 5 card exists
-            if (!cardRepository.existsById("5")) {
-                Card powerCard5 = new Card();
-                powerCard5.setId("5");
-                powerCard5.setName("Thunder");
-                powerCard5.setPower(5);
-                cardRepository.save(powerCard5);
-                System.out.println("Created card with ID: 5");
-            } else {
-                System.out.println("Power 5 card already exists");
-            }
+            // Create Lightning card
+            Card lightningCard = new Card();
+            lightningCard.setId("3");
+            lightningCard.setName("Lightning");
+            lightningCard.setPower(3);
+            lightningCard.setImageUrl("/gifs/lightning.png");
+            cardRepository.save(lightningCard);
+            System.out.println("Created Lightning card with ID: 3");
+            
+            // Create Thunder card
+            Card thunderCard = new Card();
+            thunderCard.setId("5");
+            thunderCard.setName("Thunder");
+            thunderCard.setPower(5);
+            thunderCard.setImageUrl("/gifs/thunder.png");
+            cardRepository.save(thunderCard);
+            System.out.println("Created Thunder card with ID: 5");
         };
     }
 }
