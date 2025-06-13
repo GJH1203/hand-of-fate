@@ -243,6 +243,8 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                     } catch (err) {
                         console.error('Failed to join WebSocket room:', err);
                         setError('Failed to join match room');
+                        setIsLoading(false);
+                        setIsJoining(false);
                     }
                     
                     const mockMatch: OnlineMatchInfo = {
