@@ -63,11 +63,24 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
 
         const setupWebSocket = async () => {
             try {
-                // Only connect if component is still mounted and not already connected
-                if (!isMounted || gameWebSocketService.isConnected()) return;
+                // Check if component is still mounted
+                if (!isMounted) {
+                    console.log('Component unmounted, skipping WebSocket setup');
+                    return;
+                }
                 
-                await gameWebSocketService.connect({
+                // If already connected, just update state
+                if (gameWebSocketService.isConnected()) {
+                    console.log('WebSocket already connected');
+                    setIsConnected(true);
+                    setConnectionStatus('connected');
+                    return;
+                }
+                
+                console.log('Ensuring WebSocket connection...');
+                await gameWebSocketService.ensureConnected({
                     onConnectionSuccess: () => {
+                        console.log('WebSocket connection established successfully');
                         setConnectionStatus('connected');
                         setIsConnected(true);
                     },
@@ -182,6 +195,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
         };
     }, [user]);
 
+
     // Track if match has been initialized
     const [matchInitialized, setMatchInitialized] = useState(false);
     const [isJoining, setIsJoining] = useState(false);
@@ -196,6 +210,21 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                 setIsLoading(true);
                 setError(null);
 
+                // Ensure WebSocket is connected before proceeding
+                let connectionAttempts = 0;
+                while (!gameWebSocketService.isConnected() && connectionAttempts < 10) {
+                    console.log(`WebSocket not connected, waiting... (attempt ${connectionAttempts + 1})`);
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                    connectionAttempts++;
+                }
+                
+                if (!gameWebSocketService.isConnected()) {
+                    setError('WebSocket connection failed. Please refresh the page.');
+                    setIsLoading(false);
+                    setIsJoining(false);
+                    return;
+                }
+
                 if (matchId) {
                     // Leave any existing matches first
                     await onlineGameService.leaveAllMatches(user.playerId);
@@ -207,7 +236,16 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                     const joinResponse = await onlineGameService.joinMatch(matchId, user.playerId);
                     
                     // Join WebSocket room
-                    gameWebSocketService.joinMatch(matchId, user.playerId);
+                    console.log('Player joining WebSocket room:', matchId);
+                    try {
+                        await gameWebSocketService.joinMatch(matchId, user.playerId);
+                        console.log('Player successfully joined WebSocket room');
+                    } catch (err) {
+                        console.error('Failed to join WebSocket room:', err);
+                        setError('Failed to join match room');
+                        setIsLoading(false);
+                        setIsJoining(false);
+                    }
                     
                     const mockMatch: OnlineMatchInfo = {
                         matchId: matchId,
@@ -251,9 +289,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                     // Create new match
                     const createResponse = await onlineGameService.createMatch(user.playerId);
                     
-                    // Join WebSocket room
-                    gameWebSocketService.joinMatch(createResponse.matchId, user.playerId);
-                    
+                    // Store match info first
                     const mockMatch: OnlineMatchInfo = {
                         matchId: createResponse.matchId,
                         player1Id: user.playerId,
@@ -261,6 +297,19 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                         createdAt: new Date().toISOString()
                     };
                     setMatchInfo(mockMatch);
+                    
+                    // Small delay to ensure WebSocket is ready
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    
+                    // Join WebSocket room
+                    console.log('Host joining WebSocket room:', createResponse.matchId);
+                    try {
+                        await gameWebSocketService.joinMatch(createResponse.matchId, user.playerId);
+                        console.log('Host successfully joined WebSocket room');
+                    } catch (err) {
+                        console.error('Failed to join WebSocket room:', err);
+                        setError('Failed to join match room');
+                    }
                 }
                 
                 // Mark as initialized to prevent duplicate attempts
@@ -285,12 +334,16 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
     }, []);
 
     const handleCancelMatch = useCallback(async () => {
-        if (matchInfo) {
+        if (matchInfo && user) {
             gameWebSocketService.leaveMatch();
-            // TODO: Call backend to cancel match
+            try {
+                await onlineGameService.leaveAllMatches(user.playerId);
+            } catch (err) {
+                console.error('Error leaving matches:', err);
+            }
         }
         onBack();
-    }, [onBack, matchInfo]);
+    }, [onBack, matchInfo, user]);
 
     // Update board cards display
     const updateBoardCards = (state: GameState) => {
@@ -529,7 +582,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                 <div className="bg-white rounded-lg shadow-lg p-4 mb-4">
                     <div className="flex justify-between items-center">
                         <div className="flex items-center gap-4">
-                            <Button variant="outline" onClick={onBack}>
+                            <Button variant="outline" onClick={handleCancelMatch}>
                                 Back to Menu
                             </Button>
                             <div className="flex items-center gap-2">
@@ -714,7 +767,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                                         <Button 
                                             variant="outline" 
                                             className="w-full mt-2"
-                                            onClick={onBack}
+                                            onClick={handleCancelMatch}
                                         >
                                             Back to Menu
                                         </Button>

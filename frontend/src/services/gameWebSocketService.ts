@@ -56,6 +56,10 @@ class GameWebSocketService {
   connect(callbacks: GameWebSocketCallbacks): Promise<void> {
     return new Promise((resolve, reject) => {
       try {
+        // Reset connection state for fresh start
+        this.reconnectAttempts = 0;
+        this.isReconnecting = true; // Allow reconnection for this session
+        
         // Check if already connected or connecting
         if (this.ws) {
           if (this.ws.readyState === WebSocket.CONNECTING) {
@@ -115,9 +119,13 @@ class GameWebSocketService {
         };
         
         this.ws.onclose = () => {
-          console.log('WebSocket closed');
+          console.log('WebSocket closed, isReconnecting:', this.isReconnecting);
           this.callbacks.onConnectionClosed?.();
-          this.handleReconnect();
+          
+          // Only attempt to reconnect if we're supposed to
+          if (this.isReconnecting === true) {
+            this.handleReconnect();
+          }
         };
         
       } catch (error) {
@@ -126,21 +134,55 @@ class GameWebSocketService {
     });
   }
 
-  joinMatch(matchId: string, playerId: string): void {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      console.error('WebSocket not connected');
-      return;
-    }
+  joinMatch(matchId: string, playerId: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+        console.error('WebSocket not connected, cannot join match');
+        reject(new Error('WebSocket not connected'));
+        return;
+      }
 
-    this.currentMatchId = matchId;
-    this.currentPlayerId = playerId;
+      console.log('Joining match via WebSocket:', { matchId, playerId });
+      this.currentMatchId = matchId;
+      this.currentPlayerId = playerId;
 
-    const message: WebSocketMessage = {
-      type: MessageType.JOIN_MATCH,
-      data: { matchId, playerId }
-    };
+      // Store the resolve callback to call when we get JOIN_SUCCESS
+      const originalOnJoinSuccess = this.callbacks.onJoinSuccess;
+      this.callbacks.onJoinSuccess = (data) => {
+        console.log('JOIN_SUCCESS received:', data);
+        // Restore original callback
+        this.callbacks.onJoinSuccess = originalOnJoinSuccess;
+        // Call original callback if exists
+        originalOnJoinSuccess?.(data);
+        // Resolve the promise
+        resolve();
+      };
 
-    this.ws.send(JSON.stringify(message));
+      const message: WebSocketMessage = {
+        type: MessageType.JOIN_MATCH,
+        data: { matchId, playerId }
+      };
+
+      console.log('Sending JOIN_MATCH message:', message);
+      this.ws.send(JSON.stringify(message));
+      
+      // Add timeout
+      const timeoutId = setTimeout(() => {
+        reject(new Error('Join match timeout'));
+      }, 5000);
+      
+      // Clear timeout in success handler
+      this.callbacks.onJoinSuccess = (data) => {
+        console.log('JOIN_SUCCESS received:', data);
+        clearTimeout(timeoutId); // Clear the timeout
+        // Restore original callback
+        this.callbacks.onJoinSuccess = originalOnJoinSuccess;
+        // Call original callback if exists
+        originalOnJoinSuccess?.(data);
+        // Resolve the promise
+        resolve();
+      };
+    });
   }
 
   leaveMatch(): void {
@@ -196,15 +238,43 @@ class GameWebSocketService {
   }
 
   disconnect(): void {
-    this.isReconnecting = false; // Prevent reconnection
+    console.log('Disconnecting WebSocket...');
+    this.isReconnecting = false; // Prevent auto-reconnection
+    
     if (this.ws) {
-      this.ws.close();
+      // Remove event handlers to prevent any callbacks
+      this.ws.onopen = null;
+      this.ws.onmessage = null;
+      this.ws.onerror = null;
+      this.ws.onclose = null;
+      
+      if (this.ws.readyState === WebSocket.OPEN) {
+        this.ws.close();
+      }
       this.ws = null;
     }
+    
+    // Clear state
+    this.currentMatchId = null;
+    this.currentPlayerId = null;
   }
 
   isConnected(): boolean {
     return this.ws !== null && this.ws.readyState === WebSocket.OPEN;
+  }
+
+  async ensureConnected(callbacks: GameWebSocketCallbacks): Promise<void> {
+    if (this.isConnected()) {
+      console.log('WebSocket already connected');
+      return;
+    }
+    
+    console.log('WebSocket not connected, establishing connection...');
+    // Reset state for new connection
+    this.isReconnecting = true;
+    this.reconnectAttempts = 0;
+    
+    return this.connect(callbacks);
   }
 
   private handleMessage(message: WebSocketMessage): void {
