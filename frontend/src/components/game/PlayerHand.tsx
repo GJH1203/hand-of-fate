@@ -62,11 +62,21 @@ export default function PlayerHand({
                             )}
                             onClick={() => handleCardClick(card)}
                         >
-                            <CardContent className="p-3 flex flex-col items-center space-y-2">
-                                <span className="text-2xl font-mono font-bold text-primary">
+                            <CardContent className="p-3 flex flex-col items-center space-y-2 relative">
+                                {/* Card image background */}
+                                {card.imageUrl && (
+                                    <div className="absolute inset-0 flex items-center justify-center opacity-20 group-hover:opacity-30 transition-opacity">
+                                        <img 
+                                            src={card.imageUrl} 
+                                            alt={card.name}
+                                            className="w-20 h-20 object-contain"
+                                        />
+                                    </div>
+                                )}
+                                <span className="text-2xl font-mono font-bold text-primary z-10">
                                     {card.power}
                                 </span>
-                                <span className="text-sm text-center text-muted-foreground group-hover:text-foreground transition-colors">
+                                <span className="text-sm text-center text-muted-foreground group-hover:text-foreground transition-colors z-10">
                                     {card.name}
                                 </span>
                             </CardContent>

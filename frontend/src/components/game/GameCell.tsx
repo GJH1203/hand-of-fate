@@ -89,9 +89,20 @@ export default function GameCell({
                         {isCurrentPlayerCard ? "YOU" : "OPP"}
                     </div>
                     
+                    {/* Card image */}
+                    {card.imageUrl && (
+                        <div className="absolute inset-0 flex items-center justify-center opacity-30">
+                            <img 
+                                src={card.imageUrl} 
+                                alt={card.name}
+                                className="w-16 h-16 object-contain"
+                            />
+                        </div>
+                    )}
+                    
                     {/* Card power */}
                     <div className={cn(
-                        "text-2xl font-bold font-mono",
+                        "text-2xl font-bold font-mono z-10",
                         playerInfo.textColor
                     )}>
                         {card.power}
@@ -99,7 +110,7 @@ export default function GameCell({
                     
                     {/* Card name */}
                     <span className={cn(
-                        "text-xs font-medium truncate max-w-[80%] text-center",
+                        "text-xs font-medium truncate max-w-[80%] text-center z-10",
                         playerInfo.textColor
                     )}>
                         {card.name}
