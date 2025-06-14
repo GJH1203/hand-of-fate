@@ -67,11 +67,11 @@ export default function GameCell({
                 "h-24 w-24 rounded-lg border-2 flex items-center justify-center",
                 "transition-all duration-200 relative",
                 {
-                    "cursor-pointer hover:shadow-md": !card,
+                    "cursor-pointer hover:shadow-md hover:border-purple-400": !card,
                     "cursor-not-allowed": card,
-                    "border-green-500 bg-green-50 hover:bg-green-100 shadow-lg": isValidMove && selectedCard && !card,
-                    "border-gray-300": !isValidMove || !selectedCard || !card,
-                    "hover:bg-gray-50": !card && !isValidMove,
+                    "border-green-400 bg-green-900/20 hover:bg-green-900/30 shadow-glow-green": isValidMove && selectedCard && !card,
+                    "border-gray-600 bg-gray-900/20": !isValidMove || !selectedCard || !card,
+                    "hover:bg-gray-800/30": !card && !isValidMove,
                 },
                 // Player-specific card styling
                 card && playerInfo.bgColor,

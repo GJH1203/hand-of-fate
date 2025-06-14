@@ -42,11 +42,13 @@ export default function PlayerHand({
     };
 
     return (
-        <div className={cn("mt-8", className)}>
-            <h2 className="text-xl font-semibold mb-4 text-foreground">
-                Your Hand {!isCurrentTurn && "(Waiting for opponent's move)"}
-            </h2>
-            <div className="flex gap-4 flex-wrap">
+        <div className={cn("", className)}>
+            {!isCurrentTurn && (
+                <p className="text-center text-sm text-gray-400 mb-2">
+                    Waiting for opponent's move...
+                </p>
+            )}
+            <div className="flex gap-4 flex-wrap justify-center">
                 {Array.isArray(cards) && cards.length > 0 ? (
                     cards.map((card) => (
                         <div
@@ -54,9 +56,9 @@ export default function PlayerHand({
                             className={cn(
                                 "w-24 h-32 rounded-lg overflow-hidden",
                                 "transition-all duration-200",
-                                isCurrentTurn && "hover:shadow-lg cursor-pointer",
+                                isCurrentTurn && "card-hover cursor-pointer",
                                 !isCurrentTurn && "opacity-50 cursor-not-allowed",
-                                selectedCard?.id === card.id && "ring-2 ring-primary ring-offset-2 shadow-lg",
+                                selectedCard?.id === card.id && "ring-2 ring-yellow-400 ring-offset-2 shadow-glow-yellow animate-pulse-ring",
                                 "group relative"
                             )}
                             onClick={() => handleCardClick(card)}
