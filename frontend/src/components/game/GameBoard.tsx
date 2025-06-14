@@ -353,7 +353,8 @@ export default function GameBoard() {
             <div className="mb-8 bg-black/40 backdrop-blur-sm rounded-2xl p-4 shadow-xl border border-purple-500/30">
                 <div className="flex justify-between items-center">
                     <div>
-                        <div className="text-lg font-bold text-yellow-400">
+                        <div className="text-lg font-bold text-yellow-400 flex items-center gap-2">
+                            <div className="w-3 h-3 bg-yellow-400 rounded-full animate-pulse" />
                             Current Turn: {players[gameState.currentPlayerId] || gameState.currentPlayerId}
                         </div>
                         <div className="text-sm text-gray-300">
@@ -485,6 +486,8 @@ export default function GameBoard() {
                             filter: "blur(1px)"
                         }}
                     />
+                    {/* Lightning overlay effect */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-transparent via-purple-400/10 to-transparent lightning-overlay" />
                     <div className="relative z-10 flex flex-col items-center">
                         <h2 className="text-2xl font-bold text-center text-purple-300 mb-4 drop-shadow-lg">Battle Arena</h2>
                         <div className={`grid grid-cols-3 gap-1 w-fit mx-auto ${gameState.state === 'COMPLETED' ? 'opacity-50 pointer-events-none' : ''}`}>

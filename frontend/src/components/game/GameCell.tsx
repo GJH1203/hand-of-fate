@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { cn } from "@/lib/utils";
 import type { Card, Position } from '@/types/game';
 
@@ -23,6 +23,17 @@ export default function GameCell({
                                      currentPlayerId,
                                      playerNames
                                  }: GameCellProps) {
+    const [isNewlyPlaced, setIsNewlyPlaced] = useState(false);
+    const [showRipple, setShowRipple] = useState(false);
+
+    useEffect(() => {
+        if (card && !isNewlyPlaced) {
+            setIsNewlyPlaced(true);
+            setShowRipple(true);
+            setTimeout(() => setShowRipple(false), 600);
+        }
+    }, [card, isNewlyPlaced]);
+
     const handleClick = () => {
         if (onCellClick && !card) {
             onCellClick(position);
@@ -78,8 +89,18 @@ export default function GameCell({
                 card && playerInfo.borderColor
             )}
         >
+            {/* Ripple effect when card is placed */}
+            {showRipple && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
+                    <div className="w-full h-full bg-yellow-400/50 rounded-lg ripple-effect" />
+                </div>
+            )}
+            
             {card && (
-                <div className="flex flex-col items-center gap-1 relative w-full h-full justify-center overflow-hidden rounded-lg">
+                <div className={cn(
+                    "flex flex-col items-center gap-1 relative w-full h-full justify-center overflow-hidden rounded-lg",
+                    isNewlyPlaced && "card-slam"
+                )}>
                     {/* Card image fills the cell */}
                     {card.imageUrl ? (
                         <>
