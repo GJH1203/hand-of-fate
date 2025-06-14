@@ -476,9 +476,18 @@ export default function GameBoard() {
 
             {/* Game Board Area */}
             <div className="flex justify-center mb-8">
-                <div className="bg-black/40 backdrop-blur-sm p-6 rounded-2xl shadow-2xl border border-purple-500/30">
-                    <h2 className="text-2xl font-bold text-center text-purple-300 mb-4">Battle Arena</h2>
-                    <div className={`grid grid-cols-3 gap-1 ${gameState.state === 'COMPLETED' ? 'opacity-50 pointer-events-none' : ''}`}>
+                <div className="relative bg-black/40 backdrop-blur-sm p-6 rounded-2xl shadow-2xl border border-purple-500/30 overflow-hidden">
+                    {/* Arena Background */}
+                    <div 
+                        className="absolute inset-0 bg-cover bg-center opacity-30"
+                        style={{
+                            backgroundImage: "url('/backgrounds/battle-arena.png')",
+                            filter: "blur(1px)"
+                        }}
+                    />
+                    <div className="relative z-10 flex flex-col items-center">
+                        <h2 className="text-2xl font-bold text-center text-purple-300 mb-4 drop-shadow-lg">Battle Arena</h2>
+                        <div className={`grid grid-cols-3 gap-1 w-fit mx-auto ${gameState.state === 'COMPLETED' ? 'opacity-50 pointer-events-none' : ''}`}>
                 {Array.from({ length: DEFAULT_BOARD_HEIGHT }, (_, y) =>
                     Array.from({ length: DEFAULT_BOARD_WIDTH }, (_, x) => {
                         const cellKey = `cell-${x}-${y}`;
@@ -506,21 +515,32 @@ export default function GameBoard() {
                         );
                     })
                 ).flat()}
+                        </div>
                     </div>
                 </div>
             </div>
 
             {/* Player Hand Area */}
-            <div className="mt-6 bg-gradient-to-b from-black/60 to-black/40 backdrop-blur-sm p-6 rounded-2xl shadow-2xl border border-purple-500/30">
-                <h3 className="text-xl font-bold mb-4 text-yellow-400 text-center">
-                    Your Arsenal ({gameState.currentPlayerHand?.length || 0} cards)
-                </h3>
-                <PlayerHand
-                    cards={gameState.currentPlayerHand || []}
-                    isCurrentTurn={gameState.state === 'IN_PROGRESS'}
-                    selectedCard={selectedCard}
-                    onCardSelect={gameState.state === 'IN_PROGRESS' ? handleCardSelect : () => {}}
+            <div className="mt-6 relative bg-black/40 backdrop-blur-sm p-6 rounded-2xl shadow-2xl border border-purple-500/30 overflow-hidden">
+                {/* Wooden Background */}
+                <div 
+                    className="absolute inset-0 bg-cover bg-center opacity-70"
+                    style={{
+                        backgroundImage: "url('/backgrounds/wooden-table.png')",
+                        filter: "brightness(0.7) contrast(1.1)"
+                    }}
                 />
+                <div className="relative z-10">
+                    <h3 className="text-xl font-bold mb-4 text-yellow-400 text-center drop-shadow-lg">
+                        Your Arsenal ({gameState.currentPlayerHand?.length || 0} cards)
+                    </h3>
+                    <PlayerHand
+                        cards={gameState.currentPlayerHand || []}
+                        isCurrentTurn={gameState.state === 'IN_PROGRESS'}
+                        selectedCard={selectedCard}
+                        onCardSelect={gameState.state === 'IN_PROGRESS' ? handleCardSelect : () => {}}
+                    />
+                </div>
             </div>
             </div>
         </div>

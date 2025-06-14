@@ -103,6 +103,7 @@ body {
   /* Card hover animation */
   .card-hover {
     transition: all 0.3s ease;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
   }
   
   .card-hover:hover {
