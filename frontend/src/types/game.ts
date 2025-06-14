@@ -14,6 +14,7 @@ export interface Card {
     id: string;
     power: number;
     name: string;
+    imageUrl?: string;
 }
 
 export interface GameState {

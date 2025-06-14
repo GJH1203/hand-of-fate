@@ -55,8 +55,8 @@ export default function GameLobby({
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-600 to-blue-600">
-      <Card className="w-full max-w-md">
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 relative">
+      <Card className="w-full max-w-md relative z-10 bg-black/80 backdrop-blur-sm border-purple-500/30">
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-center">
             {isHost ? 'Waiting for Opponent' : 'Joining Game'}
@@ -74,7 +74,7 @@ export default function GameLobby({
                 variant="outline"
                 size="icon"
                 onClick={copyGameCode}
-                className="ml-2"
+                className="ml-2 relative z-20"
               >
                 {copied ? (
                   <CheckCircle className="w-4 h-4 text-green-500" />

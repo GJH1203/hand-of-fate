@@ -283,90 +283,108 @@ export default function GameBoard() {
 
     if (!gameState && showOpponentSelection) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-screen gap-6">
-                <div className="text-2xl font-bold">Welcome to Hand of Fate</div>
-                <div className="text-sm text-muted-foreground mb-4">
-                    Playing as: {user?.username}
-                </div>
-                
-                <div className="w-full max-w-md space-y-4">
-                    <div className="space-y-2">
-                        <label htmlFor="opponent" className="text-sm font-medium">
-                            Opponent Name
-                        </label>
-                        <input
-                            id="opponent"
-                            type="text"
-                            value={opponentName}
-                            onChange={(e) => setOpponentName(e.target.value)}
-                            placeholder="Enter opponent's name"
-                            className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                            The opponent must be registered first to play
-                        </p>
+            <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex flex-col items-center justify-center relative">
+                <div className="relative z-10 flex flex-col items-center gap-6 p-8 bg-black/40 backdrop-blur-sm rounded-2xl shadow-2xl border border-purple-500/30">
+                    <div className="text-3xl font-bold bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
+                        Welcome to Hand of Fate
+                    </div>
+                    <div className="text-sm text-gray-300 mb-4">
+                        Playing as: {user?.username}
                     </div>
                     
-                    <Button
-                        onClick={createGameWithOpponent}
-                        size="lg"
-                        className="w-full"
-                        disabled={!opponentName.trim() || isCreatingGame}
-                    >
-                        {isCreatingGame ? 'Starting Game...' : 'Start Game'}
-                    </Button>
-                </div>
-                
-                {error && (
-                    <div className="text-red-500 text-sm mt-4">
-                        Error: {error}
+                    <div className="w-full max-w-md space-y-4">
+                        <div className="space-y-2">
+                            <label htmlFor="opponent" className="text-sm font-medium text-gray-200">
+                                Opponent Name
+                            </label>
+                            <input
+                                id="opponent"
+                                type="text"
+                                value={opponentName}
+                                onChange={(e) => setOpponentName(e.target.value)}
+                                placeholder="Enter opponent's name"
+                                className="w-full px-3 py-2 bg-black/30 border border-purple-400/50 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-400 text-white placeholder-gray-400"
+                            />
+                            <p className="text-xs text-gray-400">
+                                The opponent must be registered first to play
+                            </p>
+                        </div>
+                        
+                        <Button
+                            onClick={createGameWithOpponent}
+                            size="lg"
+                            className="w-full bg-purple-600 hover:bg-purple-700 text-white border-purple-400"
+                            disabled={!opponentName.trim() || isCreatingGame}
+                        >
+                            {isCreatingGame ? 'Starting Game...' : 'Start Game'}
+                        </Button>
                     </div>
-                )}
+                    
+                    {error && (
+                        <div className="text-red-400 text-sm mt-4 bg-red-900/20 p-2 rounded">
+                            Error: {error}
+                        </div>
+                    )}
+                </div>
             </div>
         );
     }
 
     if (!gameState) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-screen gap-4">
-                <div className="text-lg font-medium">Loading game...</div>
+            <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex flex-col items-center justify-center">
+                <div className="text-lg font-medium text-gray-300">Loading game...</div>
             </div>
         );
     }
 
     return (
-        <div className="max-w-4xl mx-auto p-6">
-            <div className="mb-8 flex justify-between items-center">
-                <div>
-                    <div className="text-lg font-bold">
-                        Current Turn: {players[gameState.currentPlayerId] || gameState.currentPlayerId}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                        Game State: {gameState.state}
-                    </div>
-                    {/* Player color legend */}
-                    <div className="flex gap-4 mt-2">
-                        <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 bg-blue-100 border-2 border-blue-400 rounded"></div>
-                            <span className="text-xs text-blue-800 font-medium">
-                                Your Cards
-                            </span>
+        <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
+            <div className="max-w-4xl mx-auto p-6 relative z-10">
+            {/* Game Title */}
+            <div className="text-center mb-8">
+                <h1 className="text-5xl font-bold bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 bg-clip-text text-transparent drop-shadow-2xl">
+                    Hand of Fate
+                </h1>
+                <p className="text-lg text-gray-300 mt-2">Lightning Card Battle</p>
+            </div>
+
+            {/* Game Info Bar */}
+            <div className="mb-8 bg-black/40 backdrop-blur-sm rounded-2xl p-4 shadow-xl border border-purple-500/30">
+                <div className="flex justify-between items-center">
+                    <div>
+                        <div className="text-lg font-bold text-yellow-400 flex items-center gap-2">
+                            <div className="w-3 h-3 bg-yellow-400 rounded-full animate-pulse" />
+                            Current Turn: {players[gameState.currentPlayerId] || gameState.currentPlayerId}
                         </div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 bg-red-100 border-2 border-red-400 rounded"></div>
-                            <span className="text-xs text-red-800 font-medium">
-                                Opponent Cards
-                            </span>
+                        <div className="text-sm text-gray-300">
+                            Game State: {gameState.state}
+                        </div>
+                        {/* Player color legend */}
+                        <div className="flex gap-4 mt-2">
+                            <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 bg-blue-400 rounded shadow-glow-blue"></div>
+                                <span className="text-xs text-blue-300 font-medium">
+                                    Your Cards
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 bg-red-400 rounded shadow-glow-red"></div>
+                                <span className="text-xs text-red-300 font-medium">
+                                    Opponent Cards
+                                </span>
+                            </div>
                         </div>
                     </div>
+                    <Button
+                        onClick={startNewGame}
+                        variant="outline"
+                        size="lg"
+                        className="bg-purple-600/50 hover:bg-purple-600/70 border-purple-400 text-white"
+                    >
+                        New Game
+                    </Button>
                 </div>
-                <Button
-                    onClick={startNewGame}
-                    variant="outline"
-                    size="lg"
-                >
-                    New Game
-                </Button>
             </div>
 
             {error && (
@@ -457,7 +475,22 @@ export default function GameBoard() {
                 </div>
             )}
 
-            <div className={`grid grid-cols-3 gap-4 mb-8 bg-secondary/20 p-4 rounded-lg ${gameState.state === 'COMPLETED' ? 'opacity-50 pointer-events-none' : ''}`}>
+            {/* Game Board Area */}
+            <div className="flex justify-center mb-8">
+                <div className="relative bg-black/40 backdrop-blur-sm p-6 rounded-2xl shadow-2xl border border-purple-500/30 overflow-hidden">
+                    {/* Arena Background */}
+                    <div 
+                        className="absolute inset-0 bg-cover bg-center opacity-30"
+                        style={{
+                            backgroundImage: "url('/backgrounds/battle-arena.png')",
+                            filter: "blur(1px)"
+                        }}
+                    />
+                    {/* Lightning overlay effect */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-transparent via-purple-400/10 to-transparent lightning-overlay" />
+                    <div className="relative z-10 flex flex-col items-center">
+                        <h2 className="text-2xl font-bold text-center text-purple-300 mb-4 drop-shadow-lg">Battle Arena</h2>
+                        <div className={`grid grid-cols-3 gap-1 w-fit mx-auto ${gameState.state === 'COMPLETED' ? 'opacity-50 pointer-events-none' : ''}`}>
                 {Array.from({ length: DEFAULT_BOARD_HEIGHT }, (_, y) =>
                     Array.from({ length: DEFAULT_BOARD_WIDTH }, (_, x) => {
                         const cellKey = `cell-${x}-${y}`;
@@ -485,18 +518,33 @@ export default function GameBoard() {
                         );
                     })
                 ).flat()}
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div className="mt-6">
-                <h3 className="text-lg font-semibold mb-3">
-                    Your Hand ({gameState.currentPlayerHand?.length || 0} cards)
-                </h3>
-                <PlayerHand
-                    cards={gameState.currentPlayerHand || []}
-                    isCurrentTurn={gameState.state === 'IN_PROGRESS'}
-                    selectedCard={selectedCard}
-                    onCardSelect={gameState.state === 'IN_PROGRESS' ? handleCardSelect : () => {}}
+            {/* Player Hand Area */}
+            <div className="mt-6 relative bg-black/40 backdrop-blur-sm p-6 rounded-2xl shadow-2xl border border-purple-500/30 overflow-hidden">
+                {/* Wooden Background */}
+                <div 
+                    className="absolute inset-0 bg-cover bg-center opacity-70"
+                    style={{
+                        backgroundImage: "url('/backgrounds/wooden-table.png')",
+                        filter: "brightness(0.7) contrast(1.1)"
+                    }}
                 />
+                <div className="relative z-10">
+                    <h3 className="text-xl font-bold mb-4 text-yellow-400 text-center drop-shadow-lg">
+                        Your Arsenal ({gameState.currentPlayerHand?.length || 0} cards)
+                    </h3>
+                    <PlayerHand
+                        cards={gameState.currentPlayerHand || []}
+                        isCurrentTurn={gameState.state === 'IN_PROGRESS'}
+                        selectedCard={selectedCard}
+                        onCardSelect={gameState.state === 'IN_PROGRESS' ? handleCardSelect : () => {}}
+                    />
+                </div>
+            </div>
             </div>
         </div>
     );

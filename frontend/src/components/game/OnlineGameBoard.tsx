@@ -566,20 +566,20 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
     // Loading state
     if (isLoading || !gameState) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
+            <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-                    <p>Loading game...</p>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-400 mx-auto mb-4"></div>
+                    <p className="text-gray-300">Loading game...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-purple-600 to-blue-600 p-4">
-            <div className="max-w-6xl mx-auto">
+        <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-4 relative">
+            <div className="max-w-6xl mx-auto relative z-10">
                 {/* Header */}
-                <div className="bg-white rounded-lg shadow-lg p-4 mb-4">
+                <div className="bg-black/40 backdrop-blur-sm rounded-lg shadow-xl p-4 mb-4 border border-purple-500/30">
                     <div className="flex justify-between items-center">
                         <div className="flex items-center gap-4">
                             <Button variant="outline" onClick={handleCancelMatch}>
@@ -627,11 +627,20 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                     {/* Main Game Board */}
                     <div className="lg:col-span-2">
-                        <div className="bg-white rounded-lg shadow-lg p-6">
-                            <h2 className="text-2xl font-bold mb-4">Game Board</h2>
+                        <div className="relative bg-black/40 backdrop-blur-sm rounded-2xl shadow-2xl p-6 border border-purple-500/30 overflow-hidden">
+                            {/* Arena Background */}
+                            <div 
+                                className="absolute inset-0 bg-cover bg-center opacity-30"
+                                style={{
+                                    backgroundImage: "url('/backgrounds/battle-arena.png')",
+                                    filter: "blur(1px)"
+                                }}
+                            />
+                            <div className="relative z-10 flex flex-col items-center">
+                                <h2 className="text-2xl font-bold mb-4 text-center text-purple-300 drop-shadow-lg">Battle Arena</h2>
                             
                             {/* Board Grid */}
-                            <div className="grid grid-cols-3 gap-2 mb-6">
+                            <div className="grid grid-cols-3 gap-2 mb-6 w-fit mx-auto">
                                 {Array.from({ length: DEFAULT_BOARD_HEIGHT }, (_, y) => 
                                     Array.from({ length: DEFAULT_BOARD_WIDTH }, (_, x) => {
                                         const posKey = `${x},${y}`;
@@ -658,12 +667,24 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                             </div>
 
                             {/* Your Hand (only visible when it's your turn) */}
-                            <PlayerHand
-                                cards={gameState.currentPlayerHand}
-                                isCurrentTurn={isMyTurn}
-                                selectedCard={selectedCard}
-                                onCardSelect={setSelectedCard}
-                            />
+                            <div className="relative bg-black/40 rounded-xl p-4 mt-4 overflow-hidden">
+                                {/* Wooden Background */}
+                                <div 
+                                    className="absolute inset-0 bg-cover bg-center opacity-70"
+                                    style={{
+                                        backgroundImage: "url('/backgrounds/wooden-table.png')",
+                                        filter: "brightness(0.7) contrast(1.1)"
+                                    }}
+                                />
+                                <div className="relative z-10">
+                                    <PlayerHand
+                                        cards={gameState.currentPlayerHand}
+                                        isCurrentTurn={isMyTurn}
+                                        selectedCard={selectedCard}
+                                        onCardSelect={setSelectedCard}
+                                    />
+                                </div>
+                            </div>
 
                             {/* Action Buttons */}
                             <div className="flex gap-2 mt-4">
@@ -680,6 +701,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                                         variant="default"
                                         onClick={handleWinRequest}
                                         disabled={!isMyTurn}
+                                        className="relative z-20"
                                     >
                                         Request Early End
                                     </Button>
@@ -713,14 +735,15 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                                     </div>
                                 )}
                             </div>
+                            </div>
                         </div>
                     </div>
 
                     {/* Side Panel */}
                     <div className="space-y-4">
                         {/* Players Info */}
-                        <div className="bg-white rounded-lg shadow-lg p-4">
-                            <h3 className="font-bold mb-3 flex items-center gap-2">
+                        <div className="bg-black/40 backdrop-blur-sm rounded-2xl shadow-xl p-4 border border-purple-500/30">
+                            <h3 className="font-bold mb-3 flex items-center gap-2 text-yellow-400">
                                 <Users className="w-5 h-5" />
                                 Players
                             </h3>
