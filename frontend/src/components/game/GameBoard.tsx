@@ -457,7 +457,8 @@ export default function GameBoard() {
                 </div>
             )}
 
-            <div className={`grid grid-cols-3 gap-4 mb-8 bg-secondary/20 p-4 rounded-lg ${gameState.state === 'COMPLETED' ? 'opacity-50 pointer-events-none' : ''}`}>
+            <div className="flex justify-center mb-8">
+                <div className={`grid grid-cols-3 gap-1 bg-secondary/20 p-4 rounded-lg ${gameState.state === 'COMPLETED' ? 'opacity-50 pointer-events-none' : ''}`}>
                 {Array.from({ length: DEFAULT_BOARD_HEIGHT }, (_, y) =>
                     Array.from({ length: DEFAULT_BOARD_WIDTH }, (_, x) => {
                         const cellKey = `cell-${x}-${y}`;
@@ -485,6 +486,7 @@ export default function GameBoard() {
                         );
                     })
                 ).flat()}
+                </div>
             </div>
 
             <div className="mt-6">

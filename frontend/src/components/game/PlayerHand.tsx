@@ -1,5 +1,4 @@
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
 import { cn } from "@/lib/utils";
 import type { Card as GameCard } from '@/types/game';
 
@@ -50,37 +49,37 @@ export default function PlayerHand({
             <div className="flex gap-4 flex-wrap">
                 {Array.isArray(cards) && cards.length > 0 ? (
                     cards.map((card) => (
-                        <Card
+                        <div
                             key={card.id}
                             className={cn(
-                                "w-24 h-32 flex flex-col items-center justify-center",
+                                "w-24 h-32 rounded-lg overflow-hidden",
                                 "transition-all duration-200",
-                                isCurrentTurn && "hover:shadow-lg hover:border-primary cursor-pointer",
+                                isCurrentTurn && "hover:shadow-lg cursor-pointer",
                                 !isCurrentTurn && "opacity-50 cursor-not-allowed",
-                                selectedCard?.id === card.id && "ring-2 ring-primary shadow-lg",
+                                selectedCard?.id === card.id && "ring-2 ring-primary ring-offset-2 shadow-lg",
                                 "group relative"
                             )}
                             onClick={() => handleCardClick(card)}
                         >
-                            <CardContent className="p-3 flex flex-col items-center space-y-2 relative">
-                                {/* Card image background */}
-                                {card.imageUrl && (
-                                    <div className="absolute inset-0 flex items-center justify-center opacity-20 group-hover:opacity-30 transition-opacity">
-                                        <img 
-                                            src={card.imageUrl} 
-                                            alt={card.name}
-                                            className="w-20 h-20 object-contain"
-                                        />
-                                    </div>
-                                )}
-                                <span className="text-2xl font-mono font-bold text-primary z-10">
-                                    {card.power}
-                                </span>
-                                <span className="text-sm text-center text-muted-foreground group-hover:text-foreground transition-colors z-10">
-                                    {card.name}
-                                </span>
-                            </CardContent>
-                        </Card>
+                            {/* Card image fills entire card */}
+                            {card.imageUrl ? (
+                                <img 
+                                    src={card.imageUrl} 
+                                    alt={card.name}
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                // Fallback when no image - show text
+                                <div className="w-full h-full flex flex-col items-center justify-center space-y-1 p-3">
+                                    <span className="text-3xl font-mono font-bold text-primary">
+                                        {card.power}
+                                    </span>
+                                    <span className="text-sm text-center font-semibold text-foreground">
+                                        {card.name}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
                     ))
                 ) : (
                     <div className="text-muted-foreground">No cards in hand</div>

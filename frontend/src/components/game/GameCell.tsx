@@ -64,7 +64,7 @@ export default function GameCell({
         <div
             onClick={handleClick}
             className={cn(
-                "h-24 w-full rounded-lg border-2 flex items-center justify-center",
+                "h-24 w-24 rounded-lg border-2 flex items-center justify-center",
                 "transition-all duration-200 relative",
                 {
                     "cursor-pointer hover:shadow-md": !card,
@@ -79,51 +79,72 @@ export default function GameCell({
             )}
         >
             {card && (
-                <div className="flex flex-col items-center gap-1 relative w-full h-full justify-center">
-                    {/* Player indicator badge */}
-                    <div className={cn(
-                        "absolute top-1 left-1 text-xs font-bold px-1.5 py-0.5 rounded-full",
-                        playerInfo.textColor,
-                        isCurrentPlayerCard ? "bg-blue-200" : "bg-red-200"
-                    )}>
-                        {isCurrentPlayerCard ? "YOU" : "OPP"}
-                    </div>
-                    
-                    {/* Card image */}
-                    {card.imageUrl && (
-                        <div className="absolute inset-0 flex items-center justify-center opacity-30">
+                <div className="flex flex-col items-center gap-1 relative w-full h-full justify-center overflow-hidden rounded-lg">
+                    {/* Card image fills the cell */}
+                    {card.imageUrl ? (
+                        <>
                             <img 
                                 src={card.imageUrl} 
                                 alt={card.name}
-                                className="w-16 h-16 object-contain"
+                                className="absolute inset-0 w-full h-full object-cover"
                             />
-                        </div>
+                            
+                            {/* Player indicator badges with semi-transparent background */}
+                            <div className={cn(
+                                "absolute top-1 left-1 text-xs font-bold px-1.5 py-0.5 rounded-full z-20",
+                                "backdrop-blur-sm",
+                                isCurrentPlayerCard ? "bg-blue-200/90 text-blue-800" : "bg-red-200/90 text-red-800"
+                            )}>
+                                {isCurrentPlayerCard ? "YOU" : "OPP"}
+                            </div>
+                            
+                            <div className={cn(
+                                "absolute bottom-1 right-1 text-[10px] font-medium px-1 py-0.5 rounded z-20",
+                                "backdrop-blur-sm",
+                                isCurrentPlayerCard ? "bg-blue-200/90 text-blue-800" : "bg-red-200/90 text-red-800"
+                            )}>
+                                {playerInfo.name.length > 6 ? playerInfo.name.substring(0, 6) + "..." : playerInfo.name}
+                            </div>
+                        </>
+                    ) : (
+                        // Fallback when no image - show original card layout
+                        <>
+                            {/* Player indicator badge */}
+                            <div className={cn(
+                                "absolute top-1 left-1 text-xs font-bold px-1.5 py-0.5 rounded-full z-20",
+                                playerInfo.textColor,
+                                isCurrentPlayerCard ? "bg-blue-200" : "bg-red-200"
+                            )}>
+                                {isCurrentPlayerCard ? "YOU" : "OPP"}
+                            </div>
+                            
+                            {/* Card content */}
+                            <div className="relative z-10 flex flex-col items-center">
+                                <div className={cn(
+                                    "text-2xl font-bold font-mono",
+                                    playerInfo.textColor
+                                )}>
+                                    {card.power}
+                                </div>
+                                
+                                <span className={cn(
+                                    "text-xs font-semibold truncate max-w-[80%] text-center",
+                                    playerInfo.textColor
+                                )}>
+                                    {card.name}
+                                </span>
+                            </div>
+                            
+                            {/* Player name indicator */}
+                            <div className={cn(
+                                "absolute bottom-1 right-1 text-[10px] font-medium px-1 py-0.5 rounded z-20",
+                                playerInfo.textColor,
+                                isCurrentPlayerCard ? "bg-blue-200/80" : "bg-red-200/80"
+                            )}>
+                                {playerInfo.name.length > 6 ? playerInfo.name.substring(0, 6) + "..." : playerInfo.name}
+                            </div>
+                        </>
                     )}
-                    
-                    {/* Card power */}
-                    <div className={cn(
-                        "text-2xl font-bold font-mono z-10",
-                        playerInfo.textColor
-                    )}>
-                        {card.power}
-                    </div>
-                    
-                    {/* Card name */}
-                    <span className={cn(
-                        "text-xs font-medium truncate max-w-[80%] text-center z-10",
-                        playerInfo.textColor
-                    )}>
-                        {card.name}
-                    </span>
-                    
-                    {/* Player name indicator */}
-                    <div className={cn(
-                        "absolute bottom-1 right-1 text-[10px] font-medium px-1 py-0.5 rounded",
-                        playerInfo.textColor,
-                        isCurrentPlayerCard ? "bg-blue-200/50" : "bg-red-200/50"
-                    )}>
-                        {playerInfo.name.length > 6 ? playerInfo.name.substring(0, 6) + "..." : playerInfo.name}
-                    </div>
                 </div>
             )}
 
