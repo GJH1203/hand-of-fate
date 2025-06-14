@@ -11,4 +11,8 @@ public interface CardDto {
     String getId();
     int getPower();
     String getName();
+    @Value.Default
+    default String getImageUrl() {
+        return "";
+    }
 }

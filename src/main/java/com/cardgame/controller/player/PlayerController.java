@@ -71,6 +71,23 @@ public class PlayerController {
     // Test endpoints removed for production security
     // Use proper authentication flow to create players
     
+    @DeleteMapping("/{playerId}")
+    public ResponseEntity<String> deletePlayerById(@PathVariable String playerId) {
+        try {
+            // Check if player exists first
+            Player player = playerService.getPlayer(playerId);
+            
+            // Delete the player
+            playerService.deletePlayer(playerId);
+            
+            return ResponseEntity.ok("Player " + player.getName() + " (ID: " + playerId + ") deleted successfully");
+        } catch (com.cardgame.exception.player.PlayerNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Failed to delete player: " + e.getMessage());
+        }
+    }
+
     @DeleteMapping("/all")
     public ResponseEntity<String> deleteAllPlayers() {
         try {

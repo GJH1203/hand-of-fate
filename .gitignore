@@ -35,3 +35,38 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Mac ###
+.DS_Store
+
+### Test Scripts ###
+get-test-players.js
+test-*.js
+test-*.sh
+test-*.py
+.esm-wrapper.mjs
+.npmignore
+
+### Node.js ###
+node_modules/
+npm-debug.log*
+package-lock.json
+package.json
+
+### Python ###
+*.pyc
+__pycache__/
+.pytest_cache/
+
+### Temporary files ###
+*.tmp
+*.temp
+*.swp
+*~
+
+### Application logs ###
+*.log
+logs/
+
+### Build reports ###
+build/reports/

@@ -12,18 +12,36 @@ public class DataInitializer {
     @Bean
     CommandLineRunner initDatabase(CardRepository cardRepository) {
         return args -> {
-            // Check if default card exists
-            if (!cardRepository.existsById("1")) {
-                // Create default card
-                Card defaultCard = new Card();
-                defaultCard.setId("1");
-                defaultCard.setName("Default Card");
-                defaultCard.setPower(1);
-                cardRepository.save(defaultCard);
-                System.out.println("Created default card with ID: 1");
-            } else {
-                System.out.println("Default card already exists");
-            }
+            // Delete all existing cards first to ensure clean state
+            cardRepository.deleteAll();
+            System.out.println("Cleared all existing cards");
+            
+            // Create Spark card
+            Card sparkCard = new Card();
+            sparkCard.setId("1");
+            sparkCard.setName("Spark");
+            sparkCard.setPower(1);
+            sparkCard.setImageUrl("/gifs/spark.png");
+            cardRepository.save(sparkCard);
+            System.out.println("Created Spark card with ID: 1");
+            
+            // Create Lightning card
+            Card lightningCard = new Card();
+            lightningCard.setId("3");
+            lightningCard.setName("Lightning");
+            lightningCard.setPower(3);
+            lightningCard.setImageUrl("/gifs/lightning.png");
+            cardRepository.save(lightningCard);
+            System.out.println("Created Lightning card with ID: 3");
+            
+            // Create Thunder card
+            Card thunderCard = new Card();
+            thunderCard.setId("5");
+            thunderCard.setName("Thunder");
+            thunderCard.setPower(5);
+            thunderCard.setImageUrl("/gifs/thunder.png");
+            cardRepository.save(thunderCard);
+            System.out.println("Created Thunder card with ID: 5");
         };
     }
 }

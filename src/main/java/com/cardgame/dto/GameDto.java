@@ -71,4 +71,12 @@ public interface GameDto {
     default Map<String, String> getCardOwnership() {
         return Map.of();
     }
+    
+    /**
+     * Map of card ID to Card details for all cards placed on the board
+     */
+    @Value.Default
+    default Map<String, CardDto> getPlacedCards() {
+        return Map.of();
+    }
 }
