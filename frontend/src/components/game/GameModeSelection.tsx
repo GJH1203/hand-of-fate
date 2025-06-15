@@ -7,7 +7,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { GameMode } from '@/types/gameMode';
 import { Users, Globe, Zap, Copy, RefreshCw, AlertCircle } from 'lucide-react';
 import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
-import { onlineGameService } from '@/services/onlineGameService';
+import { onlineGameService, ActiveGame } from '@/services/onlineGameService';
 
 interface GameModeSelectionProps {
   onModeSelect: (mode: GameMode, matchId?: string) => void;
@@ -17,7 +17,7 @@ export default function GameModeSelection({ onModeSelect }: GameModeSelectionPro
   const { user } = useUnifiedAuth();
   const [showJoinGame, setShowJoinGame] = useState(false);
   const [matchId, setMatchId] = useState('');
-  const [activeGame, setActiveGame] = useState<any>(null);
+  const [activeGame, setActiveGame] = useState<ActiveGame | null>(null);
   const [checkingActiveGame, setCheckingActiveGame] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
@@ -59,6 +59,7 @@ export default function GameModeSelection({ onModeSelect }: GameModeSelectionPro
 
   const handleConfirmNewGame = () => {
     setShowConfirmDialog(false);
+    setActiveGame(null); // Clear activeGame to avoid stale state
     onModeSelect(GameMode.ONLINE);
   };
 

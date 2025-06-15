@@ -16,6 +16,15 @@ export interface JoinMatchResponse {
   gameState?: string;
 }
 
+export interface ActiveGame {
+  hasActiveGame: boolean;
+  gameId?: string;
+  matchId?: string;
+  gameState?: string;
+  isCurrentTurn?: boolean;
+  opponentId?: string;
+}
+
 class OnlineGameService {
   /**
    * Create a new online match
@@ -116,14 +125,7 @@ class OnlineGameService {
   /**
    * Check if player has any active games
    */
-  async checkActiveGame(playerId: string): Promise<{
-    hasActiveGame: boolean;
-    gameId?: string;
-    matchId?: string;
-    gameState?: string;
-    isCurrentTurn?: boolean;
-    opponentId?: string;
-  }> {
+  async checkActiveGame(playerId: string): Promise<ActiveGame> {
     try {
       const response = await fetch(`${API_URL}/api/online-game/active-game/${playerId}`);
       
