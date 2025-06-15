@@ -123,6 +123,13 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                         setIsMyTurn(state.currentPlayerId === user.playerId);
                         updateBoardCards(mappedState);
                         
+                        // Log if game is completed
+                        if (mappedState.state === 'COMPLETED') {
+                            console.log('Game completed! Board pieces:', mappedState.board.pieces);
+                            console.log('Placed cards:', mappedState.placedCards);
+                            console.log('Column scores:', mappedState.columnScores);
+                        }
+                        
                         // Use card ownership from backend
                         if (state.cardOwnership) {
                             setCardOwnership(state.cardOwnership);
@@ -633,6 +640,27 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                             <div className="relative z-10 flex flex-col items-center">
                                 <h2 className="text-2xl font-bold mb-4 text-center text-purple-300 drop-shadow-lg">Battle Arena</h2>
                             
+                            {/* Game Completion Banner */}
+                            {gameState.state === 'COMPLETED' && (
+                                <div className="mb-4 p-4 bg-gradient-to-r from-yellow-600 to-orange-600 rounded-lg shadow-2xl text-white">
+                                    <h3 className="text-xl font-bold text-center mb-2">Game Complete!</h3>
+                                    <p className="text-center text-lg">
+                                        {gameState.isTie ? (
+                                            "It's a Tie!"
+                                        ) : gameState.winnerId === user?.playerId ? (
+                                            "🎉 You Won! 🎉"
+                                        ) : (
+                                            `${players[gameState.winnerId || ''] || 'Opponent'} Won`
+                                        )}
+                                    </p>
+                                    <div className="mt-2 text-center text-sm">
+                                        Final Score: {Object.entries(gameState.scores || {}).map(([pid, score]) => 
+                                            `${players[pid] || 'Player'}: ${score} columns`
+                                        ).join(' | ')}
+                                    </div>
+                                </div>
+                            )}
+                            
                             {/* Column Indicators */}
                             <div className="grid grid-cols-3 gap-2 mb-4 w-fit mx-auto">
                                 {[0, 1, 2].map(colIndex => (
@@ -674,7 +702,8 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                                 ).flat()}
                             </div>
 
-                            {/* Your Hand (only visible when it's your turn) */}
+                            {/* Your Hand (only visible when game is in progress) */}
+                            {gameState.state === 'IN_PROGRESS' && (
                             <div className="relative bg-black/40 rounded-xl p-4 mt-4 overflow-hidden">
                                 {/* Wooden Background */}
                                 <div 
@@ -693,8 +722,10 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                                     />
                                 </div>
                             </div>
+                            )}
 
                             {/* Action Buttons */}
+                            {gameState.state === 'IN_PROGRESS' && (
                             <div className="flex gap-2 mt-4">
                                 <Button
                                     variant="secondary"
@@ -743,6 +774,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                                     </div>
                                 )}
                             </div>
+                            )}
                             </div>
                         </div>
                     </div>
