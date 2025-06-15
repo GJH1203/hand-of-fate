@@ -458,9 +458,15 @@ public class NakamaMatchService {
                 logger.info("No active games found for player {}", playerId);
                 return null;
             }
-        } catch (Exception e) {
-            logger.error("Error finding active game for player {}", playerId, e);
+        } catch (IllegalArgumentException e) {
+            logger.error("Invalid argument while finding active game for player {}: {}", playerId, e.getMessage());
             return null;
+        } catch (NoSuchElementException e) {
+            logger.error("No element found while finding active game for player {}: {}", playerId, e.getMessage());
+            return null;
+        } catch (Exception e) {
+            logger.error("Unexpected error finding active game for player {}", playerId, e);
+            throw new RuntimeException("Unexpected error occurred while finding active game for player " + playerId, e);
         }
     }
     
