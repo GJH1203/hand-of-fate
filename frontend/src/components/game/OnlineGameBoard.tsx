@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import GameCell from './GameCell';
 import PlayerHand from './PlayerHand';
 import GameLobby from './GameLobby';
+import ColumnIndicator from './ColumnIndicator';
 import { Card, Position, GameState } from '@/types/game';
 import { OnlineMatchInfo } from '@/types/gameMode';
 import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
@@ -23,6 +24,9 @@ interface OnlineGameBoardProps {
   matchId?: string;
   onBack: () => void;
 }
+
+// Debug flag - set to false in production
+const DEBUG = process.env.NODE_ENV === 'development';
 
 export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProps) {
     const { isAuthenticated, user } = useUnifiedAuth();
@@ -114,25 +118,39 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                             hasPendingWinRequest: state.hasPendingWinRequest,
                             pendingWinRequestPlayerId: state.pendingWinRequestPlayerId,
                             cardOwnership: state.cardOwnership || {},
-                            playerIds: state.playerIds || []
+                            playerIds: state.playerIds || [],
+                            columnScores: state.columnScores || {}
                         };
                         
                         setGameState(mappedState);
                         setIsMyTurn(state.currentPlayerId === user.playerId);
                         updateBoardCards(mappedState);
                         
+                        // Log if game is completed
+                        if (mappedState.state === 'COMPLETED' && DEBUG) {
+                            console.log('Game completed! Board pieces:', mappedState.board.pieces);
+                            console.log('Placed cards:', mappedState.placedCards);
+                            console.log('Column scores:', mappedState.columnScores);
+                        }
+                        
                         // Use card ownership from backend
                         if (state.cardOwnership) {
                             setCardOwnership(state.cardOwnership);
-                            console.log('Updated card ownership from backend:', state.cardOwnership);
+                            if (DEBUG) {
+                                console.log('Updated card ownership from backend:', state.cardOwnership);
+                            }
                         }
                         
                         // Debug logging
-                        console.log('Current player ID:', state.currentPlayerId);
-                        console.log('My player ID:', user.playerId);
-                        console.log('Is my turn:', state.currentPlayerId === user.playerId);
-                        console.log('Current player hand:', state.currentPlayerHand);
-                        console.log('Card ownership:', state.cardOwnership);
+                        if (DEBUG) {
+                            console.log('Current player ID:', state.currentPlayerId);
+                            console.log('My player ID:', user.playerId);
+                            console.log('Is my turn:', state.currentPlayerId === user.playerId);
+                            console.log('Current player hand:', state.currentPlayerHand);
+                            console.log('Card ownership:', state.cardOwnership);
+                            console.log('Column scores:', state.columnScores);
+                            console.log('Full game state:', state);
+                        }
                         
                         // Update player names if available
                         if (state.playerIds && state.playerIds.length > 0) {
@@ -446,23 +464,13 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
             setSelectedCard(null);
             setValidMoves([]);
             
-            // The response already contains the updated game state
-            // Update our local state immediately
+            // Don't update game state from REST response - wait for WebSocket update
+            // The WebSocket will broadcast the proper player-specific view with column scores
+            console.log('Move successful, waiting for WebSocket update');
+            
+            // Only update turn status immediately for better UX
             if (response) {
-                console.log('Move successful, updating local state');
                 setIsMyTurn(response.currentPlayerId === user!.playerId);
-                
-                // Update card ownership from backend response
-                if (response.cardOwnership) {
-                    setCardOwnership(response.cardOwnership);
-                    console.log('Updated card ownership from response:', response.cardOwnership);
-                }
-                
-                // Update the board display with the new game state
-                updateBoardCards(response);
-                
-                // Also update the full game state
-                setGameState(response);
             }
         } catch (err) {
             setError('Failed to make move');
@@ -639,6 +647,41 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                             <div className="relative z-10 flex flex-col items-center">
                                 <h2 className="text-2xl font-bold mb-4 text-center text-purple-300 drop-shadow-lg">Battle Arena</h2>
                             
+                            {/* Game Completion Banner */}
+                            {gameState.state === 'COMPLETED' && (
+                                <div className="mb-4 p-4 bg-gradient-to-r from-yellow-600 to-orange-600 rounded-lg shadow-2xl text-white">
+                                    <h3 className="text-xl font-bold text-center mb-2">Game Complete!</h3>
+                                    <p className="text-center text-lg">
+                                        {gameState.isTie ? (
+                                            "It's a Tie!"
+                                        ) : gameState.winnerId === user?.playerId ? (
+                                            "🎉 You Won! 🎉"
+                                        ) : (
+                                            `${players[gameState.winnerId || ''] || 'Opponent'} Won`
+                                        )}
+                                    </p>
+                                    <div className="mt-2 text-center text-sm">
+                                        Final Score: {Object.entries(gameState.scores || {}).map(([pid, score]) => 
+                                            `${players[pid] || 'Player'}: ${score} columns`
+                                        ).join(' | ')}
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {/* Column Indicators */}
+                            <div className="grid grid-cols-3 gap-2 mb-4 w-fit mx-auto">
+                                {[0, 1, 2].map(colIndex => (
+                                    <div key={`col-indicator-${colIndex}`} className="w-28">
+                                        <ColumnIndicator
+                                            columnIndex={colIndex}
+                                            columnScore={gameState.columnScores?.[colIndex]}
+                                            players={players}
+                                            currentPlayerId={user?.playerId || ''}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                            
                             {/* Board Grid */}
                             <div className="grid grid-cols-3 gap-2 mb-6 w-fit mx-auto">
                                 {Array.from({ length: DEFAULT_BOARD_HEIGHT }, (_, y) => 
@@ -666,7 +709,8 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                                 ).flat()}
                             </div>
 
-                            {/* Your Hand (only visible when it's your turn) */}
+                            {/* Your Hand (only visible when game is in progress) */}
+                            {gameState.state === 'IN_PROGRESS' && (
                             <div className="relative bg-black/40 rounded-xl p-4 mt-4 overflow-hidden">
                                 {/* Wooden Background */}
                                 <div 
@@ -685,8 +729,10 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                                     />
                                 </div>
                             </div>
+                            )}
 
                             {/* Action Buttons */}
+                            {gameState.state === 'IN_PROGRESS' && (
                             <div className="flex gap-2 mt-4">
                                 <Button
                                     variant="secondary"
@@ -735,6 +781,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                                     </div>
                                 )}
                             </div>
+                            )}
                             </div>
                         </div>
                     </div>
@@ -758,7 +805,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                                                 </Badge>
                                             )}
                                         </span>
-                                        <Badge>{gameState.scores?.[playerId] || 0}</Badge>
+                                        <Badge>{gameState.scores?.[playerId] || 0} column{(gameState.scores?.[playerId] || 0) !== 1 ? 's' : ''}</Badge>
                                     </div>
                                 ))}
                             </div>

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import GameCell from './GameCell';
 import PlayerHand from './PlayerHand';
+import ColumnIndicator from './ColumnIndicator';
 import { useGameState } from '@/hooks/useGameState';
 import { Card, Position, GameState } from '@/types/game';
 import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
@@ -406,10 +407,10 @@ export default function GameBoard() {
                     )}
                     {gameState.scores && (
                         <div className="mt-4 text-center">
-                            <h3 className="text-lg font-semibold mb-2">Final Scores:</h3>
+                            <h3 className="text-lg font-semibold mb-2">Columns Won:</h3>
                             {Object.entries(gameState.scores).map(([playerId, score]) => (
                                 <p key={playerId} className="text-md">
-                                    {players[playerId] || playerId}: {score} points
+                                    {players[playerId] || playerId}: {score} column{score !== 1 ? 's' : ''}
                                 </p>
                             ))}
                         </div>
@@ -490,6 +491,21 @@ export default function GameBoard() {
                     <div className="absolute inset-0 bg-gradient-to-t from-transparent via-purple-400/10 to-transparent lightning-overlay" />
                     <div className="relative z-10 flex flex-col items-center">
                         <h2 className="text-2xl font-bold text-center text-purple-300 mb-4 drop-shadow-lg">Battle Arena</h2>
+                        
+                        {/* Column Indicators */}
+                        <div className="grid grid-cols-3 gap-1 mb-4 w-fit mx-auto">
+                            {[0, 1, 2].map(colIndex => (
+                                <div key={`col-indicator-${colIndex}`} className="w-24">
+                                    <ColumnIndicator
+                                        columnIndex={colIndex}
+                                        columnScore={gameState.columnScores?.[colIndex]}
+                                        players={players}
+                                        currentPlayerId={gameState.currentPlayerId}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                        
                         <div className={`grid grid-cols-3 gap-1 w-fit mx-auto ${gameState.state === 'COMPLETED' ? 'opacity-50 pointer-events-none' : ''}`}>
                 {Array.from({ length: DEFAULT_BOARD_HEIGHT }, (_, y) =>
                     Array.from({ length: DEFAULT_BOARD_WIDTH }, (_, x) => {

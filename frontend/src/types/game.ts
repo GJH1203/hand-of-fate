@@ -17,6 +17,12 @@ export interface Card {
     imageUrl?: string;
 }
 
+export interface ColumnScore {
+    playerScores: Record<string, number>; // Player ID to power in this column
+    winnerId: string | null; // Player who won this column
+    isTie: boolean; // Whether this column is tied
+}
+
 export interface GameState {
     id: string;
     state: 'INITIALIZED' | 'IN_PROGRESS' | 'COMPLETED';
@@ -35,6 +41,7 @@ export interface GameState {
     pendingWinRequestPlayerId?: string | null;
     cardOwnership?: Record<string, string>; // Map of position to player ID
     playerIds?: string[]; // List of player IDs in the game
+    columnScores?: Record<number, ColumnScore>; // Column index to column score info
 }
 
 export interface InitializePayload {
