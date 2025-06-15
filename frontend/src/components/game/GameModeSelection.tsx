@@ -1,25 +1,74 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { GameMode } from '@/types/gameMode';
-import { Users, Globe, Zap, Copy } from 'lucide-react';
+import { Users, Globe, Zap, Copy, RefreshCw, AlertCircle } from 'lucide-react';
+import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
+import { onlineGameService, ActiveGame } from '@/services/onlineGameService';
 
 interface GameModeSelectionProps {
   onModeSelect: (mode: GameMode, matchId?: string) => void;
 }
 
 export default function GameModeSelection({ onModeSelect }: GameModeSelectionProps) {
+  const { user } = useUnifiedAuth();
   const [showJoinGame, setShowJoinGame] = useState(false);
   const [matchId, setMatchId] = useState('');
+  const [activeGame, setActiveGame] = useState<ActiveGame | null>(null);
+  const [checkingActiveGame, setCheckingActiveGame] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+
+  // Check for active games when component mounts
+  useEffect(() => {
+    if (user?.playerId) {
+      checkForActiveGame();
+    }
+  }, [user]);
+
+  const checkForActiveGame = async () => {
+    if (!user?.playerId) return;
+    
+    setCheckingActiveGame(true);
+    try {
+      const result = await onlineGameService.checkActiveGame(user.playerId);
+      if (result.hasActiveGame) {
+        setActiveGame(result);
+      }
+    } catch (error) {
+      console.error('Error checking for active game:', error);
+    } finally {
+      setCheckingActiveGame(false);
+    }
+  };
 
   const handleLocalMode = () => {
     onModeSelect(GameMode.LOCAL);
   };
 
   const handleOnlineMode = () => {
+    // If user has active game, show confirmation
+    if (activeGame) {
+      setShowConfirmDialog(true);
+    } else {
+      onModeSelect(GameMode.ONLINE);
+    }
+  };
+
+  const handleConfirmNewGame = () => {
+    setShowConfirmDialog(false);
+    setActiveGame(null); // Clear activeGame to avoid stale state
     onModeSelect(GameMode.ONLINE);
+  };
+
+  const handleReconnect = () => {
+    if (activeGame?.matchId) {
+      // Extract the match ID from the Nakama match ID (format: "nakama_XXXXXX")
+      const matchCode = activeGame.matchId.replace('nakama_', '');
+      onModeSelect(GameMode.ONLINE, matchCode);
+    }
   };
 
   const handleQuickMatch = () => {
@@ -79,6 +128,40 @@ export default function GameModeSelection({ onModeSelect }: GameModeSelectionPro
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 relative">
+      {/* Confirmation Dialog */}
+      {showConfirmDialog && (
+        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+          <Card className="w-full max-w-md bg-black/90 border-purple-500/50">
+            <CardHeader>
+              <CardTitle className="text-xl text-yellow-400">Active Game Found</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Alert className="border-yellow-500/50 bg-yellow-500/10">
+                <AlertCircle className="h-4 w-4 text-yellow-500" />
+                <AlertDescription className="text-gray-200">
+                  You have an ongoing game. Creating a new game will abandon your current match.
+                </AlertDescription>
+              </Alert>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1 bg-gray-800/50 hover:bg-gray-700/50 border-gray-600 text-white"
+                  onClick={() => setShowConfirmDialog(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                  onClick={handleConfirmNewGame}
+                >
+                  Start New Game
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       <Card className="w-full max-w-2xl relative z-10 bg-black/80 backdrop-blur-sm border-purple-500/30">
         <CardHeader>
           <CardTitle className="text-3xl font-bold text-center bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">Choose Game Mode</CardTitle>
@@ -120,6 +203,27 @@ export default function GameModeSelection({ onModeSelect }: GameModeSelectionPro
                 Play with friends anywhere in the world. Real-time multiplayer.
               </p>
               <div className="space-y-2">
+                {/* Show active game alert if exists */}
+                {activeGame && !checkingActiveGame && (
+                  <Alert className="border-green-500/50 bg-green-500/10 mb-2">
+                    <AlertCircle className="h-4 w-4 text-green-500" />
+                    <AlertDescription className="text-gray-200 text-sm">
+                      You have an active game!
+                    </AlertDescription>
+                  </Alert>
+                )}
+                
+                {/* Reconnect button - shown when there's an active game */}
+                {activeGame && (
+                  <Button 
+                    className="w-full bg-green-600 hover:bg-green-700 text-white"
+                    onClick={handleReconnect}
+                  >
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Reconnect to Game
+                  </Button>
+                )}
+                
                 <Button 
                   className="w-full bg-purple-600 hover:bg-purple-700 text-white"
                   onClick={handleOnlineMode}

@@ -16,6 +16,15 @@ export interface JoinMatchResponse {
   gameState?: string;
 }
 
+export interface ActiveGame {
+  hasActiveGame: boolean;
+  gameId?: string;
+  matchId?: string;
+  gameState?: string;
+  isCurrentTurn?: boolean;
+  opponentId?: string;
+}
+
 class OnlineGameService {
   /**
    * Create a new online match
@@ -110,6 +119,24 @@ class OnlineGameService {
     } catch (error) {
       console.warn('Error leaving matches:', error);
       // Don't throw - allow the user to continue
+    }
+  }
+
+  /**
+   * Check if player has any active games
+   */
+  async checkActiveGame(playerId: string): Promise<ActiveGame> {
+    try {
+      const response = await fetch(`${API_URL}/api/online-game/active-game/${playerId}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to check active games');
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('Error checking active games:', error);
+      return { hasActiveGame: false };
     }
   }
 }
