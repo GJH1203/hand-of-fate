@@ -439,24 +439,25 @@ public class NakamaMatchService {
      */
     public GameModel findActiveGameForPlayer(String playerId) {
         try {
-            // Search through all games in the repository
-            List<GameModel> allGames = gameRepository.findAll();
+            // Define active game states
+            List<GameState> activeStates = Arrays.asList(
+                GameState.INITIALIZED, 
+                GameState.IN_PROGRESS
+            );
             
-            for (GameModel game : allGames) {
-                // Check if player is in this game
-                if (game.getPlayerIds() != null && game.getPlayerIds().contains(playerId)) {
-                    // Check if game is active (not completed)
-                    if (game.getGameState() != null && 
-                        (game.getGameState() == GameState.INITIALIZED || 
-                         game.getGameState() == GameState.IN_PROGRESS)) {
-                        logger.info("Found active game {} for player {}", game.getId(), playerId);
-                        return game;
-                    }
-                }
+            // Use efficient repository query to find the most recent active game
+            Optional<GameModel> activeGame = gameRepository
+                .findFirstByPlayerIdsContainingAndGameStateInOrderByUpdatedAtDesc(
+                    playerId, activeStates
+                );
+            
+            if (activeGame.isPresent()) {
+                logger.info("Found active game {} for player {}", activeGame.get().getId(), playerId);
+                return activeGame.get();
+            } else {
+                logger.info("No active games found for player {}", playerId);
+                return null;
             }
-            
-            logger.info("No active games found for player {}", playerId);
-            return null;
         } catch (Exception e) {
             logger.error("Error finding active game for player {}", playerId, e);
             return null;
