@@ -106,7 +106,8 @@ public class ScoreCalculator {
         // If multiple players have the highest score, it's a tie
         isTie = playersWithHighestScore > 1;
         
-        // If highest score is 0, it's also considered a tie (empty column)
+        // If highest score is 0, it's also considered a tie (empty column).
+        // This is the intended behavior as per game design, even if cards with power 0 are placed.
         if (highestScore == 0) {
             isTie = true;
             winnerId = null;
