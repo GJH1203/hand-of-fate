@@ -110,7 +110,7 @@ public class NakamaMatchService {
                 MatchMetadata metadata = matchMetadata.get(matchId);
                 if (metadata == null) {
                     logger.error("Match {} not found. Available matches: {}", matchId, matchMetadata.keySet());
-                    logger.error("Match metadata map contents: {}", matchMetadata);
+                    logger.error("Match metadata map contains {} entries. Keys: {}", matchMetadata.size(), matchMetadata.keySet());
                     throw new IllegalArgumentException("Match not found");
                 }
                 
