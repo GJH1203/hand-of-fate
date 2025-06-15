@@ -282,13 +282,10 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             
             // Check if game ended
             if (updatedGame.getGameState().name().equals("COMPLETED")) {
-                broadcastToMatch(info.matchId, new WebSocketMessage(
-                    MessageType.GAME_END,
-                    Map.of(
-                        "winnerId", updatedGame.getWinnerId(),
-                        "scores", updatedGame.getPlayerScores()
-                    )
-                ), null);
+                // Don't send a separate GAME_END message that might clear the board
+                // The GAME_STATE_UPDATE above already includes all the necessary info
+                logger.info("Game {} completed. Winner: {}, Scores: {}", 
+                    updatedGame.getId(), updatedGame.getWinnerId(), updatedGame.getPlayerScores());
             }
             
         } catch (Exception e) {
@@ -386,13 +383,27 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             if (gameState instanceof com.cardgame.dto.GameDto) {
                 com.cardgame.dto.GameDto gameDto = (com.cardgame.dto.GameDto) gameState;
                 
-                // Send to all sessions in the match
+                // Get the game ID from the DTO to fetch the game model
+                String gameId = gameDto.getId();
+                var gameModel = gameService.getGameModel(gameId);
+                
+                // Send player-specific views to each session
                 for (WebSocketSession session : sessions) {
                     SessionInfo sInfo = sessionInfoMap.get(session.getId());
                     if (sInfo != null) {
-                        // For the player whose data we have, send it directly
-                        // For others, they'll need to request their own view
-                        sendMessage(session, message);
+                        // Convert game state to player-specific view
+                        var playerSpecificDto = gameService.convertToDto(gameModel, sInfo.playerId);
+                        
+                        // Log column scores being sent
+                        logger.info("Sending game update to player {} with column scores: {}", 
+                            sInfo.playerId, playerSpecificDto.getColumnScores());
+                        
+                        WebSocketMessage playerMessage = new WebSocketMessage();
+                        playerMessage.setType(MessageType.GAME_STATE_UPDATE);
+                        playerMessage.setData(playerSpecificDto);
+                        
+                        sendMessage(session, playerMessage);
+                        logger.debug("Sent player-specific game view to player {}", sInfo.playerId);
                     }
                 }
             } else {
