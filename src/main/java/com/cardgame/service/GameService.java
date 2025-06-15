@@ -19,6 +19,8 @@ import com.cardgame.service.player.PlayerService;
 import com.cardgame.service.util.ScoreCalculator;
 import com.cardgame.service.validator.GameValidator;
 import org.checkerframework.checker.units.qual.C;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -32,6 +34,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class GameService {
+    private static final Logger logger = LoggerFactory.getLogger(GameService.class);
+    
     private final GameRepository gameRepository;
     private final PlayerService playerService;
     private final CardService cardService;
@@ -98,6 +102,24 @@ public class GameService {
                 .placedCards(placedCards)
                 .createdAt(gameModel.getCreatedAt())
                 .updatedAt(gameModel.getUpdatedAt());
+
+        // Calculate and add column scores
+        Map<Integer, ScoreCalculator.ColumnScore> columnScores = ScoreCalculator.calculateColumnScores(gameModel, playerService);
+        Map<Integer, ColumnScoreDto> columnScoreDtos = new HashMap<>();
+        for (Map.Entry<Integer, ScoreCalculator.ColumnScore> entry : columnScores.entrySet()) {
+            ScoreCalculator.ColumnScore colScore = entry.getValue();
+            ColumnScoreDto dto = ImmutableColumnScoreDto.builder()
+                    .playerScores(colScore.playerScores)
+                    .winnerId(colScore.winnerId)
+                    .isTie(colScore.isTie)
+                    .build();
+            columnScoreDtos.put(entry.getKey(), dto);
+        }
+        builder.columnScores(columnScoreDtos);
+        
+        // Debug logging
+        logger.debug("Column scores for game {} viewed by player {}: {}", 
+            gameModel.getId(), forPlayerId, columnScoreDtos);
 
         // Add win request information if there's a pending request
         if (gameModel.hasPendingWinRequest()) {
@@ -383,8 +405,8 @@ public class GameService {
             }
         }
 
-        // Determine winner
-        String winnerId = ScoreCalculator.determineWinner(gameModel);
+        // Determine winner using column-based scoring
+        String winnerId = ScoreCalculator.determineWinner(gameModel, playerService);
         gameModel.setWinnerId(winnerId);
         gameModel.setTie(winnerId == null);
 

@@ -79,4 +79,13 @@ public interface GameDto {
     default Map<String, CardDto> getPlacedCards() {
         return Map.of();
     }
+    
+    /**
+     * Map of column index (0, 1, 2) to column score information.
+     * Populated during gameplay to show current column standings.
+     */
+    @Value.Default
+    default Map<Integer, ColumnScoreDto> getColumnScores() {
+        return Map.of();
+    }
 }
