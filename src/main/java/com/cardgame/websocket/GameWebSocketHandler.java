@@ -282,13 +282,10 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             
             // Check if game ended
             if (updatedGame.getGameState().name().equals("COMPLETED")) {
-                broadcastToMatch(info.matchId, new WebSocketMessage(
-                    MessageType.GAME_END,
-                    Map.of(
-                        "winnerId", updatedGame.getWinnerId(),
-                        "scores", updatedGame.getPlayerScores()
-                    )
-                ), null);
+                // Don't send a separate GAME_END message that might clear the board
+                // The GAME_STATE_UPDATE above already includes all the necessary info
+                logger.info("Game {} completed. Winner: {}, Scores: {}", 
+                    updatedGame.getId(), updatedGame.getWinnerId(), updatedGame.getPlayerScores());
             }
             
         } catch (Exception e) {

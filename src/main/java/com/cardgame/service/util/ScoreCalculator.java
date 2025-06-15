@@ -42,7 +42,12 @@ public class ScoreCalculator {
         
         // Initialize column scores for each column (0, 1, 2)
         for (int col = 0; col < BOARD_WIDTH; col++) {
-            columnScores.put(col, new ColumnScore());
+            ColumnScore colScore = new ColumnScore();
+            // Initialize all players with 0 score
+            for (String playerId : gameModel.getPlayerIds()) {
+                colScore.playerScores.put(playerId, 0);
+            }
+            columnScores.put(col, colScore);
         }
         
         // Calculate scores for each player
@@ -81,6 +86,7 @@ public class ScoreCalculator {
         int highestScore = -1;
         String winnerId = null;
         boolean isTie = false;
+        int playersWithHighestScore = 0;
         
         for (Map.Entry<String, Integer> entry : columnScore.playerScores.entrySet()) {
             String playerId = entry.getKey();
@@ -89,10 +95,19 @@ public class ScoreCalculator {
             if (score > highestScore) {
                 highestScore = score;
                 winnerId = playerId;
-                isTie = false;
-            } else if (score == highestScore && score > 0) {
-                isTie = true;
+                playersWithHighestScore = 1;
+            } else if (score == highestScore) {
+                playersWithHighestScore++;
             }
+        }
+        
+        // If multiple players have the highest score, it's a tie
+        isTie = playersWithHighestScore > 1;
+        
+        // If highest score is 0, it's also considered a tie (empty column)
+        if (highestScore == 0) {
+            isTie = true;
+            winnerId = null;
         }
         
         columnScore.winnerId = isTie ? null : winnerId;

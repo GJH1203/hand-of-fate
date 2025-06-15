@@ -86,6 +86,7 @@ public class NakamaMatchService {
                 
                 logger.info("Created match {} for player {} - metadata stored with creatorId: {}", 
                     matchId, playerId, metadata.creatorId);
+                logger.info("Current matches after creation: {}", matchMetadata.keySet());
                 
                 return matchId;
             } catch (Exception e) {
@@ -105,8 +106,11 @@ public class NakamaMatchService {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 // Validate match exists and is waiting for players
+                logger.info("Attempting to join match {}. Current matches in memory: {}", matchId, matchMetadata.keySet());
                 MatchMetadata metadata = matchMetadata.get(matchId);
                 if (metadata == null) {
+                    logger.error("Match {} not found. Available matches: {}", matchId, matchMetadata.keySet());
+                    logger.error("Match metadata map contents: {}", matchMetadata);
                     throw new IllegalArgumentException("Match not found");
                 }
                 
@@ -394,10 +398,20 @@ public class NakamaMatchService {
     public void clearPlayerMatches(String playerId) {
         logger.info("Clearing matches for player: {}", playerId);
         
+        // Only remove matches that are at least 5 seconds old to prevent race conditions
+        Instant cutoffTime = Instant.now().minusSeconds(5);
+        
         // Find and remove matches where player is creator
         matchMetadata.entrySet().removeIf(entry -> {
             MatchMetadata meta = entry.getValue();
-            return meta.creatorId != null && meta.creatorId.equals(playerId);
+            boolean shouldRemove = meta.creatorId != null && 
+                                   meta.creatorId.equals(playerId) &&
+                                   meta.createdAt != null &&
+                                   meta.createdAt.isBefore(cutoffTime);
+            if (shouldRemove) {
+                logger.info("Removing match {} created by {} at {}", entry.getKey(), playerId, meta.createdAt);
+            }
+            return shouldRemove;
         });
         
         // Remove player from all subscriptions

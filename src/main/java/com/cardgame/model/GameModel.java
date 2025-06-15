@@ -30,6 +30,7 @@ public class GameModel {
     private String winnerId;
     private boolean isTie;
     private Map<String, Integer> playerScores;
+    private Map<Integer, Map<String, Integer>> finalColumnScores; // Stores column scores at game end
 
     // Win request fields
     private boolean hasPendingWinRequest;
@@ -167,6 +168,14 @@ public class GameModel {
             this.playerScores = new HashMap<>();
         }
         this.playerScores.put(playerId, score);
+    }
+
+    public Map<Integer, Map<String, Integer>> getFinalColumnScores() {
+        return finalColumnScores;
+    }
+
+    public void setFinalColumnScores(Map<Integer, Map<String, Integer>> finalColumnScores) {
+        this.finalColumnScores = finalColumnScores;
     }
 
     @Override

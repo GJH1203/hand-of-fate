@@ -104,16 +104,49 @@ public class GameService {
                 .updatedAt(gameModel.getUpdatedAt());
 
         // Calculate and add column scores
-        Map<Integer, ScoreCalculator.ColumnScore> columnScores = ScoreCalculator.calculateColumnScores(gameModel, playerService);
         Map<Integer, ColumnScoreDto> columnScoreDtos = new HashMap<>();
-        for (Map.Entry<Integer, ScoreCalculator.ColumnScore> entry : columnScores.entrySet()) {
-            ScoreCalculator.ColumnScore colScore = entry.getValue();
-            ColumnScoreDto dto = ImmutableColumnScoreDto.builder()
-                    .playerScores(colScore.playerScores)
-                    .winnerId(colScore.winnerId)
-                    .isTie(colScore.isTie)
-                    .build();
-            columnScoreDtos.put(entry.getKey(), dto);
+        
+        // If game is completed and we have stored final column scores, use those
+        if (gameModel.getGameState() == GameState.COMPLETED && gameModel.getFinalColumnScores() != null) {
+            Map<Integer, Map<String, Integer>> finalScores = gameModel.getFinalColumnScores();
+            for (Map.Entry<Integer, Map<String, Integer>> entry : finalScores.entrySet()) {
+                Integer columnIndex = entry.getKey();
+                Map<String, Integer> scores = entry.getValue();
+                
+                // Determine column winner from scores
+                String columnWinner = null;
+                int maxScore = -1;
+                boolean isTie = false;
+                
+                for (Map.Entry<String, Integer> scoreEntry : scores.entrySet()) {
+                    if (scoreEntry.getValue() > maxScore) {
+                        maxScore = scoreEntry.getValue();
+                        columnWinner = scoreEntry.getKey();
+                        isTie = false;
+                    } else if (scoreEntry.getValue() == maxScore) {
+                        isTie = true;
+                    }
+                }
+                
+                ColumnScoreDto dto = ImmutableColumnScoreDto.builder()
+                        .playerScores(scores)
+                        .winnerId(isTie ? null : columnWinner)
+                        .isTie(isTie)
+                        .build();
+                columnScoreDtos.put(columnIndex, dto);
+            }
+        } else {
+            // Game in progress - calculate current column scores
+            Map<Integer, ScoreCalculator.ColumnScore> columnScores = ScoreCalculator.calculateColumnScores(gameModel, playerService);
+            for (Map.Entry<Integer, ScoreCalculator.ColumnScore> entry : columnScores.entrySet()) {
+                ScoreCalculator.ColumnScore colScore = entry.getValue();
+                ColumnScoreDto dto = ImmutableColumnScoreDto.builder()
+                        .playerScores(colScore.playerScores)
+                        .winnerId(colScore.winnerId)
+                        .isTie(colScore.isTie)
+                        .build();
+                columnScoreDtos.put(entry.getKey(), dto);
+            }
         }
         builder.columnScores(columnScoreDtos);
         
@@ -376,6 +409,21 @@ public class GameService {
         // Set game state to completed
         gameModel.setGameState(GameState.COMPLETED);
 
+        // IMPORTANT: Calculate column scores BEFORE restoring player state (which clears placedCards)
+        Map<Integer, ScoreCalculator.ColumnScore> columnScores = ScoreCalculator.calculateColumnScores(gameModel, playerService);
+        
+        // Store column scores in the game model for final display
+        Map<Integer, Map<String, Integer>> finalColumnScores = new HashMap<>();
+        for (Map.Entry<Integer, ScoreCalculator.ColumnScore> entry : columnScores.entrySet()) {
+            finalColumnScores.put(entry.getKey(), entry.getValue().playerScores);
+        }
+        gameModel.setFinalColumnScores(finalColumnScores);
+        
+        // Determine winner using column-based scoring
+        String winnerId = ScoreCalculator.determineWinner(gameModel, playerService);
+        gameModel.setWinnerId(winnerId);
+        gameModel.setTie(winnerId == null);
+
         // Get all players for this game
         Map<String, Player> players = new HashMap<>();
         for (String playerId : gameModel.getPlayerIds()) {
@@ -404,11 +452,6 @@ public class GameService {
                     player.getName());
             }
         }
-
-        // Determine winner using column-based scoring
-        String winnerId = ScoreCalculator.determineWinner(gameModel, playerService);
-        gameModel.setWinnerId(winnerId);
-        gameModel.setTie(winnerId == null);
 
         // Award bonus points to the winner's lifetime score
         if (winnerId != null && !gameModel.isTie()) {
