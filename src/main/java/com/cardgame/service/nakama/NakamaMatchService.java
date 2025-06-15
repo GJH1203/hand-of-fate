@@ -432,6 +432,37 @@ public class NakamaMatchService {
         return new HashMap<>(matchMetadata);
     }
     
+    /**
+     * Find an active (non-completed) game for a player
+     * @param playerId The player ID to search for
+     * @return The active GameModel or null if none found
+     */
+    public GameModel findActiveGameForPlayer(String playerId) {
+        try {
+            // Search through all games in the repository
+            List<GameModel> allGames = gameRepository.findAll();
+            
+            for (GameModel game : allGames) {
+                // Check if player is in this game
+                if (game.getPlayerIds() != null && game.getPlayerIds().contains(playerId)) {
+                    // Check if game is active (not completed)
+                    if (game.getGameState() != null && 
+                        (game.getGameState() == GameState.INITIALIZED || 
+                         game.getGameState() == GameState.IN_PROGRESS)) {
+                        logger.info("Found active game {} for player {}", game.getId(), playerId);
+                        return game;
+                    }
+                }
+            }
+            
+            logger.info("No active games found for player {}", playerId);
+            return null;
+        } catch (Exception e) {
+            logger.error("Error finding active game for player {}", playerId, e);
+            return null;
+        }
+    }
+    
     // Helper methods
     
     private String generateMatchId() {

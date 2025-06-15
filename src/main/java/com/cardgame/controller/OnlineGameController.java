@@ -59,6 +59,23 @@ public class OnlineGameController {
             @RequestBody JoinMatchRequest request) {
         logger.info("Player {} joining match {}", request.getPlayerId(), matchId);
         
+        // First check if this is a reconnection attempt
+        GameModel existingGame = nakamaMatchService.findActiveGameForPlayer(request.getPlayerId());
+        if (existingGame != null && existingGame.getNakamaMatchId() != null && 
+            existingGame.getNakamaMatchId().contains(matchId)) {
+            // This is a reconnection to an existing game
+            logger.info("Player {} reconnecting to existing game {}", request.getPlayerId(), existingGame.getId());
+            
+            MatchResponse response = new MatchResponse();
+            response.setMatchId(matchId);
+            response.setGameId(existingGame.getId());
+            response.setStatus("IN_PROGRESS");
+            response.setMessage("Successfully reconnected to match");
+            response.setGameState(existingGame.getGameState().toString());
+            return CompletableFuture.completedFuture(ResponseEntity.ok(response));
+        }
+        
+        // Otherwise, proceed with normal join
         return nakamaMatchService.joinMatch(request.getPlayerId(), matchId)
             .thenApply(game -> {
                 MatchResponse response = new MatchResponse();
@@ -164,6 +181,41 @@ public class OnlineGameController {
             logger.error("Failed to leave matches for player {}", playerId, e);
             response.put("success", false);
             response.put("error", "Failed to leave matches: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+    
+    /**
+     * Check if a player has any active (non-completed) games
+     */
+    @GetMapping("/active-game/{playerId}")
+    public ResponseEntity<Map<String, Object>> getActiveGame(@PathVariable String playerId) {
+        logger.info("Checking for active games for player: {}", playerId);
+        
+        Map<String, Object> response = new HashMap<>();
+        try {
+            GameModel activeGame = nakamaMatchService.findActiveGameForPlayer(playerId);
+            if (activeGame != null) {
+                response.put("hasActiveGame", true);
+                response.put("gameId", activeGame.getId());
+                response.put("matchId", activeGame.getNakamaMatchId());
+                response.put("gameState", activeGame.getGameState().toString());
+                response.put("isCurrentTurn", activeGame.getCurrentPlayerId().equals(playerId));
+                
+                // Get opponent info
+                String opponentId = activeGame.getPlayerIds().stream()
+                    .filter(id -> !id.equals(playerId))
+                    .findFirst()
+                    .orElse(null);
+                response.put("opponentId", opponentId);
+            } else {
+                response.put("hasActiveGame", false);
+                response.put("message", "No active games found");
+            }
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Failed to check active games for player {}", playerId, e);
+            response.put("error", "Failed to check active games: " + e.getMessage());
             return ResponseEntity.internalServerError().body(response);
         }
     }
