@@ -25,6 +25,9 @@ interface OnlineGameBoardProps {
   onBack: () => void;
 }
 
+// Debug flag - set to false in production
+const DEBUG = process.env.NODE_ENV === 'development';
+
 export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProps) {
     const { isAuthenticated, user } = useUnifiedAuth();
     const router = useRouter();
@@ -124,7 +127,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                         updateBoardCards(mappedState);
                         
                         // Log if game is completed
-                        if (mappedState.state === 'COMPLETED') {
+                        if (mappedState.state === 'COMPLETED' && DEBUG) {
                             console.log('Game completed! Board pieces:', mappedState.board.pieces);
                             console.log('Placed cards:', mappedState.placedCards);
                             console.log('Column scores:', mappedState.columnScores);
@@ -133,17 +136,21 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                         // Use card ownership from backend
                         if (state.cardOwnership) {
                             setCardOwnership(state.cardOwnership);
-                            console.log('Updated card ownership from backend:', state.cardOwnership);
+                            if (DEBUG) {
+                                console.log('Updated card ownership from backend:', state.cardOwnership);
+                            }
                         }
                         
                         // Debug logging
-                        console.log('Current player ID:', state.currentPlayerId);
-                        console.log('My player ID:', user.playerId);
-                        console.log('Is my turn:', state.currentPlayerId === user.playerId);
-                        console.log('Current player hand:', state.currentPlayerHand);
-                        console.log('Card ownership:', state.cardOwnership);
-                        console.log('Column scores:', state.columnScores);
-                        console.log('Full game state:', state);
+                        if (DEBUG) {
+                            console.log('Current player ID:', state.currentPlayerId);
+                            console.log('My player ID:', user.playerId);
+                            console.log('Is my turn:', state.currentPlayerId === user.playerId);
+                            console.log('Current player hand:', state.currentPlayerHand);
+                            console.log('Card ownership:', state.cardOwnership);
+                            console.log('Column scores:', state.columnScores);
+                            console.log('Full game state:', state);
+                        }
                         
                         // Update player names if available
                         if (state.playerIds && state.playerIds.length > 0) {
