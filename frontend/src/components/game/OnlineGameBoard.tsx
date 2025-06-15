@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import GameCell from './GameCell';
 import PlayerHand from './PlayerHand';
 import GameLobby from './GameLobby';
+import ColumnIndicator from './ColumnIndicator';
 import { Card, Position, GameState } from '@/types/game';
 import { OnlineMatchInfo } from '@/types/gameMode';
 import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
@@ -114,7 +115,8 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                             hasPendingWinRequest: state.hasPendingWinRequest,
                             pendingWinRequestPlayerId: state.pendingWinRequestPlayerId,
                             cardOwnership: state.cardOwnership || {},
-                            playerIds: state.playerIds || []
+                            playerIds: state.playerIds || [],
+                            columnScores: state.columnScores || {}
                         };
                         
                         setGameState(mappedState);
@@ -133,6 +135,8 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                         console.log('Is my turn:', state.currentPlayerId === user.playerId);
                         console.log('Current player hand:', state.currentPlayerHand);
                         console.log('Card ownership:', state.cardOwnership);
+                        console.log('Column scores:', state.columnScores);
+                        console.log('Full game state:', state);
                         
                         // Update player names if available
                         if (state.playerIds && state.playerIds.length > 0) {
@@ -446,23 +450,13 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
             setSelectedCard(null);
             setValidMoves([]);
             
-            // The response already contains the updated game state
-            // Update our local state immediately
+            // Don't update game state from REST response - wait for WebSocket update
+            // The WebSocket will broadcast the proper player-specific view with column scores
+            console.log('Move successful, waiting for WebSocket update');
+            
+            // Only update turn status immediately for better UX
             if (response) {
-                console.log('Move successful, updating local state');
                 setIsMyTurn(response.currentPlayerId === user!.playerId);
-                
-                // Update card ownership from backend response
-                if (response.cardOwnership) {
-                    setCardOwnership(response.cardOwnership);
-                    console.log('Updated card ownership from response:', response.cardOwnership);
-                }
-                
-                // Update the board display with the new game state
-                updateBoardCards(response);
-                
-                // Also update the full game state
-                setGameState(response);
             }
         } catch (err) {
             setError('Failed to make move');
@@ -639,6 +633,20 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                             <div className="relative z-10 flex flex-col items-center">
                                 <h2 className="text-2xl font-bold mb-4 text-center text-purple-300 drop-shadow-lg">Battle Arena</h2>
                             
+                            {/* Column Indicators */}
+                            <div className="grid grid-cols-3 gap-2 mb-4 w-fit mx-auto">
+                                {[0, 1, 2].map(colIndex => (
+                                    <div key={`col-indicator-${colIndex}`} className="w-28">
+                                        <ColumnIndicator
+                                            columnIndex={colIndex}
+                                            columnScore={gameState.columnScores?.[colIndex]}
+                                            players={players}
+                                            currentPlayerId={user?.playerId || ''}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                            
                             {/* Board Grid */}
                             <div className="grid grid-cols-3 gap-2 mb-6 w-fit mx-auto">
                                 {Array.from({ length: DEFAULT_BOARD_HEIGHT }, (_, y) => 
@@ -758,7 +766,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                                                 </Badge>
                                             )}
                                         </span>
-                                        <Badge>{gameState.scores?.[playerId] || 0}</Badge>
+                                        <Badge>{gameState.scores?.[playerId] || 0} column{(gameState.scores?.[playerId] || 0) !== 1 ? 's' : ''}</Badge>
                                     </div>
                                 ))}
                             </div>
