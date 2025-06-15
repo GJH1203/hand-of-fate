@@ -2,7 +2,7 @@ package com.cardgame.dto;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.mongodb.lang.Nullable;
+import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
 import java.util.Map;

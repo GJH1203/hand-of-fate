@@ -113,25 +113,15 @@ public class GameService {
                 Integer columnIndex = entry.getKey();
                 Map<String, Integer> scores = entry.getValue();
                 
-                // Determine column winner from scores
-                String columnWinner = null;
-                int maxScore = -1;
-                boolean isTie = false;
-                
-                for (Map.Entry<String, Integer> scoreEntry : scores.entrySet()) {
-                    if (scoreEntry.getValue() > maxScore) {
-                        maxScore = scoreEntry.getValue();
-                        columnWinner = scoreEntry.getKey();
-                        isTie = false;
-                    } else if (scoreEntry.getValue() == maxScore) {
-                        isTie = true;
-                    }
-                }
+                // Reuse ScoreCalculator logic to determine column winner
+                ScoreCalculator.ColumnScore tempColScore = new ScoreCalculator.ColumnScore();
+                tempColScore.playerScores = scores;
+                ScoreCalculator.determineColumnWinner(tempColScore);
                 
                 ColumnScoreDto dto = ImmutableColumnScoreDto.builder()
                         .playerScores(scores)
-                        .winnerId(isTie ? null : columnWinner)
-                        .isTie(isTie)
+                        .winnerId(tempColScore.winnerId)
+                        .isTie(tempColScore.isTie)
                         .build();
                 columnScoreDtos.put(columnIndex, dto);
             }

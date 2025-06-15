@@ -16,8 +16,6 @@ import java.util.Map;
  */
 public class ScoreCalculator {
     
-    private static final int BOARD_WIDTH = 3; // 3 columns
-    
     /**
      * Column score data containing the score for each player in a column
      */
@@ -40,8 +38,11 @@ public class ScoreCalculator {
     public static Map<Integer, ColumnScore> calculateColumnScores(GameModel gameModel, PlayerService playerService) {
         Map<Integer, ColumnScore> columnScores = new HashMap<>();
         
-        // Initialize column scores for each column (0, 1, 2)
-        for (int col = 0; col < BOARD_WIDTH; col++) {
+        // Get board width dynamically from the game model
+        int boardWidth = gameModel.getBoard().getWidth();
+        
+        // Initialize column scores for each column
+        for (int col = 0; col < boardWidth; col++) {
             ColumnScore colScore = new ColumnScore();
             // Initialize all players with 0 score
             for (String playerId : gameModel.getPlayerIds()) {
@@ -81,8 +82,9 @@ public class ScoreCalculator {
     
     /**
      * Determine the winner of a single column
+     * @param columnScore The column score to evaluate
      */
-    private static void determineColumnWinner(ColumnScore columnScore) {
+    public static void determineColumnWinner(ColumnScore columnScore) {
         int highestScore = -1;
         String winnerId = null;
         boolean isTie = false;
@@ -172,8 +174,10 @@ public class ScoreCalculator {
     }
     
     /**
-     * Legacy method for backward compatibility
+     * @deprecated This method is retained for backward compatibility but does nothing.
+     * Use {@link #determineWinner(GameModel, PlayerService)} for scoring logic.
      */
+    @Deprecated
     public static String determineWinner(GameModel gameModel) {
         // This should not be called anymore, but kept for compatibility
         throw new UnsupportedOperationException("Use determineWinner(GameModel, PlayerService) instead");
