@@ -84,77 +84,134 @@ export default function GameModeSelection({ onModeSelect }: GameModeSelectionPro
 
   if (showJoinGame) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 relative">
-        <Card className="w-full max-w-md relative z-10 bg-black/80 backdrop-blur-sm border-purple-500/30">
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold text-center bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">Join Online Game</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <label htmlFor="matchId" className="block text-sm font-medium mb-2 text-gray-200">
-                Enter Game Code
-              </label>
-              <input
-                id="matchId"
-                type="text"
-                value={matchId}
-                onChange={(e) => setMatchId(e.target.value.toUpperCase())}
-                placeholder="Enter 6-character code"
-                className="w-full px-3 py-2 bg-black/30 border border-purple-400/50 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-400 text-white placeholder-gray-400 font-mono text-center text-xl"
-                maxLength={6}
-              />
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 relative overflow-hidden">
+        {/* Animated background particles */}
+        <div className="absolute inset-0">
+          {[...Array(30)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute animate-float"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 10}s`,
+                animationDuration: `${10 + Math.random() * 20}s`
+              }}
+            >
+              <div className="w-1 h-1 bg-purple-400 rounded-full opacity-60 blur-sm" />
             </div>
-            <div className="flex gap-2">
+          ))}
+        </div>
+        
+        {/* Mystical orb effects */}
+        <div className="absolute top-40 right-40 w-64 h-64 bg-purple-600/20 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-40 left-40 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+        
+        <Card className="w-full max-w-md relative z-10 bg-gradient-to-br from-purple-800/60 to-blue-800/60 backdrop-blur-md border-purple-500/50 shadow-2xl">
+          <CardHeader className="border-b border-purple-500/30">
+            <CardTitle className="text-2xl font-bold text-center bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
+              Join Mystical Battle
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6 p-6">
+            <div>
+              <label htmlFor="matchId" className="block text-sm font-medium mb-3 text-purple-200">
+                Enter the Sacred Code
+              </label>
+              <div className="relative">
+                <input
+                  id="matchId"
+                  type="text"
+                  value={matchId}
+                  onChange={(e) => setMatchId(e.target.value.toUpperCase())}
+                  placeholder="XXXXXX"
+                  className="w-full px-4 py-3 bg-black/40 border-2 border-purple-500/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-purple-400 text-white placeholder-gray-500 font-mono text-center text-2xl tracking-widest transition-all duration-300"
+                  maxLength={6}
+                />
+                <div className="absolute inset-0 bg-purple-600/10 rounded-lg blur-xl -z-10" />
+              </div>
+              <p className="text-xs text-purple-300 mt-2 text-center">Share this code with your opponent</p>
+            </div>
+            <div className="flex gap-3">
               <Button
                 variant="outline"
-                className="flex-1 bg-gray-800/50 hover:bg-gray-700/50 border-gray-600 text-white"
+                className="flex-1 bg-gray-800/40 hover:bg-gray-700/50 border-gray-600/50 text-gray-200 hover:text-white transition-all duration-300"
                 onClick={() => setShowJoinGame(false)}
               >
                 Back
               </Button>
               <Button
-                className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+                className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg hover:shadow-purple-500/30 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={handleJoinGame}
                 disabled={!matchId.trim()}
               >
-                Join Game
+                Join Battle
               </Button>
             </div>
           </CardContent>
         </Card>
+        
+        <style jsx>{`
+          @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.6; }
+            50% { transform: translateY(-20px) rotate(180deg); opacity: 0.3; }
+          }
+        `}</style>
       </div>
     );
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 relative">
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 relative overflow-hidden">
+      {/* Animated background particles */}
+      <div className="absolute inset-0">
+        {[...Array(40)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute animate-float"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 10}s`,
+              animationDuration: `${10 + Math.random() * 20}s`
+            }}
+          >
+            <div className="w-1 h-1 bg-purple-400 rounded-full opacity-60 blur-sm" />
+          </div>
+        ))}
+      </div>
+      
+      {/* Mystical orb effects */}
+      <div className="absolute top-20 left-20 w-64 h-64 bg-purple-600/20 rounded-full blur-3xl animate-pulse" />
+      <div className="absolute bottom-20 right-20 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+      
       {/* Confirmation Dialog */}
       {showConfirmDialog && (
-        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
-          <Card className="w-full max-w-md bg-black/90 border-purple-500/50">
-            <CardHeader>
-              <CardTitle className="text-xl text-yellow-400">Active Game Found</CardTitle>
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center">
+          <Card className="w-full max-w-md bg-gradient-to-br from-purple-800/90 to-blue-800/90 backdrop-blur-md border-purple-500/50 shadow-2xl">
+            <CardHeader className="border-b border-purple-500/30">
+              <CardTitle className="text-xl text-yellow-400">Active Battle Detected</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 p-6">
               <Alert className="border-yellow-500/50 bg-yellow-500/10">
                 <AlertCircle className="h-4 w-4 text-yellow-500" />
                 <AlertDescription className="text-gray-200">
-                  You have an ongoing game. Creating a new game will abandon your current match.
+                  You have an ongoing battle. Creating a new game will abandon your current match.
                 </AlertDescription>
               </Alert>
-              <div className="flex gap-2">
+              <div className="flex gap-3">
                 <Button
                   variant="outline"
-                  className="flex-1 bg-gray-800/50 hover:bg-gray-700/50 border-gray-600 text-white"
+                  className="flex-1 bg-gray-800/40 hover:bg-gray-700/50 border-gray-600/50 text-gray-200 hover:text-white transition-all duration-300"
                   onClick={() => setShowConfirmDialog(false)}
                 >
                   Cancel
                 </Button>
                 <Button
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                  className="flex-1 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white shadow-lg hover:shadow-red-500/30 transition-all duration-300"
                   onClick={handleConfirmNewGame}
                 >
-                  Start New Game
+                  Abandon & Start New
                 </Button>
               </div>
             </CardContent>
@@ -162,45 +219,71 @@ export default function GameModeSelection({ onModeSelect }: GameModeSelectionPro
         </div>
       )}
 
-      <Card className="w-full max-w-2xl relative z-10 bg-black/80 backdrop-blur-sm border-purple-500/30">
-        <CardHeader>
-          <CardTitle className="text-3xl font-bold text-center bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">Choose Game Mode</CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
+      <div className="relative z-10 w-full max-w-4xl px-4">
+        <div className="text-center mb-8">
+          <h1 className="text-5xl font-bold mb-3 bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 bg-clip-text text-transparent drop-shadow-lg">
+            Choose Your Path
+          </h1>
+          <p className="text-xl text-purple-200 font-light">
+            Select your battlefield for mystical card combat
+          </p>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Local Mode */}
           <Card 
-            className="cursor-pointer hover:shadow-lg transition-all hover:scale-105 bg-black/60 border-purple-400/30 hover:border-purple-400"
+            className="cursor-pointer hover:shadow-2xl transition-all duration-300 hover:scale-105 bg-gradient-to-br from-blue-800/50 to-purple-800/50 backdrop-blur-md border-blue-500/50 hover:border-blue-400 hover:shadow-blue-500/20 group"
             onClick={handleLocalMode}
           >
-            <CardHeader>
-              <div className="flex items-center justify-center mb-4">
-                <Users className="w-16 h-16 text-blue-400" />
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-center mb-4 relative">
+                <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-2xl group-hover:bg-blue-500/30 transition-all duration-300" />
+                <Users className="w-20 h-20 text-blue-400 relative z-10 group-hover:scale-110 transition-transform duration-300" />
               </div>
-              <CardTitle className="text-xl text-center text-gray-100">Local Mode</CardTitle>
+              <CardTitle className="text-2xl text-center bg-gradient-to-r from-blue-300 to-blue-100 bg-clip-text text-transparent">
+                Local Duel
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-center text-gray-300">
-                Play with a friend on the same device. Take turns making moves.
+            <CardContent className="pt-0">
+              <p className="text-center text-gray-300 mb-4">
+                Face your opponent in person, sharing the same mystical arena
               </p>
-              <ul className="mt-4 space-y-2 text-sm text-gray-400">
-                <li>• Same device gameplay</li>
-                <li>• No internet required</li>
-                <li>• Perfect for in-person games</li>
-              </ul>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center gap-2 text-blue-300">
+                  <span className="w-1.5 h-1.5 bg-blue-400 rounded-full" />
+                  <span>Same device gameplay</span>
+                </div>
+                <div className="flex items-center gap-2 text-blue-300">
+                  <span className="w-1.5 h-1.5 bg-blue-400 rounded-full" />
+                  <span>No internet required</span>
+                </div>
+                <div className="flex items-center gap-2 text-blue-300">
+                  <span className="w-1.5 h-1.5 bg-blue-400 rounded-full" />
+                  <span>Perfect for friends & family</span>
+                </div>
+              </div>
+              <div className="mt-6 text-center">
+                <span className="text-xs text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  Click to enter local arena
+                </span>
+              </div>
             </CardContent>
           </Card>
 
           {/* Online Mode */}
-          <Card className="border-2 border-purple-500 bg-black/60 hover:border-purple-400">
-            <CardHeader>
-              <div className="flex items-center justify-center mb-4">
-                <Globe className="w-16 h-16 text-green-500" />
+          <Card className="bg-gradient-to-br from-purple-800/50 to-pink-800/50 backdrop-blur-md border-2 border-purple-500/70 hover:border-purple-400 shadow-xl hover:shadow-purple-500/30 transition-all duration-300 group">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-center mb-4 relative">
+                <div className="absolute inset-0 bg-green-500/20 rounded-full blur-2xl group-hover:bg-green-500/30 transition-all duration-300" />
+                <Globe className="w-20 h-20 text-green-400 relative z-10 group-hover:scale-110 group-hover:rotate-12 transition-all duration-300" />
               </div>
-              <CardTitle className="text-xl text-center text-gray-100">Online Mode</CardTitle>
+              <CardTitle className="text-2xl text-center bg-gradient-to-r from-green-300 to-emerald-100 bg-clip-text text-transparent">
+                Global Arena
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-center text-gray-300 mb-4">
-                Play with friends anywhere in the world. Real-time multiplayer.
+            <CardContent className="pt-0">
+              <p className="text-center text-gray-300 mb-6">
+                Challenge mystics across realms in real-time battles
               </p>
               <div className="space-y-2">
                 {/* Show active game alert if exists */}
@@ -249,8 +332,15 @@ export default function GameModeSelection({ onModeSelect }: GameModeSelectionPro
               </div>
             </CardContent>
           </Card>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
+      
+      <style jsx>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.6; }
+          50% { transform: translateY(-20px) rotate(180deg); opacity: 0.3; }
+        }
+      `}</style>
     </div>
   );
 }
