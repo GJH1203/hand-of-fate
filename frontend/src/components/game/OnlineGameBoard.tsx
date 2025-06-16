@@ -119,7 +119,8 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                             pendingWinRequestPlayerId: state.pendingWinRequestPlayerId,
                             cardOwnership: state.cardOwnership || {},
                             playerIds: state.playerIds || [],
-                            columnScores: state.columnScores || {}
+                            columnScores: state.columnScores || {},
+                            playerNames: state.playerNames || {}
                         };
                         
                         setGameState(mappedState);
@@ -149,11 +150,15 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                             console.log('Current player hand:', state.currentPlayerHand);
                             console.log('Card ownership:', state.cardOwnership);
                             console.log('Column scores:', state.columnScores);
+                            console.log('Player names:', state.playerNames);
                             console.log('Full game state:', state);
                         }
                         
-                        // Update player names if available
-                        if (state.playerIds && state.playerIds.length > 0) {
+                        // Update player names from backend
+                        if (state.playerNames && Object.keys(state.playerNames).length > 0) {
+                            setPlayers(state.playerNames);
+                        } else if (state.playerIds && state.playerIds.length > 0) {
+                            // Fallback to generic names if playerNames not available
                             const playerMap: {[key: string]: string} = {};
                             state.playerIds.forEach((id: string, index: number) => {
                                 playerMap[id] = `Player ${index + 1}`;
@@ -590,33 +595,41 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                 <div className="bg-black/40 backdrop-blur-sm rounded-lg shadow-xl p-4 mb-4 border border-purple-500/30">
                     <div className="flex justify-between items-center">
                         <div className="flex items-center gap-4">
-                            <Button variant="outline" onClick={handleCancelMatch}>
-                                Back to Menu
+                            <Button 
+                                variant="outline" 
+                                onClick={handleCancelMatch}
+                                className="bg-purple-800/30 hover:bg-purple-700/40 border-purple-500/50 text-purple-200 hover:text-purple-100 transition-all duration-300"
+                            >
+                                ← Back to Menu
                             </Button>
                             <div className="flex items-center gap-2">
                                 {connectionStatus === 'connected' ? (
-                                    <Wifi className="w-5 h-5 text-green-500" />
+                                    <Wifi className="w-5 h-5 text-green-400 drop-shadow-lg" />
                                 ) : (
-                                    <WifiOff className="w-5 h-5 text-red-500" />
+                                    <WifiOff className="w-5 h-5 text-red-400 drop-shadow-lg" />
                                 )}
-                                <span className="text-sm">
+                                <span className="text-sm text-gray-300">
                                     {connectionStatus === 'connected' ? 'Connected' : 'Disconnected'}
                                 </span>
                             </div>
                         </div>
                         
                         <div className="flex items-center gap-4">
-                            <Badge variant={isMyTurn ? "default" : "secondary"}>
-                                {isMyTurn ? "Your Turn" : `${players[gameState.currentPlayerId] || 'Opponent'}'s Turn`}
+                            <Badge 
+                                className={isMyTurn 
+                                    ? "bg-gradient-to-r from-green-600 to-emerald-600 text-white border-0 shadow-lg shadow-green-500/20" 
+                                    : "bg-gray-800/50 text-gray-300 border-gray-600/50"}
+                            >
+                                {isMyTurn ? "⚔️ Your Turn" : `${players[gameState.currentPlayerId] || 'Opponent'}'s Turn`}
                             </Badge>
                             {gameState.hasPendingWinRequest && (
-                                <Badge variant="destructive">
-                                    Early End Requested
+                                <Badge className="bg-red-900/50 text-red-300 border-red-500/50">
+                                    ⚠️ Early End Requested
                                 </Badge>
                             )}
                             {matchInfo && (
-                                <Badge variant="outline">
-                                    Room: {matchInfo.matchId.slice(-6).toUpperCase()}
+                                <Badge className="bg-purple-900/50 text-purple-300 border-purple-500/50">
+                                    📍 Room: {matchInfo.matchId.slice(-6).toUpperCase()}
                                 </Badge>
                             )}
                         </div>
@@ -757,22 +770,23 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                                  gameState.pendingWinRequestPlayerId !== user!.playerId && 
                                  isMyTurn && (
                                     <div className="space-y-2">
-                                        <Alert>
-                                            <AlertCircle className="h-4 w-4" />
-                                            <AlertDescription>
+                                        <Alert className="bg-yellow-900/30 border-yellow-500/50">
+                                            <AlertCircle className="h-4 w-4 text-yellow-500" />
+                                            <AlertDescription className="text-yellow-200">
                                                 Your opponent has requested to end the game early. 
                                                 Do you accept?
                                             </AlertDescription>
                                         </Alert>
                                         <div className="flex gap-2">
                                             <Button
-                                                variant="default"
+                                                className="bg-green-600 hover:bg-green-700 text-white"
                                                 onClick={() => handleWinResponse(true)}
                                             >
                                                 Accept & Calculate Winner
                                             </Button>
                                             <Button
                                                 variant="outline"
+                                                className="bg-gray-800/50 hover:bg-gray-700/50 border-gray-600 text-gray-200"
                                                 onClick={() => handleWinResponse(false)}
                                             >
                                                 Continue Playing
@@ -797,46 +811,50 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                             <div className="space-y-2">
                                 {Object.entries(players).map(([playerId, playerName]) => (
                                     <div key={playerId} className="flex justify-between items-center">
-                                        <span className="flex items-center gap-2">
-                                            {playerName} {playerId === user!.playerId && '(You)'}
+                                        <span className="flex items-center gap-2 text-gray-200">
+                                            {playerName} {playerId === user!.playerId && <span className="text-purple-400">(You)</span>}
                                             {playerId !== user!.playerId && !opponentConnected && (
-                                                <Badge variant="secondary" className="text-xs">
+                                                <Badge className="text-xs bg-red-900/50 text-red-300 border-red-500/50">
                                                     Disconnected
                                                 </Badge>
                                             )}
                                         </span>
-                                        <Badge>{gameState.scores?.[playerId] || 0} column{(gameState.scores?.[playerId] || 0) !== 1 ? 's' : ''}</Badge>
+                                        <Badge className="bg-blue-900/50 text-blue-300 border-blue-500/50">
+                                            {gameState.scores?.[playerId] || 0} column{(gameState.scores?.[playerId] || 0) !== 1 ? 's' : ''}
+                                        </Badge>
                                     </div>
                                 ))}
                             </div>
                         </div>
 
                         {/* Game Status */}
-                        <div className="bg-white rounded-lg shadow-lg p-4">
-                            <h3 className="font-bold mb-3">Game Status</h3>
+                        <div className="bg-black/40 backdrop-blur-sm rounded-2xl shadow-xl p-4 border border-purple-500/30">
+                            <h3 className="font-bold mb-3 text-yellow-400">Game Status</h3>
                             <div className="space-y-2 text-sm">
-                                <div className="flex justify-between">
-                                    <span>State:</span>
-                                    <Badge variant="outline">{gameState.state}</Badge>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-gray-300">State:</span>
+                                    <Badge className="bg-purple-900/50 text-purple-300 border-purple-500/50">
+                                        {gameState.state}
+                                    </Badge>
                                 </div>
-                                <div className="flex justify-between">
-                                    <span>Cards in hand:</span>
-                                    <span>{gameState.currentPlayerHand.length}</span>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-gray-300">Cards in hand:</span>
+                                    <span className="text-purple-200 font-bold">{gameState.currentPlayerHand.length}</span>
                                 </div>
                                 {gameState.state === 'COMPLETED' && (
-                                    <div className="mt-4 p-3 bg-yellow-100 rounded">
-                                        <p className="font-bold text-center">
+                                    <div className="mt-4 p-3 bg-gradient-to-br from-yellow-900/30 to-orange-900/30 rounded-lg border border-yellow-700/50">
+                                        <p className="font-bold text-center text-yellow-300">
                                             {gameState.isTie ? (
-                                                "Game ended in a tie!"
+                                                "⚔️ Game ended in a tie! ⚔️"
                                             ) : gameState.winnerId === user!.playerId ? (
-                                                "You won! 🎉"
+                                                "🎉 You won! 🎉"
                                             ) : (
-                                                "You lost. Better luck next time!"
+                                                "💔 You lost. Better luck next time!"
                                             )}
                                         </p>
                                         <Button 
                                             variant="outline" 
-                                            className="w-full mt-2"
+                                            className="w-full mt-2 bg-purple-800/30 hover:bg-purple-700/40 border-purple-500/50 text-purple-200 hover:text-purple-100 transition-all duration-300"
                                             onClick={handleCancelMatch}
                                         >
                                             Back to Menu

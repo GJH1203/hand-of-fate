@@ -42,6 +42,7 @@ export interface GameState {
     cardOwnership?: Record<string, string>; // Map of position to player ID
     playerIds?: string[]; // List of player IDs in the game
     columnScores?: Record<number, ColumnScore>; // Column index to column score info
+    playerNames?: Record<string, string>; // Map of player ID to player name
 }
 
 export interface InitializePayload {

@@ -243,7 +243,11 @@ class GameService {
             winnerId: backendData.winnerId,
             isTie: backendData.isTie,
             hasPendingWinRequest: backendData.hasPendingWinRequest,
-            pendingWinRequestPlayerId: backendData.pendingWinRequestPlayerId
+            pendingWinRequestPlayerId: backendData.pendingWinRequestPlayerId,
+            cardOwnership: backendData.cardOwnership,
+            playerIds: backendData.playerIds,
+            columnScores: backendData.columnScores,
+            playerNames: backendData.playerNames
         };
     }
 }

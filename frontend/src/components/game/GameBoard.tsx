@@ -51,6 +51,17 @@ export default function GameBoard() {
 
             setBoardCards(cardMap);
             console.log('Board cards set to:', cardMap);
+            
+            // Update player names from gameState if available
+            if (gameState.playerNames && Object.keys(gameState.playerNames).length > 0) {
+                setPlayers(gameState.playerNames);
+                console.log('Player names updated from gameState:', gameState.playerNames);
+            }
+            
+            // Update card ownership from gameState
+            if (gameState.cardOwnership) {
+                setCardOwnership(gameState.cardOwnership);
+            }
         }
     }, [gameState]);
 
