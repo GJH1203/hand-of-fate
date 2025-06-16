@@ -69,11 +69,15 @@ public class GameService {
     public GameDto convertToDto(GameModel gameModel, String forPlayerId) {
         Player currentPlayer = playerService.getPlayer(forPlayerId);
 
-        // Build card ownership map and collect all placed cards
+        // Build card ownership map, collect all placed cards, and player names
         Map<String, String> cardOwnership = new HashMap<>();
         Map<String, CardDto> placedCards = new HashMap<>();
+        Map<String, String> playerNames = new HashMap<>();
         for (String playerId : gameModel.getPlayerIds()) {
             Player player = playerService.getPlayer(playerId);
+            // Add player name
+            playerNames.put(playerId, player.getName());
+            
             if (player.getPlacedCards() != null) {
                 for (Map.Entry<String, Card> entry : player.getPlacedCards().entrySet()) {
                     String position = entry.getKey();
@@ -100,6 +104,7 @@ public class GameService {
                 .playerIds(gameModel.getPlayerIds())
                 .cardOwnership(cardOwnership)
                 .placedCards(placedCards)
+                .playerNames(playerNames)
                 .createdAt(gameModel.getCreatedAt())
                 .updatedAt(gameModel.getUpdatedAt());
 
@@ -153,9 +158,24 @@ public class GameService {
             }
         }
 
-        // If the game is completed, include the scores and winner information
+        // Calculate column wins for current game state
+        Map<String, Integer> columnsWonByPlayer = new HashMap<>();
+        for (ColumnScoreDto columnScore : columnScoreDtos.values()) {
+            if (columnScore.getWinnerId() != null && !columnScore.isTie()) {
+                columnsWonByPlayer.merge(columnScore.getWinnerId(), 1, Integer::sum);
+            }
+        }
+        
+        // Initialize scores for all players with 0 if they haven't won any columns
+        for (String playerId : gameModel.getPlayerIds()) {
+            columnsWonByPlayer.putIfAbsent(playerId, 0);
+        }
+        
+        // Always include scores (columns won count)
+        builder.scores(columnsWonByPlayer);
+
+        // If the game is completed, include winner information
         if (gameModel.getGameState() == GameState.COMPLETED) {
-            builder.scores(gameModel.getPlayerScores());
             // Only set the winnerId if it's not null
             if (gameModel.getWinnerId() != null) {
                 builder.winnerId(gameModel.getWinnerId());
