@@ -26,7 +26,7 @@ interface BackendSyncRequest {
  */
 export class UnifiedAuthService {
   private supabaseAuth: SupabaseAuthService
-  private backendUrl = 'http://localhost:8080/api/auth'
+  private backendUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/auth`
 
   constructor() {
     this.supabaseAuth = new SupabaseAuthService()

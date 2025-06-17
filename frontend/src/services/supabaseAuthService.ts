@@ -13,6 +13,9 @@ export class SupabaseAuthService {
   async signUp(email: string, password: string, username: string): Promise<AuthResponse> {
     this.checkConfiguration()
     try {
+      // Use the actual URL the user is accessing from
+      const redirectUrl = `${window.location.protocol}//${window.location.host}/auth/callback`;
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -21,7 +24,7 @@ export class SupabaseAuthService {
             username: username
           },
           // Email verification is required
-          emailRedirectTo: `${window.location.origin}/auth/callback`
+          emailRedirectTo: redirectUrl
         }
       })
 
@@ -117,11 +120,14 @@ export class SupabaseAuthService {
    */
   async resendVerification(email: string): Promise<{ error: any }> {
     this.checkConfiguration()
+    // Use the actual URL the user is accessing from
+    const redirectUrl = `${window.location.protocol}//${window.location.host}/auth/callback`;
+    
     const { error } = await supabase!.auth.resend({
       type: 'signup',
       email: email,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`
+        emailRedirectTo: redirectUrl
       }
     })
     return { error }

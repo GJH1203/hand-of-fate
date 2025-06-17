@@ -489,7 +489,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
         
         try {
             // Send pass action through REST API
-            const response = await fetch(`http://localhost:8080/game/${gameState.id}/pass`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/game/${gameState.id}/pass`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -516,7 +516,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
         if (!isMyTurn || !gameState) return;
         
         try {
-            const response = await fetch(`http://localhost:8080/game/${gameState.id}/request-win`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/game/${gameState.id}/request-win`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -542,7 +542,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
         if (!isMyTurn || !gameState) return;
         
         try {
-            const response = await fetch(`http://localhost:8080/game/${gameState.id}/respond-win-request`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/game/${gameState.id}/respond-win-request`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -724,15 +724,19 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
 
                             {/* Your Hand (only visible when game is in progress) */}
                             {gameState.state === 'IN_PROGRESS' && (
-                            <div className="relative bg-black/40 rounded-xl p-4 mt-4 overflow-hidden">
-                                {/* Wooden Background */}
-                                <div 
-                                    className="absolute inset-0 bg-cover bg-center opacity-70"
-                                    style={{
-                                        backgroundImage: "url('/backgrounds/wooden-table.png')",
-                                        filter: "brightness(0.7) contrast(1.1)"
-                                    }}
-                                />
+                            <div className="relative bg-gradient-to-br from-purple-900/40 via-blue-900/40 to-indigo-900/40 backdrop-blur-sm rounded-xl p-4 mt-4 overflow-hidden border border-purple-500/30">
+                                {/* Mystical energy background effect */}
+                                <div className="absolute inset-0">
+                                    <div className="absolute inset-0 bg-gradient-to-t from-purple-600/10 via-transparent to-blue-600/10 animate-pulse" />
+                                    <div className="absolute top-0 left-1/4 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl" />
+                                    <div className="absolute bottom-0 right-1/4 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl" />
+                                </div>
+                                
+                                {/* Title */}
+                                <h3 className="text-center text-sm font-bold text-purple-300 mb-3 relative z-10">
+                                    Your Mystical Hand
+                                </h3>
+                                
                                 <div className="relative z-10">
                                     <PlayerHand
                                         cards={gameState.currentPlayerHand}

@@ -1,6 +1,6 @@
 import {Card} from "@/types/game";
 
-const API_BASE_URL = 'http://localhost:8080/players';
+const API_BASE_URL = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/players`;
 
 export interface PlayerDto {
     id: string;
@@ -54,7 +54,7 @@ class PlayerService {
 
     async getPlayerHand(playerId: string): Promise<Array<Card>> {
         try {
-            const response = await fetch(`http://localhost:8080/game/players/${playerId}/hand`);
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/game/players/${playerId}/hand`);
 
             if (!response.ok) {
                 throw new Error('Failed to fetch player hand');

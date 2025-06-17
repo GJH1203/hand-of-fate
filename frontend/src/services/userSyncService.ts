@@ -8,7 +8,7 @@ interface BackendPlayer {
 }
 
 export class UserSyncService {
-  private backendUrl = 'http://localhost:8080'
+  private backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
 
   /**
    * Create or get player in backend database from Supabase user
