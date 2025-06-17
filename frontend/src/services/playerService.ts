@@ -7,6 +7,7 @@ export interface PlayerDto {
     name: string;
     score: number;
     handSize: number;
+    lifetimeScore: number;
     playerCardCounts: Record<string, number>;
     currentDeck?: {  // Make this optional since it's not in the DTO
         id: string;

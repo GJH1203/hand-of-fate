@@ -9,11 +9,14 @@ import { useUnifiedAuth } from '@/hooks/useUnifiedAuth'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Sparkles, Trophy, Swords, ScrollText, LogOut, Star, Zap, Shield } from 'lucide-react'
+import { playerService } from '@/services/playerService'
 
 export default function Home() {
   const { isAuthenticated, user, logout, isLoading } = useUnifiedAuth();
   const router = useRouter();
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [playerData, setPlayerData] = useState<any>(null);
+  const [loadingStats, setLoadingStats] = useState(true);
 
   useEffect(() => {
     console.log('Main page auth check:', {
@@ -27,6 +30,25 @@ export default function Home() {
       router.push('/login');
     }
   }, [isAuthenticated, isLoading, router, user]);
+
+  // Fetch player data when authenticated
+  useEffect(() => {
+    if (isAuthenticated && user?.playerId) {
+      const fetchPlayerData = async () => {
+        try {
+          setLoadingStats(true);
+          const data = await playerService.getPlayer(user.playerId);
+          console.log('Fetched player data:', data);
+          setPlayerData(data);
+        } catch (error) {
+          console.error('Failed to fetch player data:', error);
+        } finally {
+          setLoadingStats(false);
+        }
+      };
+      fetchPlayerData();
+    }
+  }, [isAuthenticated, user?.playerId]);
 
   // Track mouse for parallax effect
   useEffect(() => {
@@ -49,11 +71,11 @@ export default function Home() {
     return null;
   }
 
-  // Placeholder stats - in real app, fetch from backend
+  // Use fetched player data for stats
   const userStats = {
     gamesPlayed: user?.stats?.gamesPlayed || 0,
     wins: user?.stats?.wins || 0,
-    lifetimeScore: user?.stats?.lifetimeScore || 0,
+    lifetimeScore: playerData?.lifetimeScore || 0,
     rank: user?.stats?.rank || 'Apprentice',
     winRate: user?.stats?.gamesPlayed ? Math.round((user?.stats?.wins / user?.stats?.gamesPlayed) * 100) : 0
   };
@@ -98,9 +120,6 @@ export default function Home() {
               <div className="relative">
                 <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center shadow-lg shadow-purple-500/50">
                   <Shield className="w-8 h-8 text-white" />
-                </div>
-                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center text-xs font-bold shadow-lg">
-                  {userStats.gamesPlayed}
                 </div>
               </div>
               <div>
@@ -152,22 +171,28 @@ export default function Home() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="p-6">
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center p-3 bg-purple-900/30 rounded-lg border border-purple-700/50 hover:bg-purple-900/40 transition-colors">
-                      <span className="text-gray-300">Battles Fought</span>
-                      <span className="text-2xl font-bold text-purple-300">{userStats.gamesPlayed}</span>
+                  <div className="flex flex-col items-center justify-center py-8">
+                    <div className="relative">
+                      {/* Mystical glow effect */}
+                      <div className="absolute inset-0 bg-yellow-400/20 rounded-full blur-3xl animate-pulse" />
+                      <div className="relative bg-gradient-to-br from-yellow-900/50 to-orange-900/50 rounded-2xl p-8 border-2 border-yellow-600/50 shadow-2xl">
+                        <div className="text-center">
+                          <div className="text-sm text-yellow-200 mb-2 uppercase tracking-wider">Power Score</div>
+                          <div className="text-5xl font-bold bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
+                            {loadingStats ? (
+                              <div className="animate-pulse">...</div>
+                            ) : (
+                              userStats.lifetimeScore
+                            )}
+                          </div>
+                          <div className="mt-2 text-xs text-yellow-300/70">
+                            Mystical energy accumulated
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex justify-between items-center p-3 bg-green-900/30 rounded-lg border border-green-700/50 hover:bg-green-900/40 transition-colors">
-                      <span className="text-gray-300">Victories</span>
-                      <span className="text-2xl font-bold text-green-400">{userStats.wins}</span>
-                    </div>
-                    <div className="flex justify-between items-center p-3 bg-yellow-900/30 rounded-lg border border-yellow-700/50 hover:bg-yellow-900/40 transition-colors">
-                      <span className="text-gray-300">Power Score</span>
-                      <span className="text-2xl font-bold text-yellow-400">{userStats.lifetimeScore}</span>
-                    </div>
-                    <div className="flex justify-between items-center p-3 bg-blue-900/30 rounded-lg border border-blue-700/50 hover:bg-blue-900/40 transition-colors">
-                      <span className="text-gray-300">Win Rate</span>
-                      <span className="text-2xl font-bold text-blue-400">{userStats.winRate}%</span>
+                    <div className="mt-6 text-center text-sm text-purple-300/70 max-w-xs">
+                      Your power grows with each battle. Harness the mystical forces to climb the eternal rankings.
                     </div>
                   </div>
                 </CardContent>
@@ -220,27 +245,6 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Quick Stats Bar */}
-                <div className="mt-6 p-4 bg-purple-900/20 rounded-lg border border-purple-700/30">
-                  <div className="flex justify-around text-center">
-                    <div>
-                      <div className="text-2xl font-bold text-yellow-400">
-                        {userStats.gamesPlayed > 0 ? Math.round(userStats.lifetimeScore / userStats.gamesPlayed) : 0}
-                      </div>
-                      <div className="text-xs text-purple-300">Avg Score</div>
-                    </div>
-                    <div className="border-l border-purple-700/50" />
-                    <div>
-                      <div className="text-2xl font-bold text-green-400">{userStats.wins}</div>
-                      <div className="text-xs text-purple-300">Total Wins</div>
-                    </div>
-                    <div className="border-l border-purple-700/50" />
-                    <div>
-                      <div className="text-2xl font-bold text-blue-400">#{userStats.gamesPlayed + 1}</div>
-                      <div className="text-xs text-purple-300">Next Match</div>
-                    </div>
-                  </div>
-                </div>
               </CardContent>
             </Card>
 
