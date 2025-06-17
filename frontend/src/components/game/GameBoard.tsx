@@ -51,6 +51,17 @@ export default function GameBoard() {
 
             setBoardCards(cardMap);
             console.log('Board cards set to:', cardMap);
+            
+            // Update player names from gameState if available
+            if (gameState.playerNames && Object.keys(gameState.playerNames).length > 0) {
+                setPlayers(gameState.playerNames);
+                console.log('Player names updated from gameState:', gameState.playerNames);
+            }
+            
+            // Update card ownership from gameState
+            if (gameState.cardOwnership) {
+                setCardOwnership(gameState.cardOwnership);
+            }
         }
     }, [gameState]);
 
@@ -88,7 +99,7 @@ export default function GameBoard() {
             // Check if players have decks, create them if missing
             if (!currentPlayerData.currentDeck) {
                 console.log('Current player missing deck, creating default deck...');
-                const createDeckResponse = await fetch(`http://localhost:8080/players/${currentPlayerData.id}/create-deck`, {
+                const createDeckResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/players/${currentPlayerData.id}/create-deck`, {
                     method: 'POST'
                 });
                 if (createDeckResponse.ok) {
@@ -101,7 +112,7 @@ export default function GameBoard() {
             
             if (!opponentData.currentDeck) {
                 console.log('Opponent missing deck, creating default deck...');
-                const createDeckResponse = await fetch(`http://localhost:8080/players/${opponentData.id}/create-deck`, {
+                const createDeckResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/players/${opponentData.id}/create-deck`, {
                     method: 'POST'
                 });
                 if (createDeckResponse.ok) {
@@ -540,18 +551,16 @@ export default function GameBoard() {
             </div>
 
             {/* Player Hand Area */}
-            <div className="mt-6 relative bg-black/40 backdrop-blur-sm p-6 rounded-2xl shadow-2xl border border-purple-500/30 overflow-hidden">
-                {/* Wooden Background */}
-                <div 
-                    className="absolute inset-0 bg-cover bg-center opacity-70"
-                    style={{
-                        backgroundImage: "url('/backgrounds/wooden-table.png')",
-                        filter: "brightness(0.7) contrast(1.1)"
-                    }}
-                />
+            <div className="mt-6 relative bg-gradient-to-br from-purple-900/40 via-blue-900/40 to-indigo-900/40 backdrop-blur-sm p-6 rounded-2xl shadow-2xl border border-purple-500/30 overflow-hidden">
+                {/* Mystical energy background effect */}
+                <div className="absolute inset-0">
+                    <div className="absolute inset-0 bg-gradient-to-t from-purple-600/10 via-transparent to-blue-600/10 animate-pulse" />
+                    <div className="absolute top-0 left-1/4 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl" />
+                    <div className="absolute bottom-0 right-1/4 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl" />
+                </div>
                 <div className="relative z-10">
-                    <h3 className="text-xl font-bold mb-4 text-yellow-400 text-center drop-shadow-lg">
-                        Your Arsenal ({gameState.currentPlayerHand?.length || 0} cards)
+                    <h3 className="text-xl font-bold mb-4 text-center bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent drop-shadow-lg">
+                        Your Mystical Arsenal ({gameState.currentPlayerHand?.length || 0} cards)
                     </h3>
                     <PlayerHand
                         cards={gameState.currentPlayerHand || []}

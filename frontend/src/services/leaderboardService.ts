@@ -11,7 +11,7 @@ export interface LeaderboardResponse {
     prevCursor: string;
 }
 
-const API_BASE_URL = 'http://localhost:8080/leaderboards';
+const API_BASE_URL = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/leaderboards`;
 
 class LeaderboardService {
     async getWeeklyLeaderboard(limit: number = 20): Promise<LeaderboardResponse> {

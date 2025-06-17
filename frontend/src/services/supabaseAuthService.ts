@@ -1,6 +1,11 @@
 import { supabase, AuthResponse, AuthUser, isSupabaseConfigured } from '@/lib/supabase'
 import { User, Session } from '@supabase/supabase-js'
 
+// Helper function to get redirect URL
+function getRedirectUrl(): string {
+  return `${window.location.protocol}//${window.location.host}/auth/callback`
+}
+
 export class SupabaseAuthService {
   private checkConfiguration() {
     if (!isSupabaseConfigured || !supabase) {
@@ -21,7 +26,7 @@ export class SupabaseAuthService {
             username: username
           },
           // Email verification is required
-          emailRedirectTo: `${window.location.origin}/auth/callback`
+          emailRedirectTo: getRedirectUrl()
         }
       })
 
@@ -121,7 +126,7 @@ export class SupabaseAuthService {
       type: 'signup',
       email: email,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`
+        emailRedirectTo: getRedirectUrl()
       }
     })
     return { error }

@@ -1,7 +1,7 @@
 import { Card, GameState, InitializePayload, MovePayload, Position, WinRequestPayload, WinResponsePayload } from '@/types/game';
 import { playerService } from './playerService';
 
-const API_BASE_URL = 'http://localhost:8080/game';
+const API_BASE_URL = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/game`;
 
 class GameService {
     async initializeGame(
@@ -243,7 +243,11 @@ class GameService {
             winnerId: backendData.winnerId,
             isTie: backendData.isTie,
             hasPendingWinRequest: backendData.hasPendingWinRequest,
-            pendingWinRequestPlayerId: backendData.pendingWinRequestPlayerId
+            pendingWinRequestPlayerId: backendData.pendingWinRequestPlayerId,
+            cardOwnership: backendData.cardOwnership,
+            playerIds: backendData.playerIds,
+            columnScores: backendData.columnScores,
+            playerNames: backendData.playerNames
         };
     }
 }

@@ -25,7 +25,7 @@ interface OnlineGameBoardProps {
   onBack: () => void;
 }
 
-// Debug flag - set to false in production
+// Debug flag - only enable in development
 const DEBUG = process.env.NODE_ENV === 'development';
 
 export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProps) {
@@ -69,34 +69,34 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
             try {
                 // Check if component is still mounted
                 if (!isMounted) {
-                    console.log('Component unmounted, skipping WebSocket setup');
+                    if (DEBUG) console.log('Component unmounted, skipping WebSocket setup');
                     return;
                 }
                 
                 // If already connected, just update state
                 if (gameWebSocketService.isConnected()) {
-                    console.log('WebSocket already connected');
+                    if (DEBUG) console.log('WebSocket already connected');
                     setIsConnected(true);
                     setConnectionStatus('connected');
                     return;
                 }
                 
-                console.log('Ensuring WebSocket connection...');
+                if (DEBUG) console.log('Ensuring WebSocket connection...');
                 await gameWebSocketService.ensureConnected({
                     onConnectionSuccess: () => {
-                        console.log('WebSocket connection established successfully');
+                        if (DEBUG) console.log('WebSocket connection established successfully');
                         setConnectionStatus('connected');
                         setIsConnected(true);
                     },
                     onJoinSuccess: (data) => {
-                        console.log('Joined match successfully:', data);
+                        if (DEBUG) console.log('Joined match successfully:', data);
                     },
                     onGameStateUpdate: (state) => {
-                        console.log('Game state update:', state);
+                        if (DEBUG) console.log('Game state update:', state);
                         
                         // Check if this is a waiting status update
                         if (state.status === 'WAITING') {
-                            console.log('Still waiting for players...');
+                            if (DEBUG) console.log('Still waiting for players...');
                             return;
                         }
                         
@@ -119,7 +119,8 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                             pendingWinRequestPlayerId: state.pendingWinRequestPlayerId,
                             cardOwnership: state.cardOwnership || {},
                             playerIds: state.playerIds || [],
-                            columnScores: state.columnScores || {}
+                            columnScores: state.columnScores || {},
+                            playerNames: state.playerNames || {}
                         };
                         
                         setGameState(mappedState);
@@ -149,22 +150,26 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                             console.log('Current player hand:', state.currentPlayerHand);
                             console.log('Card ownership:', state.cardOwnership);
                             console.log('Column scores:', state.columnScores);
+                            console.log('Player names:', state.playerNames);
                             console.log('Full game state:', state);
                         }
                         
-                        // Update player names if available
-                        if (state.playerIds && state.playerIds.length > 0) {
+                        // Update player names from backend
+                        if (state.playerNames && Object.keys(state.playerNames).length > 0) {
+                            setPlayers(state.playerNames);
+                        } else if (state.playerIds && state.playerIds.length > 0) {
+                            // Fallback to generic names if playerNames not available
                             const playerMap: {[key: string]: string} = {};
                             state.playerIds.forEach((id: string, index: number) => {
                                 playerMap[id] = `Player ${index + 1}`;
                             });
                             setPlayers(playerMap);
                         } else {
-                            console.warn('No playerIds in game state - backend needs to be restarted');
+                            if (DEBUG) console.warn('No playerIds in game state - backend needs to be restarted');
                         }
                     },
                     onPlayerJoined: (playerId) => {
-                        console.log('Player joined:', playerId);
+                        if (DEBUG) console.log('Player joined:', playerId);
                         setMatchInfo(prev => {
                             if (prev && !prev.player2Id && playerId !== prev.player1Id) {
                                 // Second player joined - game should start automatically
@@ -179,11 +184,11 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                         });
                     },
                     onPlayerDisconnected: (playerId) => {
-                        console.log('Player disconnected:', playerId);
+                        if (DEBUG) console.log('Player disconnected:', playerId);
                         setOpponentConnected(false);
                     },
                     onPlayerReconnected: (playerId) => {
-                        console.log('Player reconnected:', playerId);
+                        if (DEBUG) console.log('Player reconnected:', playerId);
                         setOpponentConnected(true);
                     },
                     onError: (error) => {
@@ -231,7 +236,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                 // Ensure WebSocket is connected before proceeding
                 let connectionAttempts = 0;
                 while (!gameWebSocketService.isConnected() && connectionAttempts < 10) {
-                    console.log(`WebSocket not connected, waiting... (attempt ${connectionAttempts + 1})`);
+                    if (DEBUG) console.log(`WebSocket not connected, waiting... (attempt ${connectionAttempts + 1})`);
                     await new Promise(resolve => setTimeout(resolve, 200));
                     connectionAttempts++;
                 }
@@ -254,10 +259,10 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                     const joinResponse = await onlineGameService.joinMatch(matchId, user.playerId);
                     
                     // Join WebSocket room
-                    console.log('Player joining WebSocket room:', matchId);
+                    if (DEBUG) console.log('Player joining WebSocket room:', matchId);
                     try {
                         await gameWebSocketService.joinMatch(matchId, user.playerId);
-                        console.log('Player successfully joined WebSocket room');
+                        if (DEBUG) console.log('Player successfully joined WebSocket room');
                     } catch (err) {
                         console.error('Failed to join WebSocket room:', err);
                         setError('Failed to join match room');
@@ -320,10 +325,10 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                     await new Promise(resolve => setTimeout(resolve, 100));
                     
                     // Join WebSocket room
-                    console.log('Host joining WebSocket room:', createResponse.matchId);
+                    if (DEBUG) console.log('Host joining WebSocket room:', createResponse.matchId);
                     try {
                         await gameWebSocketService.joinMatch(createResponse.matchId, user.playerId);
-                        console.log('Host successfully joined WebSocket room');
+                        if (DEBUG) console.log('Host successfully joined WebSocket room');
                     } catch (err) {
                         console.error('Failed to join WebSocket room:', err);
                         setError('Failed to join match room');
@@ -393,7 +398,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
         const moves: Position[] = [];
         const boardPieces = gameState.board.pieces || {};
         
-        console.log('Calculating valid moves, card ownership:', cardOwnership);
+        if (DEBUG) console.log('Calculating valid moves, card ownership:', cardOwnership);
         
         // Check if board is empty (first move)
         const boardIsEmpty = Object.keys(boardPieces).length === 0;
@@ -413,11 +418,11 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                 // Check if this card belongs to the current player
                 const cardOwner = cardOwnership[posKey];
                 if (cardOwner !== user.playerId) {
-                    console.log(`Skipping card at ${posKey} - owned by ${cardOwner}, not ${user.playerId}`);
+                    if (DEBUG) console.log(`Skipping card at ${posKey} - owned by ${cardOwner}, not ${user.playerId}`);
                     return;
                 }
                 
-                console.log(`Found own card at ${posKey}`);
+                if (DEBUG) console.log(`Found own card at ${posKey}`);
                 
                 // Check orthogonal adjacent positions (no diagonals)
                 const adjacentPositions = [
@@ -435,7 +440,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                         // Add to moves if not already included
                         if (!moves.some(m => m.x === pos.x && m.y === pos.y)) {
                             moves.push(pos);
-                            console.log(`Added valid position: ${pos.x},${pos.y}`);
+                            if (DEBUG) console.log(`Added valid position: ${pos.x},${pos.y}`);
                         }
                     }
                 });
@@ -466,7 +471,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
             
             // Don't update game state from REST response - wait for WebSocket update
             // The WebSocket will broadcast the proper player-specific view with column scores
-            console.log('Move successful, waiting for WebSocket update');
+            if (DEBUG) console.log('Move successful, waiting for WebSocket update');
             
             // Only update turn status immediately for better UX
             if (response) {
@@ -484,7 +489,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
         
         try {
             // Send pass action through REST API
-            const response = await fetch(`http://localhost:8080/game/${gameState.id}/pass`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/game/${gameState.id}/pass`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -511,7 +516,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
         if (!isMyTurn || !gameState) return;
         
         try {
-            const response = await fetch(`http://localhost:8080/game/${gameState.id}/request-win`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/game/${gameState.id}/request-win`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -537,7 +542,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
         if (!isMyTurn || !gameState) return;
         
         try {
-            const response = await fetch(`http://localhost:8080/game/${gameState.id}/respond-win-request`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/game/${gameState.id}/respond-win-request`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -590,33 +595,41 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                 <div className="bg-black/40 backdrop-blur-sm rounded-lg shadow-xl p-4 mb-4 border border-purple-500/30">
                     <div className="flex justify-between items-center">
                         <div className="flex items-center gap-4">
-                            <Button variant="outline" onClick={handleCancelMatch}>
-                                Back to Menu
+                            <Button 
+                                variant="outline" 
+                                onClick={handleCancelMatch}
+                                className="bg-purple-800/30 hover:bg-purple-700/40 border-purple-500/50 text-purple-200 hover:text-purple-100 transition-all duration-300"
+                            >
+                                ← Back to Menu
                             </Button>
                             <div className="flex items-center gap-2">
                                 {connectionStatus === 'connected' ? (
-                                    <Wifi className="w-5 h-5 text-green-500" />
+                                    <Wifi className="w-5 h-5 text-green-400 drop-shadow-lg" />
                                 ) : (
-                                    <WifiOff className="w-5 h-5 text-red-500" />
+                                    <WifiOff className="w-5 h-5 text-red-400 drop-shadow-lg" />
                                 )}
-                                <span className="text-sm">
+                                <span className="text-sm text-gray-300">
                                     {connectionStatus === 'connected' ? 'Connected' : 'Disconnected'}
                                 </span>
                             </div>
                         </div>
                         
                         <div className="flex items-center gap-4">
-                            <Badge variant={isMyTurn ? "default" : "secondary"}>
-                                {isMyTurn ? "Your Turn" : `${players[gameState.currentPlayerId] || 'Opponent'}'s Turn`}
+                            <Badge 
+                                className={isMyTurn 
+                                    ? "bg-gradient-to-r from-green-600 to-emerald-600 text-white border-0 shadow-lg shadow-green-500/20" 
+                                    : "bg-gray-800/50 text-gray-300 border-gray-600/50"}
+                            >
+                                {isMyTurn ? "⚔️ Your Turn" : `${players[gameState.currentPlayerId] || 'Opponent'}'s Turn`}
                             </Badge>
                             {gameState.hasPendingWinRequest && (
-                                <Badge variant="destructive">
-                                    Early End Requested
+                                <Badge className="bg-red-900/50 text-red-300 border-red-500/50">
+                                    ⚠️ Early End Requested
                                 </Badge>
                             )}
                             {matchInfo && (
-                                <Badge variant="outline">
-                                    Room: {matchInfo.matchId.slice(-6).toUpperCase()}
+                                <Badge className="bg-purple-900/50 text-purple-300 border-purple-500/50">
+                                    📍 Room: {matchInfo.matchId.slice(-6).toUpperCase()}
                                 </Badge>
                             )}
                         </div>
@@ -711,15 +724,19 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
 
                             {/* Your Hand (only visible when game is in progress) */}
                             {gameState.state === 'IN_PROGRESS' && (
-                            <div className="relative bg-black/40 rounded-xl p-4 mt-4 overflow-hidden">
-                                {/* Wooden Background */}
-                                <div 
-                                    className="absolute inset-0 bg-cover bg-center opacity-70"
-                                    style={{
-                                        backgroundImage: "url('/backgrounds/wooden-table.png')",
-                                        filter: "brightness(0.7) contrast(1.1)"
-                                    }}
-                                />
+                            <div className="relative bg-gradient-to-br from-purple-900/40 via-blue-900/40 to-indigo-900/40 backdrop-blur-sm rounded-xl p-4 mt-4 overflow-hidden border border-purple-500/30">
+                                {/* Mystical energy background effect */}
+                                <div className="absolute inset-0">
+                                    <div className="absolute inset-0 bg-gradient-to-t from-purple-600/10 via-transparent to-blue-600/10 animate-pulse" />
+                                    <div className="absolute top-0 left-1/4 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl" />
+                                    <div className="absolute bottom-0 right-1/4 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl" />
+                                </div>
+                                
+                                {/* Title */}
+                                <h3 className="text-center text-sm font-bold text-purple-300 mb-3 relative z-10">
+                                    Your Mystical Hand
+                                </h3>
+                                
                                 <div className="relative z-10">
                                     <PlayerHand
                                         cards={gameState.currentPlayerHand}
@@ -757,22 +774,23 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                                  gameState.pendingWinRequestPlayerId !== user!.playerId && 
                                  isMyTurn && (
                                     <div className="space-y-2">
-                                        <Alert>
-                                            <AlertCircle className="h-4 w-4" />
-                                            <AlertDescription>
+                                        <Alert className="bg-yellow-900/30 border-yellow-500/50">
+                                            <AlertCircle className="h-4 w-4 text-yellow-500" />
+                                            <AlertDescription className="text-yellow-200">
                                                 Your opponent has requested to end the game early. 
                                                 Do you accept?
                                             </AlertDescription>
                                         </Alert>
                                         <div className="flex gap-2">
                                             <Button
-                                                variant="default"
+                                                className="bg-green-600 hover:bg-green-700 text-white"
                                                 onClick={() => handleWinResponse(true)}
                                             >
                                                 Accept & Calculate Winner
                                             </Button>
                                             <Button
                                                 variant="outline"
+                                                className="bg-gray-800/50 hover:bg-gray-700/50 border-gray-600 text-gray-200"
                                                 onClick={() => handleWinResponse(false)}
                                             >
                                                 Continue Playing
@@ -797,46 +815,50 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                             <div className="space-y-2">
                                 {Object.entries(players).map(([playerId, playerName]) => (
                                     <div key={playerId} className="flex justify-between items-center">
-                                        <span className="flex items-center gap-2">
-                                            {playerName} {playerId === user!.playerId && '(You)'}
+                                        <span className="flex items-center gap-2 text-gray-200">
+                                            {playerName} {playerId === user!.playerId && <span className="text-purple-400">(You)</span>}
                                             {playerId !== user!.playerId && !opponentConnected && (
-                                                <Badge variant="secondary" className="text-xs">
+                                                <Badge className="text-xs bg-red-900/50 text-red-300 border-red-500/50">
                                                     Disconnected
                                                 </Badge>
                                             )}
                                         </span>
-                                        <Badge>{gameState.scores?.[playerId] || 0} column{(gameState.scores?.[playerId] || 0) !== 1 ? 's' : ''}</Badge>
+                                        <Badge className="bg-blue-900/50 text-blue-300 border-blue-500/50">
+                                            {gameState.scores?.[playerId] || 0} column{(gameState.scores?.[playerId] || 0) !== 1 ? 's' : ''}
+                                        </Badge>
                                     </div>
                                 ))}
                             </div>
                         </div>
 
                         {/* Game Status */}
-                        <div className="bg-white rounded-lg shadow-lg p-4">
-                            <h3 className="font-bold mb-3">Game Status</h3>
+                        <div className="bg-black/40 backdrop-blur-sm rounded-2xl shadow-xl p-4 border border-purple-500/30">
+                            <h3 className="font-bold mb-3 text-yellow-400">Game Status</h3>
                             <div className="space-y-2 text-sm">
-                                <div className="flex justify-between">
-                                    <span>State:</span>
-                                    <Badge variant="outline">{gameState.state}</Badge>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-gray-300">State:</span>
+                                    <Badge className="bg-purple-900/50 text-purple-300 border-purple-500/50">
+                                        {gameState.state}
+                                    </Badge>
                                 </div>
-                                <div className="flex justify-between">
-                                    <span>Cards in hand:</span>
-                                    <span>{gameState.currentPlayerHand.length}</span>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-gray-300">Cards in hand:</span>
+                                    <span className="text-purple-200 font-bold">{gameState.currentPlayerHand.length}</span>
                                 </div>
                                 {gameState.state === 'COMPLETED' && (
-                                    <div className="mt-4 p-3 bg-yellow-100 rounded">
-                                        <p className="font-bold text-center">
+                                    <div className="mt-4 p-3 bg-gradient-to-br from-yellow-900/30 to-orange-900/30 rounded-lg border border-yellow-700/50">
+                                        <p className="font-bold text-center text-yellow-300">
                                             {gameState.isTie ? (
-                                                "Game ended in a tie!"
+                                                "⚔️ Game ended in a tie! ⚔️"
                                             ) : gameState.winnerId === user!.playerId ? (
-                                                "You won! 🎉"
+                                                "🎉 You won! 🎉"
                                             ) : (
-                                                "You lost. Better luck next time!"
+                                                "💔 You lost. Better luck next time!"
                                             )}
                                         </p>
                                         <Button 
                                             variant="outline" 
-                                            className="w-full mt-2"
+                                            className="w-full mt-2 bg-purple-800/30 hover:bg-purple-700/40 border-purple-500/50 text-purple-200 hover:text-purple-100 transition-all duration-300"
                                             onClick={handleCancelMatch}
                                         >
                                             Back to Menu

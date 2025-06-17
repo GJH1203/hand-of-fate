@@ -71,14 +71,31 @@ export default function PlayerHand({
                                     className="w-full h-full object-cover"
                                 />
                             ) : (
-                                // Fallback when no image - show text
-                                <div className="w-full h-full flex flex-col items-center justify-center space-y-1 p-3">
-                                    <span className="text-3xl font-mono font-bold text-primary">
-                                        {card.power}
-                                    </span>
-                                    <span className="text-sm text-center font-semibold text-foreground">
-                                        {card.name}
-                                    </span>
+                                // Mystical card design when no image
+                                <div className="w-full h-full relative bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 border-2 border-purple-500/50">
+                                    {/* Magical card pattern overlay */}
+                                    <div className="absolute inset-0 opacity-20">
+                                        <div className="absolute inset-0 bg-gradient-to-t from-transparent via-purple-500/20 to-transparent animate-pulse" />
+                                        <div className="absolute top-2 left-2 w-4 h-4 border border-yellow-400/50 rotate-45" />
+                                        <div className="absolute top-2 right-2 w-4 h-4 border border-yellow-400/50 rotate-45" />
+                                        <div className="absolute bottom-2 left-2 w-4 h-4 border border-yellow-400/50 rotate-45" />
+                                        <div className="absolute bottom-2 right-2 w-4 h-4 border border-yellow-400/50 rotate-45" />
+                                    </div>
+                                    
+                                    {/* Card content */}
+                                    <div className="relative z-10 flex flex-col items-center justify-center h-full p-2">
+                                        <div className="text-4xl font-bold text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.5)] mb-1">
+                                            {card.power}
+                                        </div>
+                                        <div className="text-xs text-center font-semibold text-purple-200 px-1">
+                                            {card.name}
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Glow effect for selected card */}
+                                    {selectedCard?.id === card.id && (
+                                        <div className="absolute inset-0 bg-yellow-400/20 rounded-lg animate-pulse" />
+                                    )}
                                 </div>
                             )}
                         </div>
