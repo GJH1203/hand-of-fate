@@ -25,7 +25,7 @@ interface OnlineGameBoardProps {
   onBack: () => void;
 }
 
-// Debug flag - set to false in production
+// Debug flag - only enable in development
 const DEBUG = process.env.NODE_ENV === 'development';
 
 export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProps) {
@@ -69,34 +69,34 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
             try {
                 // Check if component is still mounted
                 if (!isMounted) {
-                    console.log('Component unmounted, skipping WebSocket setup');
+                    if (DEBUG) console.log('Component unmounted, skipping WebSocket setup');
                     return;
                 }
                 
                 // If already connected, just update state
                 if (gameWebSocketService.isConnected()) {
-                    console.log('WebSocket already connected');
+                    if (DEBUG) console.log('WebSocket already connected');
                     setIsConnected(true);
                     setConnectionStatus('connected');
                     return;
                 }
                 
-                console.log('Ensuring WebSocket connection...');
+                if (DEBUG) console.log('Ensuring WebSocket connection...');
                 await gameWebSocketService.ensureConnected({
                     onConnectionSuccess: () => {
-                        console.log('WebSocket connection established successfully');
+                        if (DEBUG) console.log('WebSocket connection established successfully');
                         setConnectionStatus('connected');
                         setIsConnected(true);
                     },
                     onJoinSuccess: (data) => {
-                        console.log('Joined match successfully:', data);
+                        if (DEBUG) console.log('Joined match successfully:', data);
                     },
                     onGameStateUpdate: (state) => {
-                        console.log('Game state update:', state);
+                        if (DEBUG) console.log('Game state update:', state);
                         
                         // Check if this is a waiting status update
                         if (state.status === 'WAITING') {
-                            console.log('Still waiting for players...');
+                            if (DEBUG) console.log('Still waiting for players...');
                             return;
                         }
                         
@@ -165,11 +165,11 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                             });
                             setPlayers(playerMap);
                         } else {
-                            console.warn('No playerIds in game state - backend needs to be restarted');
+                            if (DEBUG) console.warn('No playerIds in game state - backend needs to be restarted');
                         }
                     },
                     onPlayerJoined: (playerId) => {
-                        console.log('Player joined:', playerId);
+                        if (DEBUG) console.log('Player joined:', playerId);
                         setMatchInfo(prev => {
                             if (prev && !prev.player2Id && playerId !== prev.player1Id) {
                                 // Second player joined - game should start automatically
@@ -184,11 +184,11 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                         });
                     },
                     onPlayerDisconnected: (playerId) => {
-                        console.log('Player disconnected:', playerId);
+                        if (DEBUG) console.log('Player disconnected:', playerId);
                         setOpponentConnected(false);
                     },
                     onPlayerReconnected: (playerId) => {
-                        console.log('Player reconnected:', playerId);
+                        if (DEBUG) console.log('Player reconnected:', playerId);
                         setOpponentConnected(true);
                     },
                     onError: (error) => {
@@ -236,7 +236,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                 // Ensure WebSocket is connected before proceeding
                 let connectionAttempts = 0;
                 while (!gameWebSocketService.isConnected() && connectionAttempts < 10) {
-                    console.log(`WebSocket not connected, waiting... (attempt ${connectionAttempts + 1})`);
+                    if (DEBUG) console.log(`WebSocket not connected, waiting... (attempt ${connectionAttempts + 1})`);
                     await new Promise(resolve => setTimeout(resolve, 200));
                     connectionAttempts++;
                 }
@@ -259,10 +259,10 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                     const joinResponse = await onlineGameService.joinMatch(matchId, user.playerId);
                     
                     // Join WebSocket room
-                    console.log('Player joining WebSocket room:', matchId);
+                    if (DEBUG) console.log('Player joining WebSocket room:', matchId);
                     try {
                         await gameWebSocketService.joinMatch(matchId, user.playerId);
-                        console.log('Player successfully joined WebSocket room');
+                        if (DEBUG) console.log('Player successfully joined WebSocket room');
                     } catch (err) {
                         console.error('Failed to join WebSocket room:', err);
                         setError('Failed to join match room');
@@ -325,10 +325,10 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                     await new Promise(resolve => setTimeout(resolve, 100));
                     
                     // Join WebSocket room
-                    console.log('Host joining WebSocket room:', createResponse.matchId);
+                    if (DEBUG) console.log('Host joining WebSocket room:', createResponse.matchId);
                     try {
                         await gameWebSocketService.joinMatch(createResponse.matchId, user.playerId);
-                        console.log('Host successfully joined WebSocket room');
+                        if (DEBUG) console.log('Host successfully joined WebSocket room');
                     } catch (err) {
                         console.error('Failed to join WebSocket room:', err);
                         setError('Failed to join match room');
@@ -398,7 +398,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
         const moves: Position[] = [];
         const boardPieces = gameState.board.pieces || {};
         
-        console.log('Calculating valid moves, card ownership:', cardOwnership);
+        if (DEBUG) console.log('Calculating valid moves, card ownership:', cardOwnership);
         
         // Check if board is empty (first move)
         const boardIsEmpty = Object.keys(boardPieces).length === 0;
@@ -418,11 +418,11 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                 // Check if this card belongs to the current player
                 const cardOwner = cardOwnership[posKey];
                 if (cardOwner !== user.playerId) {
-                    console.log(`Skipping card at ${posKey} - owned by ${cardOwner}, not ${user.playerId}`);
+                    if (DEBUG) console.log(`Skipping card at ${posKey} - owned by ${cardOwner}, not ${user.playerId}`);
                     return;
                 }
                 
-                console.log(`Found own card at ${posKey}`);
+                if (DEBUG) console.log(`Found own card at ${posKey}`);
                 
                 // Check orthogonal adjacent positions (no diagonals)
                 const adjacentPositions = [
@@ -440,7 +440,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                         // Add to moves if not already included
                         if (!moves.some(m => m.x === pos.x && m.y === pos.y)) {
                             moves.push(pos);
-                            console.log(`Added valid position: ${pos.x},${pos.y}`);
+                            if (DEBUG) console.log(`Added valid position: ${pos.x},${pos.y}`);
                         }
                     }
                 });
@@ -471,7 +471,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
             
             // Don't update game state from REST response - wait for WebSocket update
             // The WebSocket will broadcast the proper player-specific view with column scores
-            console.log('Move successful, waiting for WebSocket update');
+            if (DEBUG) console.log('Move successful, waiting for WebSocket update');
             
             // Only update turn status immediately for better UX
             if (response) {

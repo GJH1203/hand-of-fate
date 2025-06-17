@@ -7,8 +7,11 @@ interface BackendPlayer {
   supabaseUserId: string
 }
 
+// Shared API base URL constant
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
+
 export class UserSyncService {
-  private backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
+  private backendUrl = API_BASE_URL
 
   /**
    * Create or get player in backend database from Supabase user
@@ -38,7 +41,7 @@ export class UserSyncService {
    */
   private async findPlayerBySupabaseId(supabaseUserId: string): Promise<BackendPlayer | null> {
     try {
-      const response = await fetch(`${this.backendUrl}/players/by-supabase-id/${supabaseUserId}`)
+      const response = await fetch(`${API_BASE_URL}/players/by-supabase-id/${supabaseUserId}`)
       
       if (response.ok) {
         return await response.json()
@@ -66,7 +69,7 @@ export class UserSyncService {
         username: username
       })
       
-      const response = await fetch(`${this.backendUrl}/api/auth/sync-verified-user`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/sync-verified-user`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
