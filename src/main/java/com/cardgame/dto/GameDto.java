@@ -88,4 +88,12 @@ public interface GameDto {
     default Map<Integer, ColumnScoreDto> getColumnScores() {
         return Map.of();
     }
+    
+    /**
+     * Map of player ID to player name/username for display purposes.
+     */
+    @Value.Default
+    default Map<String, String> getPlayerNames() {
+        return Map.of();
+    }
 }

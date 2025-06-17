@@ -17,6 +17,9 @@ public class WebSocketConfig implements WebSocketConfigurer {
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry.addHandler(gameWebSocketHandler, "/ws/game")
-                .setAllowedOrigins("http://localhost:3000"); // Specific origin for CORS
+                .setAllowedOrigins(
+                    "http://localhost:3000",
+                    "http://localhost:3001"
+                ); // Specific origins for CORS
     }
 }
