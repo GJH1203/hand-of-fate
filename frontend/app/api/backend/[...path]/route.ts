@@ -4,14 +4,15 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8080'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { path: string[] } }
+  { params }: { params: Promise<{ path: string[] }> }
 ) {
-  const path = params.path.join('/')
+  const { path } = await params
+  const pathString = path.join('/')
   
   try {
     const body = await request.text()
     
-    const response = await fetch(`${BACKEND_URL}/${path}`, {
+    const response = await fetch(`${BACKEND_URL}/${pathString}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -32,12 +33,13 @@ export async function POST(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { path: string[] } }
+  { params }: { params: Promise<{ path: string[] }> }
 ) {
-  const path = params.path.join('/')
+  const { path } = await params
+  const pathString = path.join('/')
   
   try {
-    const response = await fetch(`${BACKEND_URL}/${path}`, {
+    const response = await fetch(`${BACKEND_URL}/${pathString}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
