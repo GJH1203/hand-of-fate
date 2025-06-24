@@ -209,12 +209,8 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
 
         return () => {
             isMounted = false;
-            // Small delay to prevent rapid reconnection in development
-            setTimeout(() => {
-                if (!isMounted) {
-                    gameWebSocketService.disconnect();
-                }
-            }, 100);
+            // Don't disconnect immediately - let the service handle reconnection
+            // Only disconnect if we're truly leaving the game (not just navigating)
         };
     }, [user]);
 
@@ -249,12 +245,6 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                 }
 
                 if (matchId) {
-                    // Leave any existing matches first
-                    await onlineGameService.leaveAllMatches(user.playerId);
-                    
-                    // Small delay to ensure cleanup completes
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                    
                     // Join existing match
                     const joinResponse = await onlineGameService.joinMatch(matchId, user.playerId);
                     
@@ -306,9 +296,6 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                         }, 100);
                     }
                 } else {
-                    // Leave any existing matches first
-                    await onlineGameService.leaveAllMatches(user.playerId);
-                    
                     // Create new match
                     const createResponse = await onlineGameService.createMatch(user.playerId);
                     
@@ -359,11 +346,10 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
     const handleCancelMatch = useCallback(async () => {
         if (matchInfo && user) {
             gameWebSocketService.leaveMatch();
-            try {
-                await onlineGameService.leaveAllMatches(user.playerId);
-            } catch (err) {
-                console.error('Error leaving matches:', err);
-            }
+            // Disconnect WebSocket when user explicitly goes back to menu
+            gameWebSocketService.disconnect();
+            // Don't call leaveAllMatches here - we don't want to abandon the game
+            // The game should remain in its current state (IN_PROGRESS or COMPLETED)
         }
         onBack();
     }, [onBack, matchInfo, user]);
