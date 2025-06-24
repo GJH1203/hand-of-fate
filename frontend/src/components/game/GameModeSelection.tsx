@@ -20,6 +20,7 @@ export default function GameModeSelection({ onModeSelect }: GameModeSelectionPro
   const [activeGame, setActiveGame] = useState<ActiveGame | null>(null);
   const [checkingActiveGame, setCheckingActiveGame] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [pendingAction, setPendingAction] = useState<'create' | 'join' | null>(null);
 
   // Check for active games when component mounts
   useEffect(() => {
@@ -51,6 +52,7 @@ export default function GameModeSelection({ onModeSelect }: GameModeSelectionPro
   const handleOnlineMode = () => {
     // If user has active game, show confirmation
     if (activeGame) {
+      setPendingAction('create');
       setShowConfirmDialog(true);
     } else {
       onModeSelect(GameMode.ONLINE);
@@ -70,7 +72,22 @@ export default function GameModeSelection({ onModeSelect }: GameModeSelectionPro
     }
     
     setActiveGame(null); // Clear activeGame to avoid stale state
-    onModeSelect(GameMode.ONLINE);
+    
+    // Handle the pending action
+    if (pendingAction === 'create') {
+      onModeSelect(GameMode.ONLINE);
+    } else if (pendingAction === 'join') {
+      if (matchId.trim()) {
+        // If we already have a match ID, join directly
+        onModeSelect(GameMode.ONLINE, matchId.trim());
+        setShowJoinGame(false);
+      } else {
+        // Otherwise show the join dialog
+        setShowJoinGame(true);
+      }
+    }
+    
+    setPendingAction(null);
   };
 
   const handleReconnect = () => {
@@ -88,7 +105,13 @@ export default function GameModeSelection({ onModeSelect }: GameModeSelectionPro
 
   const handleJoinGame = () => {
     if (matchId.trim()) {
-      onModeSelect(GameMode.ONLINE, matchId.trim());
+      // If user has active game, show confirmation
+      if (activeGame) {
+        setPendingAction('join');
+        setShowConfirmDialog(true);
+      } else {
+        onModeSelect(GameMode.ONLINE, matchId.trim());
+      }
     }
   };
 
@@ -206,14 +229,17 @@ export default function GameModeSelection({ onModeSelect }: GameModeSelectionPro
               <Alert className="border-yellow-500/50 bg-yellow-500/10">
                 <AlertCircle className="h-4 w-4 text-yellow-500" />
                 <AlertDescription className="text-gray-200">
-                  You have an ongoing battle. Creating a new game will abandon your current match.
+                  You have an ongoing battle. Starting a new game will abandon your current match.
                 </AlertDescription>
               </Alert>
               <div className="flex gap-3">
                 <Button
                   variant="outline"
                   className="flex-1 bg-gray-800/40 hover:bg-gray-700/50 border-gray-600/50 text-gray-200 hover:text-white transition-all duration-300"
-                  onClick={() => setShowConfirmDialog(false)}
+                  onClick={() => {
+                    setShowConfirmDialog(false);
+                    setPendingAction(null);
+                  }}
                 >
                   Cancel
                 </Button>
@@ -335,7 +361,16 @@ export default function GameModeSelection({ onModeSelect }: GameModeSelectionPro
                 <Button 
                   variant="outline"
                   className="w-full bg-gray-800/50 hover:bg-gray-700/50 border-gray-600 text-white"
-                  onClick={() => setShowJoinGame(true)}
+                  onClick={() => {
+                    // Check for active game when opening join dialog
+                    if (activeGame) {
+                      // Remember that we want to show join dialog after confirmation
+                      setPendingAction('join');
+                      setShowConfirmDialog(true);
+                    } else {
+                      setShowJoinGame(true);
+                    }
+                  }}
                 >
                   Join with Code
                 </Button>
