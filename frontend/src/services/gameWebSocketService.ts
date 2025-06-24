@@ -97,10 +97,9 @@ class GameWebSocketService {
         
         if (isProduction && isUsingProxy) {
           // Can't use WebSocket through proxy on HTTPS
-          console.warn('WebSocket not available through HTTPS proxy. Game updates may be delayed.');
-          // For now, we'll try to connect anyway but it will fail
-          // TODO: Implement polling fallback
-          wsUrl = 'ws://134.199.238.66:8080/ws/game';
+          console.warn('WebSocket not available through HTTPS proxy. Using direct connection.');
+          // Use the direct WebSocket connection to your backend
+          wsUrl = 'wss://funnygames.duckdns.org/ws/game';
         } else if (process.env.NEXT_PUBLIC_API_URL?.startsWith('/api/')) {
           // Local development with proxy
           wsUrl = 'ws://localhost:8080/ws/game';
