@@ -4,10 +4,11 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://134.199.238.66:8080';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { path: string[] } }
+  context: { params: Promise<{ path: string[] }> }
 ) {
-  const path = params.path.join('/');
-  const url = `${BACKEND_URL}/${path}`;
+  const { path } = await context.params;
+  const pathString = path.join('/');
+  const url = `${BACKEND_URL}/${pathString}`;
 
   try {
     const response = await fetch(url, {
@@ -26,10 +27,11 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { path: string[] } }
+  context: { params: Promise<{ path: string[] }> }
 ) {
-  const path = params.path.join('/');
-  const url = `${BACKEND_URL}/${path}`;
+  const { path } = await context.params;
+  const pathString = path.join('/');
+  const url = `${BACKEND_URL}/${pathString}`;
 
   try {
     const body = await request.json();
