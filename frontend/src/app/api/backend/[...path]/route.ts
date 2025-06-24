@@ -38,7 +38,7 @@ export async function POST(
   } catch (error) {
     console.error('Proxy error:', error)
     return Response.json(
-      { error: 'Failed to connect to backend', details: error.message },
+      { error: 'Failed to connect to backend', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }
