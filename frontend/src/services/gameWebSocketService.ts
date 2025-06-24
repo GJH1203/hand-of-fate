@@ -95,19 +95,17 @@ class GameWebSocketService {
         const isProduction = window.location.protocol === 'https:';
         const isUsingProxy = process.env.NEXT_PUBLIC_API_URL?.startsWith('/api/');
         
-        if (isProduction && isUsingProxy) {
-          // Can't use WebSocket through proxy on HTTPS
-          console.warn('WebSocket not available through HTTPS proxy. Using direct connection.');
-          // Use the direct WebSocket connection to your backend
-          wsUrl = 'wss://funnygames.duckdns.org/ws/game';
-        } else if (process.env.NEXT_PUBLIC_API_URL?.startsWith('/api/')) {
-          // Local development with proxy
-          wsUrl = 'ws://localhost:8080/ws/game';
+        if (process.env.NEXT_PUBLIC_API_URL?.startsWith('https://')) {
+          // Direct HTTPS connection - use WSS
+          const host = process.env.NEXT_PUBLIC_API_URL.replace(/^https:\/\//, '');
+          wsUrl = `wss://${host}/ws/game`;
+        } else if (process.env.NEXT_PUBLIC_API_URL?.startsWith('http://')) {
+          // Direct HTTP connection - use WS
+          const host = process.env.NEXT_PUBLIC_API_URL.replace(/^http:\/\//, '');
+          wsUrl = `ws://${host}/ws/game`;
         } else {
-          // Direct connection
-          const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-          const host = process.env.NEXT_PUBLIC_API_URL?.replace(/^https?:\/\//, '') || 'localhost:8080';
-          wsUrl = `${protocol}//${host}/ws/game`;
+          // Local development or fallback
+          wsUrl = 'ws://localhost:8080/ws/game';
         }
         
         console.log('Connecting to WebSocket:', wsUrl);
