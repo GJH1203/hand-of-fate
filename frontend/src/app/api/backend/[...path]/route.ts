@@ -12,6 +12,8 @@ export async function POST(
   try {
     const body = await request.text()
     
+    console.log(`Proxying POST request to: ${BACKEND_URL}/${pathString}`)
+    
     const response = await fetch(`${BACKEND_URL}/${pathString}`, {
       method: 'POST',
       headers: {
@@ -20,12 +22,23 @@ export async function POST(
       body: body,
     })
     
-    const data = await response.json()
-    return Response.json(data, { status: response.status })
+    const responseText = await response.text()
+    console.log(`Backend response status: ${response.status}`)
+    
+    // Try to parse as JSON, if not return as text
+    try {
+      const data = JSON.parse(responseText)
+      return Response.json(data, { status: response.status })
+    } catch {
+      return new Response(responseText, { 
+        status: response.status,
+        headers: { 'Content-Type': 'text/plain' }
+      })
+    }
   } catch (error) {
     console.error('Proxy error:', error)
     return Response.json(
-      { error: 'Failed to connect to backend' },
+      { error: 'Failed to connect to backend', details: error.message },
       { status: 500 }
     )
   }
