@@ -12,9 +12,14 @@ public class DataInitializer {
     @Bean
     CommandLineRunner initDatabase(CardRepository cardRepository) {
         return args -> {
-            // Delete all existing cards first to ensure clean state
-            cardRepository.deleteAll();
-            System.out.println("Cleared all existing cards");
+            // Check if cards already exist
+            long cardCount = cardRepository.count();
+            if (cardCount > 0) {
+                System.out.println("Cards already initialized. Found " + cardCount + " cards.");
+                return;
+            }
+            
+            System.out.println("Initializing cards...");
             
             // Create Spark card
             Card sparkCard = new Card();
@@ -42,6 +47,8 @@ public class DataInitializer {
             thunderCard.setImageUrl("/gifs/thunder.png");
             cardRepository.save(thunderCard);
             System.out.println("Created Thunder card with ID: 5");
+            
+            System.out.println("Card initialization complete. Total cards: " + cardRepository.count());
         };
     }
 }
