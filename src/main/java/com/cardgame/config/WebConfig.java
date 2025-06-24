@@ -22,7 +22,8 @@ public class WebConfig implements WebMvcConfigurer {
             "http://localhost:3001",
             "https://card-game-frontend-*.vercel.app",
             "https://card-game-frontend.vercel.app",
-            "https://*.vercel.app"
+            "https://*.vercel.app",
+            "https://funnygames.duckdns.org"
         ));
         
         // Add any additional origins from environment variable
