@@ -94,16 +94,16 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                     onGameStateUpdate: (state) => {
                         if (DEBUG) console.log('Game state update:', state);
                         
-                        // Check if this is a waiting status update
-                        if (state.status === 'WAITING') {
-                            if (DEBUG) console.log('Still waiting for players...');
+                        // Skip if no game state yet
+                        if (!state.id || !state.state) {
+                            if (DEBUG) console.log('No game state available yet');
                             return;
                         }
                         
                         // Map backend game state to frontend format
                         const mappedState: GameState = {
                             id: state.id,
-                            state: state.state || state.gameState,
+                            state: state.state,
                             board: {
                                 width: state.board?.width || 3,
                                 height: state.board?.height || 5,
@@ -446,9 +446,11 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
         try {
             // Send move through REST API (WebSocket will broadcast the update)
             const response = await gameService.makeMove(gameState.id, {
+                type: 'PLACE_CARD' as const,
                 playerId: user!.playerId,
                 card: selectedCard,
-                targetPosition: { x, y }
+                targetPosition: { x, y },
+                timestamp: Date.now()
             });
             
             // Clear selection

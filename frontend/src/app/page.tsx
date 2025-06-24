@@ -73,11 +73,11 @@ export default function Home() {
 
   // Use fetched player data for stats
   const userStats = {
-    gamesPlayed: user?.stats?.gamesPlayed || 0,
-    wins: user?.stats?.wins || 0,
+    gamesPlayed: playerData?.gamesPlayed || 0,
+    wins: playerData?.wins || 0,
     lifetimeScore: playerData?.lifetimeScore || 0,
-    rank: user?.stats?.rank || 'Apprentice',
-    winRate: user?.stats?.gamesPlayed ? Math.round((user?.stats?.wins / user?.stats?.gamesPlayed) * 100) : 0
+    rank: playerData?.rank || 'Apprentice',
+    winRate: playerData?.gamesPlayed ? Math.round((playerData?.wins / playerData?.gamesPlayed) * 100) : 0
   };
 
   return (

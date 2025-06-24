@@ -4,7 +4,11 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { UnifiedAuthProvider } from '@/hooks/useUnifiedAuth'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ 
+  subsets: ['latin'],
+  display: 'swap',
+  fallback: ['system-ui', 'arial']
+})
 
 export const metadata: Metadata = {
     title: "Queen's Blood",
