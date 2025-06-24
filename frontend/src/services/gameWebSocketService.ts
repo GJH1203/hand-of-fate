@@ -89,9 +89,27 @@ class GameWebSocketService {
         this.callbacks = callbacks;
         
         // Determine WebSocket URL
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const host = process.env.NEXT_PUBLIC_API_URL?.replace(/^https?:\/\//, '') || 'localhost:8080';
-        const wsUrl = `${protocol}//${host}/ws/game`;
+        let wsUrl: string;
+        
+        // Check if we're in production with HTTPS
+        const isProduction = window.location.protocol === 'https:';
+        const isUsingProxy = process.env.NEXT_PUBLIC_API_URL?.startsWith('/api/');
+        
+        if (isProduction && isUsingProxy) {
+          // Can't use WebSocket through proxy on HTTPS
+          console.warn('WebSocket not available through HTTPS proxy. Game updates may be delayed.');
+          // For now, we'll try to connect anyway but it will fail
+          // TODO: Implement polling fallback
+          wsUrl = 'ws://134.199.238.66:8080/ws/game';
+        } else if (process.env.NEXT_PUBLIC_API_URL?.startsWith('/api/')) {
+          // Local development with proxy
+          wsUrl = 'ws://localhost:8080/ws/game';
+        } else {
+          // Direct connection
+          const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+          const host = process.env.NEXT_PUBLIC_API_URL?.replace(/^https?:\/\//, '') || 'localhost:8080';
+          wsUrl = `${protocol}//${host}/ws/game`;
+        }
         
         console.log('Connecting to WebSocket:', wsUrl);
         
