@@ -10,14 +10,31 @@ export async function GET(
   const pathString = path.join('/');
   const url = `${BACKEND_URL}/${pathString}`;
 
+  console.log('GET Proxy - Path array:', path);
+  console.log('GET Proxy - Full URL:', url);
+
   try {
     const response = await fetch(url, {
-      headers: request.headers,
+      headers: {
+        'Accept': 'application/json',
+      },
     });
 
-    const data = await response.json();
-    return NextResponse.json(data, { status: response.status });
+    const contentType = response.headers.get('content-type');
+    
+    if (contentType && contentType.includes('application/json')) {
+      const data = await response.json();
+      return NextResponse.json(data, { status: response.status });
+    } else {
+      const text = await response.text();
+      console.error('Non-JSON response:', text.substring(0, 200));
+      return NextResponse.json(
+        { error: 'Backend returned non-JSON response', details: text.substring(0, 200) },
+        { status: response.status }
+      );
+    }
   } catch (error) {
+    console.error('GET proxy error:', error);
     return NextResponse.json(
       { error: 'Failed to fetch from backend' },
       { status: 500 }
