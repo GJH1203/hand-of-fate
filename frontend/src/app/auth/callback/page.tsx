@@ -16,6 +16,22 @@ export default function AuthCallback() {
       try {
         console.log('Handling auth callback...')
         
+        // Check for error in URL hash
+        const hash = window.location.hash
+        if (hash.includes('error=')) {
+          const params = new URLSearchParams(hash.substring(1))
+          const errorCode = params.get('error_code')
+          const errorDescription = params.get('error_description')
+          
+          if (errorCode === 'otp_expired') {
+            setError('Verification link has expired. Please sign up again or request a new verification email.')
+          } else {
+            setError(errorDescription || 'Verification failed')
+          }
+          setTimeout(() => router.push('/login'), 5000)
+          return
+        }
+        
         // Get the current Supabase session
         const { user, session } = await unifiedAuthService.getCurrentSession()
         
