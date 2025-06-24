@@ -398,6 +398,14 @@ public class NakamaMatchService {
     public void clearPlayerMatches(String playerId) {
         logger.info("Clearing matches for player: {}", playerId);
         
+        // First, find and mark all active games as ABANDONED
+        GameModel activeGame = findActiveGameForPlayer(playerId);
+        if (activeGame != null) {
+            logger.info("Marking game {} as ABANDONED for player {}", activeGame.getId(), playerId);
+            activeGame.setGameState(GameState.ABANDONED);
+            gameRepository.save(activeGame);
+        }
+        
         // Only remove matches that are at least 5 seconds old to prevent race conditions
         Instant cutoffTime = Instant.now().minusSeconds(5);
         
