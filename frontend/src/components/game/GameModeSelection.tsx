@@ -57,8 +57,18 @@ export default function GameModeSelection({ onModeSelect }: GameModeSelectionPro
     }
   };
 
-  const handleConfirmNewGame = () => {
+  const handleConfirmNewGame = async () => {
     setShowConfirmDialog(false);
+    
+    // Abandon the current game before creating a new one
+    if (user?.playerId) {
+      try {
+        await onlineGameService.leaveAllMatches(user.playerId);
+      } catch (error) {
+        console.error('Error abandoning current game:', error);
+      }
+    }
+    
     setActiveGame(null); // Clear activeGame to avoid stale state
     onModeSelect(GameMode.ONLINE);
   };
