@@ -17,9 +17,13 @@ public class WebSocketConfig implements WebSocketConfigurer {
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry.addHandler(gameWebSocketHandler, "/ws/game")
-                .setAllowedOrigins(
+                .setAllowedOriginPatterns(
                     "http://localhost:3000",
-                    "http://localhost:3001"
-                ); // Specific origins for CORS
+                    "http://localhost:3001",
+                    "https://card-game-frontend-*.vercel.app",
+                    "https://card-game-frontend.vercel.app",
+                    "https://*.vercel.app",
+                    "https://funnygames.duckdns.org"
+                ); // Allow same origins as HTTP CORS
     }
 }
