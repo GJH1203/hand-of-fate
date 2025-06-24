@@ -54,8 +54,8 @@ class GameSocketService {
     try {
       this.callbacks = callbacks;
       
-      // Create session from token
-      this.session = Session.restore(nakamaToken);
+      // Create session from token (needs refresh token too)
+      this.session = Session.restore(nakamaToken, nakamaToken);
       
       // Create socket
       this.socket = this.client!.createSocket();
@@ -184,7 +184,7 @@ class GameSocketService {
    */
   disconnect() {
     if (this.socket) {
-      this.socket.disconnect();
+      this.socket.disconnect(true);
       this.socket = null;
       this.session = null;
       this.currentMatch = null;
@@ -323,7 +323,7 @@ class GameSocketService {
    * Get current connection status
    */
   isConnected(): boolean {
-    return this.socket?.isConnected() || false;
+    return this.socket !== null && this.socket !== undefined;
   }
 
   /**

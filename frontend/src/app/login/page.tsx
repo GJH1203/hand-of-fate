@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,7 +12,7 @@ import { Sparkles, Shield, Mail, Lock, User, HelpCircle } from 'lucide-react';
 import ParticleEffect from '@/components/effects/ParticleEffect';
 import GameTutorial from '@/components/tutorial/GameTutorial';
 
-export default function UnifiedAuthPage() {
+function UnifiedAuthPageContent() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -514,5 +514,17 @@ export default function UnifiedAuthPage() {
         }
       `}</style>
     </div>
+  );
+}
+
+export default function UnifiedAuthPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-indigo-950 via-purple-900 to-blue-950 flex items-center justify-center">
+        <div className="text-purple-100 text-xl">Loading...</div>
+      </div>
+    }>
+      <UnifiedAuthPageContent />
+    </Suspense>
   );
 }
