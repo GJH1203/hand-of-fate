@@ -22,7 +22,8 @@ public class WebConfig implements WebMvcConfigurer {
             "http://localhost:3001",
             "https://card-game-frontend-*.vercel.app",
             "https://card-game-frontend.vercel.app",
-            "https://*.vercel.app"
+            "https://*.vercel.app",
+            "https://funnygames.duckdns.org"
         ));
         
         // Add any additional origins from environment variable
@@ -31,7 +32,7 @@ public class WebConfig implements WebMvcConfigurer {
         }
         
         registry.addMapping("/**")
-                .allowedOrigins(origins.toArray(new String[0]))
+                .allowedOriginPatterns(origins.toArray(new String[0]))
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true);
