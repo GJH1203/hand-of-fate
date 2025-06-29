@@ -70,3 +70,8 @@ logs/
 
 ### Build reports ###
 build/reports/
+
+# Environment variables
+.env
+.env.local
+.env.production
