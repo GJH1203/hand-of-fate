@@ -18,6 +18,8 @@ import com.cardgame.service.player.DeckService;
 import com.cardgame.service.player.PlayerService;
 import com.cardgame.service.util.ScoreCalculator;
 import com.cardgame.service.validator.GameValidator;
+import com.cardgame.config.MetricsConfig;
+import io.micrometer.core.instrument.Counter;
 import org.checkerframework.checker.units.qual.C;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +46,9 @@ public class GameService {
     private final GameValidator gameValidator;
     private final MoveStrategyFactory moveStrategyFactory;
     private final NakamaLeaderBoardService nakamaLeaderBoardService;
+    private final MetricsConfig metricsConfig;
+    private final Counter gameCreatedCounter;
+    private final Counter gameCompletedCounter;
 
     public GameService(GameRepository gameRepository,
                        PlayerService playerService,
@@ -51,7 +56,11 @@ public class GameService {
                        DeckService deckService,
                        BoardManager boardManager,
                        GameValidator gameValidator,
-                       MoveStrategyFactory moveStrategyFactory, NakamaLeaderBoardService nakamaLeaderBoardService) {
+                       MoveStrategyFactory moveStrategyFactory,
+                       NakamaLeaderBoardService nakamaLeaderBoardService,
+                       MetricsConfig metricsConfig,
+                       Counter gameCreatedCounter,
+                       Counter gameCompletedCounter) {
         this.gameRepository = gameRepository;
         this.playerService = playerService;
         this.cardService = cardService;
@@ -60,6 +69,9 @@ public class GameService {
         this.gameValidator = gameValidator;
         this.moveStrategyFactory = moveStrategyFactory;
         this.nakamaLeaderBoardService = nakamaLeaderBoardService;
+        this.metricsConfig = metricsConfig;
+        this.gameCreatedCounter = gameCreatedCounter;
+        this.gameCompletedCounter = gameCompletedCounter;
     }
 
     public GameDto convertToDto(GameModel gameModel) {
@@ -229,6 +241,11 @@ public class GameService {
 
         gameModel.setGameState(GameState.IN_PROGRESS);
         gameRepository.save(gameModel);
+        
+        // Track metrics
+        gameCreatedCounter.increment();
+        metricsConfig.incrementActiveGames();
+        logger.info("Game created with ID: {}", gameModel.getId());
 
         return convertToDto(gameModel);
     }
@@ -418,6 +435,11 @@ public class GameService {
     private void finalizeGame(GameModel gameModel) {
         // Set game state to completed
         gameModel.setGameState(GameState.COMPLETED);
+        
+        // Track metrics
+        gameCompletedCounter.increment();
+        metricsConfig.decrementActiveGames();
+        logger.info("Game completed with ID: {}", gameModel.getId());
 
         // IMPORTANT: Calculate column scores BEFORE restoring player state (which clears placedCards)
         Map<Integer, ScoreCalculator.ColumnScore> columnScores = ScoreCalculator.calculateColumnScores(gameModel, playerService);

@@ -7,6 +7,7 @@ import com.cardgame.model.Card;
 import com.cardgame.model.Position;
 import com.cardgame.service.GameService;
 import com.cardgame.service.nakama.NakamaMatchService;
+import com.cardgame.config.MetricsConfig;
 import com.cardgame.websocket.message.WebSocketMessage;
 import com.cardgame.websocket.message.MessageType;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -38,6 +39,9 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
     @Autowired
     private GameService gameService;
     
+    @Autowired
+    private MetricsConfig metricsConfig;
+    
     // Store sessions by match ID
     private final Map<String, Set<WebSocketSession>> matchSessions = new ConcurrentHashMap<>();
     
@@ -47,6 +51,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         logger.info("WebSocket connection established: {}", session.getId());
+        metricsConfig.incrementWebSocketConnections();
         
         // Send connection success message
         WebSocketMessage message = new WebSocketMessage();
@@ -93,6 +98,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
         logger.info("WebSocket connection closed: {} - {}", session.getId(), status);
+        metricsConfig.decrementWebSocketConnections();
         
         // Remove session from all data structures
         SessionInfo info = sessionInfoMap.remove(session.getId());

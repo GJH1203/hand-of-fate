@@ -7,6 +7,7 @@ import com.cardgame.model.Player;
 import com.cardgame.service.nakama.NakamaAuthService;
 import com.cardgame.service.player.PlayerService;
 import com.heroiclabs.nakama.Session;
+import io.micrometer.core.instrument.Counter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,11 +39,15 @@ public class UnifiedAuthController {
 
     private final NakamaAuthService nakamaAuthService;
     private final PlayerService playerService;
+    private final Counter playerLoginCounter;
 
     @Autowired
-    public UnifiedAuthController(NakamaAuthService nakamaAuthService, PlayerService playerService) {
+    public UnifiedAuthController(NakamaAuthService nakamaAuthService, 
+                                PlayerService playerService,
+                                Counter playerLoginCounter) {
         this.nakamaAuthService = nakamaAuthService;
         this.playerService = playerService;
+        this.playerLoginCounter = playerLoginCounter;
     }
 
     /**
@@ -157,6 +162,7 @@ public class UnifiedAuthController {
                 player.setNakamaUserId(nakamaSession.getUserId());
                 playerService.savePlayer(player);
                 
+                playerLoginCounter.increment();
                 return ResponseEntity.ok(buildAuthResponse(player, nakamaSession));
             }
             
@@ -169,6 +175,7 @@ public class UnifiedAuthController {
                         .build());
             }
             
+            playerLoginCounter.increment();
             return ResponseEntity.ok(buildAuthResponse(player, nakamaSession));
             
         } catch (Exception e) {
