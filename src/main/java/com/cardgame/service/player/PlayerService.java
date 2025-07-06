@@ -111,6 +111,43 @@ public class PlayerService {
     }
 
     public void savePlayer(Player player) {
+        // Validate that we're not accidentally clearing nakamaUserId
+        if (player.getId() != null) {
+            // Check if this is an existing player
+            Optional<Player> existingPlayer = playerRepository.findById(player.getId());
+            if (existingPlayer.isPresent()) {
+                String existingNakamaUserId = existingPlayer.get().getNakamaUserId();
+                
+                // If the existing player has a nakamaUserId but the updated player doesn't, prevent the update
+                if (existingNakamaUserId != null && !existingNakamaUserId.trim().isEmpty() 
+                    && (player.getNakamaUserId() == null || player.getNakamaUserId().trim().isEmpty())) {
+                    
+                    logger.error("CRITICAL: Attempted to clear nakamaUserId for player {}. " +
+                                "Existing nakamaUserId: {}, New nakamaUserId: {}", 
+                                player.getId(), existingNakamaUserId, player.getNakamaUserId());
+                    
+                    // Restore the nakamaUserId to prevent data loss
+                    player.setNakamaUserId(existingNakamaUserId);
+                    
+                    // Log stack trace to identify where this is coming from
+                    logger.error("Stack trace for nakamaUserId clearing attempt:", new Exception("Stack trace"));
+                }
+                
+                // Also protect supabaseUserId
+                String existingSupabaseUserId = existingPlayer.get().getSupabaseUserId();
+                if (existingSupabaseUserId != null && !existingSupabaseUserId.trim().isEmpty() 
+                    && (player.getSupabaseUserId() == null || player.getSupabaseUserId().trim().isEmpty())) {
+                    
+                    logger.error("CRITICAL: Attempted to clear supabaseUserId for player {}. " +
+                                "Existing supabaseUserId: {}, New supabaseUserId: {}", 
+                                player.getId(), existingSupabaseUserId, player.getSupabaseUserId());
+                    
+                    // Restore the supabaseUserId to prevent data loss
+                    player.setSupabaseUserId(existingSupabaseUserId);
+                }
+            }
+        }
+        
         playerRepository.save(player);
     }
 
@@ -139,6 +176,47 @@ public class PlayerService {
     public void setLifetimeScore(String playerId, int lifetimeScore) {
         Player player = getPlayer(playerId);
         player.setLifetimeScore(lifetimeScore);
+        savePlayer(player);
+    }
+    
+    /**
+     * Safe update method that only updates specific fields without risking data loss
+     * @param playerId The player ID to update
+     * @param updateAction The update action to perform on the player
+     */
+    public void updatePlayerSafely(String playerId, java.util.function.Consumer<Player> updateAction) {
+        Player player = getPlayer(playerId);
+        
+        // Store critical fields before update
+        String originalNakamaUserId = player.getNakamaUserId();
+        String originalSupabaseUserId = player.getSupabaseUserId();
+        String originalEmail = player.getEmail();
+        
+        // Perform the update action
+        updateAction.accept(player);
+        
+        // Ensure critical fields are not accidentally cleared
+        if (originalNakamaUserId != null && !originalNakamaUserId.trim().isEmpty()) {
+            if (player.getNakamaUserId() == null || player.getNakamaUserId().trim().isEmpty()) {
+                logger.warn("Update action attempted to clear nakamaUserId for player {}, restoring original value", playerId);
+                player.setNakamaUserId(originalNakamaUserId);
+            }
+        }
+        
+        if (originalSupabaseUserId != null && !originalSupabaseUserId.trim().isEmpty()) {
+            if (player.getSupabaseUserId() == null || player.getSupabaseUserId().trim().isEmpty()) {
+                logger.warn("Update action attempted to clear supabaseUserId for player {}, restoring original value", playerId);
+                player.setSupabaseUserId(originalSupabaseUserId);
+            }
+        }
+        
+        if (originalEmail != null && !originalEmail.trim().isEmpty()) {
+            if (player.getEmail() == null || player.getEmail().trim().isEmpty()) {
+                logger.warn("Update action attempted to clear email for player {}, restoring original value", playerId);
+                player.setEmail(originalEmail);
+            }
+        }
+        
         savePlayer(player);
     }
     

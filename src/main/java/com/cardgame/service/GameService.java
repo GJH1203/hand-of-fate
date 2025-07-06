@@ -454,7 +454,16 @@ public class GameService {
             restorePlayerOriginalState(player);
 
             // Save player with updated lifetime score and restored original deck
-            playerService.savePlayer(player);
+            // Use updatePlayerSafely to prevent accidental data loss
+            playerService.updatePlayerSafely(player.getId(), p -> {
+                // Copy the updated state from the player object
+                p.setLifetimeScore(player.getLifetimeScore());
+                p.setCurrentDeck(player.getCurrentDeck());
+                p.setOriginalDeck(player.getOriginalDeck());
+                p.setHand(player.getHand());
+                p.setPlacedCards(player.getPlacedCards());
+                p.setScore(player.getScore());
+            });
 
             // Submit lifetime score to leaderboard if player has a Nakama user ID
             if (player.getNakamaUserId() != null && !player.getNakamaUserId().isEmpty()) {
@@ -470,7 +479,11 @@ public class GameService {
                 // Add a victory bonus to lifetime score (e.g., 10 points)
                 int victoryBonus = 10;
                 winner.addLifetimeScore(victoryBonus);
-                playerService.savePlayer(winner);
+                
+                // Use updatePlayerSafely to prevent accidental data loss
+                playerService.updatePlayerSafely(winner.getId(), p -> {
+                    p.setLifetimeScore(winner.getLifetimeScore());
+                });
 
                 // Update leaderboard with the new lifetime score including victory bonus
                 if (winner.getNakamaUserId() != null && !winner.getNakamaUserId().isEmpty()) {
