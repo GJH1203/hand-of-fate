@@ -24,6 +24,7 @@ public class WebConfig implements WebMvcConfigurer {
             "https://card-game-frontend.vercel.app",
             "https://*.vercel.app",
             "https://funnygames.duckdns.org"
+            // CloudFlare domains will be added via environment variable
         ));
         
         // Add any additional origins from environment variable

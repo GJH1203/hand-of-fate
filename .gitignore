@@ -75,3 +75,11 @@ build/reports/
 .env
 .env.local
 .env.production
+
+# Prometheus data and configuration
+data/
+prometheus-local.yml
+prometheus-droplet.yml
+
+# Backup files
+*.bak
