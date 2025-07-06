@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CORS Test</title>
+</head>
+<body>
+    <h1>CORS Test for Card Game Backend</h1>
+    <button onclick="testDirectBackend()">Test Direct Backend Connection</button>
+    <button onclick="testHealthCheck()">Test Backend Health Check</button>
+    <div id="result"></div>
+
+    <script>
+        async function testDirectBackend() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p>Testing direct backend connection...</p>';
+            
+            try {
+                const response = await fetch('http://134.199.238.66:8080/api/auth/login-with-supabase', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        supabaseUserId: 'test-id',
+                        email: 'test@example.com',
+                        username: 'testuser'
+                    })
+                });
+                
+                if (response.ok) {
+                    resultDiv.innerHTML += '<p style="color: green;">✓ CORS is working! Backend responded.</p>';
+                    const data = await response.json();
+                    resultDiv.innerHTML += '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                } else {
+                    resultDiv.innerHTML += '<p style="color: orange;">Backend responded with status: ' + response.status + '</p>';
+                }
+            } catch (error) {
+                resultDiv.innerHTML += '<p style="color: red;">✗ CORS error: ' + error.message + '</p>';
+                resultDiv.innerHTML += '<p>This usually means CORS is not properly configured.</p>';
+            }
+        }
+        
+        async function testHealthCheck() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p>Testing backend health check...</p>';
+            
+            try {
+                // First test if backend is reachable
+                const response = await fetch('http://134.199.238.66:8080/actuator/health', {
+                    method: 'GET',
+                    mode: 'cors',
+                    headers: {
+                        'Accept': 'application/json',
+                    }
+                });
+                
+                if (response.ok) {
+                    resultDiv.innerHTML += '<p style="color: green;">✓ Backend is healthy and reachable!</p>';
+                    const data = await response.json();
+                    resultDiv.innerHTML += '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                } else {
+                    resultDiv.innerHTML += '<p style="color: orange;">Backend responded with status: ' + response.status + '</p>';
+                }
+            } catch (error) {
+                resultDiv.innerHTML += '<p style="color: red;">✗ Cannot reach backend: ' + error.message + '</p>';
+                resultDiv.innerHTML += '<p>Make sure your backend is running and accessible from the internet.</p>';
+            }
+        }
+    </script>
+</body>
+</html>

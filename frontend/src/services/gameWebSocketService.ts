@@ -89,9 +89,24 @@ class GameWebSocketService {
         this.callbacks = callbacks;
         
         // Determine WebSocket URL
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const host = process.env.NEXT_PUBLIC_API_URL?.replace(/^https?:\/\//, '') || 'localhost:8080';
-        const wsUrl = `${protocol}//${host}/ws/game`;
+        let wsUrl: string;
+        
+        // Check if we're in production with HTTPS
+        const isProduction = window.location.protocol === 'https:';
+        const isUsingProxy = process.env.NEXT_PUBLIC_API_URL?.startsWith('/api/');
+        
+        if (process.env.NEXT_PUBLIC_API_URL?.startsWith('https://')) {
+          // Direct HTTPS connection - use WSS
+          const host = process.env.NEXT_PUBLIC_API_URL.replace(/^https:\/\//, '');
+          wsUrl = `wss://${host}/ws/game`;
+        } else if (process.env.NEXT_PUBLIC_API_URL?.startsWith('http://')) {
+          // Direct HTTP connection - use WS
+          const host = process.env.NEXT_PUBLIC_API_URL.replace(/^http:\/\//, '');
+          wsUrl = `ws://${host}/ws/game`;
+        } else {
+          // Local development or fallback
+          wsUrl = 'ws://localhost:8080/ws/game';
+        }
         
         console.log('Connecting to WebSocket:', wsUrl);
         

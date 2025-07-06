@@ -16,6 +16,7 @@ import { gameService } from '@/services/gameService';
 import { WifiOff, Wifi, Users, AlertCircle } from 'lucide-react';
 import { onlineGameService } from '@/services/onlineGameService';
 import { gameWebSocketService } from '@/services/gameWebSocketService';
+import { gamePollingService } from '@/services/gamePollingService';
 
 const DEFAULT_BOARD_WIDTH = 3;
 const DEFAULT_BOARD_HEIGHT = 5;

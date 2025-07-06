@@ -26,7 +26,7 @@ interface BackendSyncRequest {
  */
 export class UnifiedAuthService {
   private supabaseAuth: SupabaseAuthService
-  private backendUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/auth`
+  private backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
 
   constructor() {
     this.supabaseAuth = new SupabaseAuthService()
@@ -161,7 +161,7 @@ export class UnifiedAuthService {
                       supabaseUser.email?.split('@')[0] || 
                       'User'
       
-      const response = await fetch(`${this.backendUrl}/sync-verified-user`, {
+      const response = await fetch(`${this.backendUrl}/api/auth/sync-verified-user`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -198,7 +198,7 @@ export class UnifiedAuthService {
                       supabaseUser.email?.split('@')[0] || 
                       'User'
       
-      const response = await fetch(`${this.backendUrl}/login-with-supabase`, {
+      const response = await fetch(`${this.backendUrl}/api/auth/login-with-supabase`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
