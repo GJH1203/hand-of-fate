@@ -8,8 +8,9 @@ import { Badge } from '@/components/ui/badge'
 import { useUnifiedAuth } from '@/hooks/useUnifiedAuth'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { Sparkles, Trophy, Swords, ScrollText, LogOut, Star, Zap, Shield } from 'lucide-react'
+import { Sparkles, Trophy, Swords, ScrollText, LogOut, Star, Zap, Shield, BookOpen } from 'lucide-react'
 import { playerService } from '@/services/playerService'
+import GuidedTutorial from '@/components/tutorial/GuidedTutorial'
 
 export default function Home() {
   const { isAuthenticated, user, logout, isLoading } = useUnifiedAuth();
@@ -17,6 +18,8 @@ export default function Home() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [playerData, setPlayerData] = useState<any>(null);
   const [loadingStats, setLoadingStats] = useState(true);
+  const [needsOnboarding, setNeedsOnboarding] = useState<boolean | null>(null);
+  const [showTutorial, setShowTutorial] = useState(false);
 
   useEffect(() => {
     console.log('Main page auth check:', {
@@ -50,6 +53,48 @@ export default function Home() {
     }
   }, [isAuthenticated, user?.playerId]);
 
+  // Check onboarding status when authenticated (simplified)
+  useEffect(() => {
+    if (isAuthenticated && user?.playerId && needsOnboarding === null) {
+      // For now, check if user has completed tutorial via localStorage
+      const hasCompletedTutorial = localStorage.getItem(`tutorial_completed_${user.playerId}`);
+      const needsTutorial = !hasCompletedTutorial;
+      
+      setNeedsOnboarding(needsTutorial);
+      if (needsTutorial) {
+        setShowTutorial(true);
+      }
+    }
+  }, [isAuthenticated, user?.playerId, needsOnboarding]);
+
+  // Tutorial completion handlers
+  const handleTutorialComplete = () => {
+    setShowTutorial(false);
+    setNeedsOnboarding(false);
+    // Mark tutorial as completed in localStorage
+    if (user?.playerId) {
+      localStorage.setItem(`tutorial_completed_${user.playerId}`, 'true');
+    }
+  };
+
+  const handleTutorialSkip = () => {
+    setShowTutorial(false);
+    setNeedsOnboarding(false);
+    // Also mark as completed when skipped
+    if (user?.playerId) {
+      localStorage.setItem(`tutorial_completed_${user.playerId}`, 'true');
+    }
+  };
+
+  const handleRedoTutorial = async () => {
+    if (user?.playerId) {
+      // Remove completion flag and restart tutorial
+      localStorage.removeItem(`tutorial_completed_${user.playerId}`);
+      setShowTutorial(true);
+      setNeedsOnboarding(true);
+    }
+  };
+
   // Track mouse for parallax effect
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -69,6 +114,18 @@ export default function Home() {
 
   if (!isAuthenticated) {
     return null;
+  }
+
+  // Show tutorial if user needs onboarding
+  if (showTutorial && user?.playerId) {
+    return (
+      <GuidedTutorial
+        playerId={user.playerId}
+        playerName={user.username || 'Apprentice'}
+        onComplete={handleTutorialComplete}
+        onSkip={handleTutorialSkip}
+      />
+    );
   }
 
   // Use fetched player data for stats
@@ -134,14 +191,25 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            <Button 
-              variant="outline" 
-              onClick={logout}
-              className="bg-red-900/20 hover:bg-red-800/30 border-red-500/50 text-red-300 hover:text-red-200 transition-all duration-300"
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
-            </Button>
+            <div className="flex items-center gap-3">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleRedoTutorial}
+                className="bg-blue-900/20 hover:bg-blue-800/30 border-blue-500/50 text-blue-300 hover:text-blue-200 transition-all duration-300"
+              >
+                <BookOpen className="w-4 h-4 mr-2" />
+                Redo Tutorial
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={logout}
+                className="bg-red-900/20 hover:bg-red-800/30 border-red-500/50 text-red-300 hover:text-red-200 transition-all duration-300"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
+            </div>
           </div>
         </header>
 
