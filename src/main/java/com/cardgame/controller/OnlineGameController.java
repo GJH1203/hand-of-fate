@@ -18,7 +18,6 @@ import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/api/online-game")
-@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:3001"}, allowCredentials = "true")
 public class OnlineGameController {
     private static final Logger logger = LoggerFactory.getLogger(OnlineGameController.class);
     

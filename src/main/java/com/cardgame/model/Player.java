@@ -6,6 +6,7 @@ import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -47,6 +48,15 @@ public class Player {
 
     @Field("lifetime_score")
     private int lifetimeScore = 0;
+
+    @Field("has_completed_onboarding")
+    private boolean hasCompletedOnboarding = false;
+
+    @Field("onboarding_completed_at")
+    private LocalDateTime onboardingCompletedAt;
+
+    @Field("tutorial_game_id")
+    private String tutorialGameId;
 
     // Default constructor
     public Player() {
@@ -140,6 +150,38 @@ public class Player {
 
     public void setSupabaseUserId(String supabaseUserId) {
         this.supabaseUserId = supabaseUserId;
+    }
+
+    public boolean hasCompletedOnboarding() {
+        return hasCompletedOnboarding;
+    }
+
+    public void setHasCompletedOnboarding(boolean hasCompletedOnboarding) {
+        this.hasCompletedOnboarding = hasCompletedOnboarding;
+    }
+
+    public LocalDateTime getOnboardingCompletedAt() {
+        return onboardingCompletedAt;
+    }
+
+    public void setOnboardingCompletedAt(LocalDateTime onboardingCompletedAt) {
+        this.onboardingCompletedAt = onboardingCompletedAt;
+    }
+
+    public String getTutorialGameId() {
+        return tutorialGameId;
+    }
+
+    public void setTutorialGameId(String tutorialGameId) {
+        this.tutorialGameId = tutorialGameId;
+    }
+
+    /**
+     * Mark onboarding as completed
+     */
+    public void completeOnboarding() {
+        this.hasCompletedOnboarding = true;
+        this.onboardingCompletedAt = LocalDateTime.now();
     }
 
     public String getEmail() {
