@@ -23,7 +23,9 @@ public class WebSocketConfig implements WebSocketConfigurer {
                     "https://card-game-frontend-*.vercel.app",
                     "https://card-game-frontend.vercel.app",
                     "https://*.vercel.app",
-                    "https://funnygames.duckdns.org"
+                    "https://handoffate.net",
+                    "https://www.handoffate.net",
+                    "https://api.handoffate.net"
                 ); // Allow same origins as HTTP CORS
     }
 }
