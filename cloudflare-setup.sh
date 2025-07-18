@@ -1,16 +1,16 @@
 #!/bin/bash
 
-# CloudFlare Setup Script for handoffate.org
+# CloudFlare Setup Script for handoffate.net
 # Run this on your DigitalOcean droplet
 
-echo "=== CloudFlare Setup for handoffate.org (Option 1) ==="
+echo "=== CloudFlare Setup for handoffate.net (Option 1) ==="
 
 # 1. Update CORS environment variable for your current Vercel domains + API domain
 echo "Setting CORS environment variable..."
-export CORS_ALLOWED_ORIGINS="https://card-game-frontend.vercel.app,https://card-game-frontend-*.vercel.app,https://*.vercel.app,https://api.handoffate.org"
+export CORS_ALLOWED_ORIGINS="https://card-game-frontend.vercel.app,https://card-game-frontend-*.vercel.app,https://*.vercel.app,https://api.handoffate.net"
 
 # Add to /etc/environment for persistence
-echo 'CORS_ALLOWED_ORIGINS=https://card-game-frontend.vercel.app,https://card-game-frontend-*.vercel.app,https://*.vercel.app,https://api.handoffate.org' | sudo tee -a /etc/environment
+echo 'CORS_ALLOWED_ORIGINS=https://card-game-frontend.vercel.app,https://card-game-frontend-*.vercel.app,https://*.vercel.app,https://api.handoffate.net' | sudo tee -a /etc/environment
 
 # 2. Install Nginx if not installed
 if ! command -v nginx &> /dev/null; then
@@ -57,7 +57,7 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
     
-    # Prometheus monitoring on monitoring.handoffate.org
+    # Prometheus monitoring on monitoring.handoffate.net
     location /monitoring/ {
         proxy_pass http://localhost:9090/;
         proxy_set_header Host $host;
@@ -106,7 +106,7 @@ echo "=== Setup Complete! ==="
 echo ""
 echo "Next steps:"
 echo "1. Update Vercel environment variable:"
-echo "   NEXT_PUBLIC_API_URL=https://api.handoffate.org"
+echo "   NEXT_PUBLIC_API_URL=https://api.handoffate.net"
 echo ""
 echo "2. Restart your Spring Boot application to pick up new CORS settings:"
 echo "   source /etc/environment"
@@ -114,8 +114,8 @@ echo "   # Then restart your Spring Boot service"
 echo ""
 echo "3. Test the endpoints:"
 echo "   • Frontend: https://card-game-frontend.vercel.app"
-echo "   • API Health: https://api.handoffate.org/health"
-echo "   • API Prometheus: https://api.handoffate.org/actuator/prometheus"
-echo "   • Monitoring: https://monitoring.handoffate.org/monitoring/"
+echo "   • API Health: https://api.handoffate.net/health"
+echo "   • API Prometheus: https://api.handoffate.net/actuator/prometheus"
+echo "   • Monitoring: https://monitoring.handoffate.net/monitoring/"
 echo ""
 echo "Your CloudFlare setup is ready! 🎉"

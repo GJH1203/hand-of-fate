@@ -12,8 +12,9 @@ public class DataInitializer {
     @Bean
     CommandLineRunner initDatabase(CardRepository cardRepository) {
         return args -> {
-            // Check if cards already exist
-            long cardCount = cardRepository.count();
+            try {
+                // Check if cards already exist
+                long cardCount = cardRepository.count();
             if (cardCount > 0) {
                 System.out.println("Cards already initialized. Found " + cardCount + " cards.");
                 return;
@@ -48,7 +49,11 @@ public class DataInitializer {
             cardRepository.save(thunderCard);
             System.out.println("Created Thunder card with ID: 5");
             
-            System.out.println("Card initialization complete. Total cards: " + cardRepository.count());
+                System.out.println("Card initialization complete. Total cards: " + cardRepository.count());
+            } catch (Exception e) {
+                System.err.println("Failed to initialize cards: " + e.getMessage());
+                // Continue application startup even if card initialization fails
+            }
         };
     }
 }

@@ -5,19 +5,19 @@ This setup integrates CloudFlare with your card game project using Option 1 (sim
 
 ## Current Architecture
 - **Frontend**: `https://card-game-frontend.vercel.app` (Vercel)
-- **Backend API**: `https://api.handoffate.org` (DigitalOcean + CloudFlare)
-- **Monitoring**: `https://monitoring.handoffate.org/monitoring/` (DigitalOcean + CloudFlare)
+- **Backend API**: `https://api.handoffate.net` (DigitalOcean + CloudFlare)
+- **Monitoring**: `https://monitoring.handoffate.net/monitoring/` (DigitalOcean + CloudFlare)
 
 ## What's Configured
 
 ### Backend (Spring Boot)
 - ✅ CORS support for CloudFlare domains via environment variable
-- ✅ Support for `api.handoffate.org` subdomain
+- ✅ Support for `api.handoffate.net` subdomain
 - ✅ WebSocket proxy configuration for real-time games
 
 ### CloudFlare DNS
-- ✅ `api.handoffate.org` → 134.199.238.66 (Proxied)
-- ✅ `monitoring.handoffate.org` → 134.199.238.66 (Proxied)
+- ✅ `api.handoffate.net` → 134.199.238.66 (Proxied)
+- ✅ `monitoring.handoffate.net` → 134.199.238.66 (Proxied)
 - ✅ SSL/TLS certificates (automatic)
 - ✅ DDoS protection and security features
 
@@ -47,17 +47,17 @@ chmod +x cloudflare-setup.sh
 ### 2. Update Frontend
 In Vercel dashboard:
 - Go to Settings → Environment Variables
-- Set: `NEXT_PUBLIC_API_URL=https://api.handoffate.org`
+- Set: `NEXT_PUBLIC_API_URL=https://api.handoffate.net`
 - Redeploy if needed
 
 ### 3. Test Endpoints
 - Frontend: `https://card-game-frontend.vercel.app`
-- API Health: `https://api.handoffate.org/health`
-- Prometheus: `https://api.handoffate.org/actuator/prometheus`
-- Monitoring: `https://monitoring.handoffate.org/monitoring/`
+- API Health: `https://api.handoffate.net/health`
+- Prometheus: `https://api.handoffate.net/actuator/prometheus`
+- Monitoring: `https://monitoring.handoffate.net/monitoring/`
 
 ## Benefits
-- ✅ Professional API domain (`api.handoffate.org`)
+- ✅ Professional API domain (`api.handoffate.net`)
 - ✅ CloudFlare CDN for faster API responses
 - ✅ DDoS protection for your backend
 - ✅ Free SSL certificates
@@ -65,7 +65,7 @@ In Vercel dashboard:
 - ✅ Easy to upgrade to full domain later
 
 ## Future Upgrade Path
-To move frontend to `handoffate.org` later:
+To move frontend to `handoffate.net` later:
 1. Change CloudFlare DNS for main domain to point to Vercel
 2. Update Vercel domain settings
 3. Update CORS configuration
