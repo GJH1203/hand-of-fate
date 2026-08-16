@@ -1,7 +1,8 @@
 package com.cardgame.config;
 
+import com.cardgame.security.BearerSubprotocolHandshakeHandler;
+import com.cardgame.security.WebSocketAuthInterceptor;
 import com.cardgame.websocket.GameWebSocketHandler;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
@@ -10,20 +11,26 @@ import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 @Configuration
 @EnableWebSocket
 public class WebSocketConfig implements WebSocketConfigurer {
-    
-    @Autowired
-    private GameWebSocketHandler gameWebSocketHandler;
-    
+
+    private final GameWebSocketHandler gameWebSocketHandler;
+    private final WebSocketAuthInterceptor webSocketAuthInterceptor;
+    private final AllowedOrigins allowedOrigins;
+
+    public WebSocketConfig(GameWebSocketHandler gameWebSocketHandler,
+                           WebSocketAuthInterceptor webSocketAuthInterceptor,
+                           AllowedOrigins allowedOrigins) {
+        this.gameWebSocketHandler = gameWebSocketHandler;
+        this.webSocketAuthInterceptor = webSocketAuthInterceptor;
+        this.allowedOrigins = allowedOrigins;
+    }
+
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry.addHandler(gameWebSocketHandler, "/ws/game")
-                .setAllowedOriginPatterns(
-                    "http://localhost:3000",
-                    "http://localhost:3001",
-                    "https://card-game-frontend-*.vercel.app",
-                    "https://card-game-frontend.vercel.app",
-                    "https://handoffate.org",
-                    "https://www.handoffate.org"
-                ); // Keep in step with WebConfig
+                // Rejects the handshake outright when the token is missing or bad, so a
+                // socket never reaches the handler without a known player behind it.
+                .addInterceptors(webSocketAuthInterceptor)
+                .setHandshakeHandler(new BearerSubprotocolHandshakeHandler())
+                .setAllowedOriginPatterns(allowedOrigins.toArray());
     }
 }

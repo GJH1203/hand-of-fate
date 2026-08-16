@@ -75,6 +75,11 @@ public class SecurityConfig {
                         // The container health check runs before anything has a token.
                         .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
 
+                        // The handshake carries its credential in a WebSocket subprotocol
+                        // rather than a header, so it is authenticated by
+                        // WebSocketAuthInterceptor instead of by this chain.
+                        .requestMatchers("/ws/game").permitAll()
+
                         // Metrics describe the running system. Prometheus is not deployed
                         // today; when it comes back it will need an admin credential.
                         .requestMatchers("/actuator/**").hasRole("ADMIN")

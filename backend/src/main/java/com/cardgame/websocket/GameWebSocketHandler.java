@@ -7,6 +7,7 @@ import com.cardgame.model.Card;
 import com.cardgame.model.Position;
 import com.cardgame.service.GameService;
 import com.cardgame.service.nakama.NakamaMatchService;
+import com.cardgame.security.WebSocketAuthInterceptor;
 import com.cardgame.config.MetricsConfig;
 import com.cardgame.websocket.message.WebSocketMessage;
 import com.cardgame.websocket.message.MessageType;
@@ -50,15 +51,25 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
     
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-        logger.info("WebSocket connection established: {}", session.getId());
+        String playerId = authenticatedPlayerId(session);
+        logger.info("WebSocket connection established: {} for player {}", session.getId(), playerId);
         metricsConfig.incrementWebSocketConnections();
-        
+
         // Send connection success message
         WebSocketMessage message = new WebSocketMessage();
         message.setType(MessageType.CONNECTION_SUCCESS);
-        message.setData(Map.of("sessionId", session.getId()));
-        
+        message.setData(Map.of("sessionId", session.getId(), "playerId", playerId));
+
         sendMessage(session, message);
+    }
+
+    /**
+     * The player this socket is allowed to act as, established during the handshake by
+     * {@link com.cardgame.security.WebSocketAuthInterceptor}.
+     */
+    private String authenticatedPlayerId(WebSocketSession session) {
+        Object playerId = session.getAttributes().get(WebSocketAuthInterceptor.PLAYER_ID_ATTRIBUTE);
+        return playerId instanceof String value ? value : null;
     }
     
     @Override
@@ -141,15 +152,34 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
     private void handleJoinMatch(WebSocketSession session, WebSocketMessage message) {
         Map<String, Object> data = (Map<String, Object>) message.getData();
         String matchId = (String) data.get("matchId");
-        String playerId = (String) data.get("playerId");
-        
+
+        // The player id comes from the token checked during the handshake, never from
+        // the payload. Taking it from the payload is what let a client act as its
+        // opponent simply by sending the other id.
+        String playerId = authenticatedPlayerId(session);
+
         logger.info("handleJoinMatch - matchId: {}, playerId: {}", matchId, playerId);
-        
-        if (matchId == null || playerId == null) {
-            sendError(session, "Missing matchId or playerId");
+
+        if (matchId == null) {
+            sendError(session, "Missing matchId");
             return;
         }
-        
+        if (playerId == null) {
+            sendError(session, "Connection is not authenticated");
+            return;
+        }
+
+        Object claimedPlayerId = data.get("playerId");
+        if (claimedPlayerId != null && !playerId.equals(claimedPlayerId)) {
+            logger.warn("Session {} asked to join match {} as player {} but the token says {}",
+                session.getId(), matchId, claimedPlayerId, playerId);
+        }
+
+        if (!nakamaMatchService.isPlayerInMatch(matchId, playerId)) {
+            sendError(session, "You are not a player in this match");
+            return;
+        }
+
         // Store session info
         SessionInfo info = new SessionInfo(matchId, playerId);
         sessionInfoMap.put(session.getId(), info);
@@ -210,9 +240,8 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         
         try {
             Map<String, Object> data = (Map<String, Object>) message.getData();
-            String matchId = (String) data.get("matchId");
             Map<String, Object> actionData = (Map<String, Object>) data.get("action");
-            
+
             if (actionData == null) {
                 sendError(session, "No action data provided");
                 return;
@@ -257,8 +286,9 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                 return;
             }
             
-            // Get the game from the match
-            NakamaMatchService.MatchMetadata metadata = nakamaMatchService.getMatchMetadata(matchId);
+            // Act on the match this session joined, not on whichever id the payload
+            // names — otherwise a client could reach into a game it never joined.
+            NakamaMatchService.MatchMetadata metadata = nakamaMatchService.getMatchMetadata(info.matchId);
             if (metadata == null || metadata.gameId == null) {
                 sendError(session, "Game not found for match");
                 return;
