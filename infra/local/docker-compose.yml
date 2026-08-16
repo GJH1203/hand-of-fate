@@ -1,0 +1,125 @@
+# Local stack. Memory limits mirror what a single t4g.small (2 GiB) can give
+# each container in production, so an OOM shows up here rather than on EC2.
+#
+#   OS + Docker + ECS agent   ~450 MiB
+#   backend                    640 MiB
+#   nakama                     400 MiB
+#   postgres                   320 MiB
+#   ------------------------------------
+#   ~1810 MiB of 2048, leaving ~240 MiB headroom.
+#
+# MongoDB is only here for local development — production uses Atlas, which is
+# what frees up the room for the other three.
+
+name: hand-of-fate
+
+services:
+  mongodb:
+    image: mongodb/mongodb-community-server:8.0-ubi9
+    container_name: card-game-mongodb
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      - MONGODB_DATABASE=card_game
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USERNAME:-admin}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD:-localdev}
+      - MONGO_INITDB_DATABASE=card_game
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres:
+    container_name: postgres
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_DB=nakama
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-localdb}
+    # Defaults assume a machine far larger than 2 GiB. Nakama is the only
+    # client and it pools connections, so 20 is plenty.
+    command:
+      - postgres
+      - -c
+      - shared_buffers=64MB
+      - -c
+      - max_connections=20
+      - -c
+      - work_mem=4MB
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    # Deliberately not published. Only Nakama talks to it, over the compose
+    # network, and 5432 is commonly already taken on a dev machine.
+    expose:
+      - "5432"
+    mem_limit: 320m
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-d", "nakama"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  nakama:
+    container_name: nakama
+    # 3.26.0 is the earliest tag published for arm64; anything older is
+    # amd64-only and will not run on Graviton without emulation.
+    image: registry.heroiclabs.com/heroiclabs/nakama:3.26.0
+    entrypoint:
+      - "/bin/sh"
+      - "-ecx"
+      - >
+        /nakama/nakama migrate up
+        --database.address postgres:${POSTGRES_PASSWORD:-localdb}@postgres:5432/nakama &&
+        exec /nakama/nakama
+        --name nakama1
+        --database.address postgres:${POSTGRES_PASSWORD:-localdb}@postgres:5432/nakama
+        --logger.level INFO
+        --session.token_expiry_sec 7200
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./modules:/nakama/data/modules
+    ports:
+      - "7349:7349"   # gRPC
+      - "7350:7350"   # HTTP API
+      - "7351:7351"   # console
+    mem_limit: 400m
+    healthcheck:
+      test: ["CMD", "/nakama/nakama", "healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    container_name: card-game-backend
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      nakama:
+        condition: service_healthy
+    environment:
+      - MONGODB_URI=mongodb://${MONGO_USERNAME:-admin}:${MONGO_PASSWORD:-localdev}@mongodb:27017/card_game?authSource=admin
+      - NAKAMA_HOST=nakama
+      - NAKAMA_PORT=7349
+      - NAKAMA_SERVER_KEY=${NAKAMA_SERVER_KEY:-defaultkey}
+      - CORS_ALLOWED_ORIGINS=http://localhost:3000
+    ports:
+      # Override with BACKEND_PORT if 8080 is already taken on your machine.
+      - "${BACKEND_PORT:-8080}:8080"
+    mem_limit: 640m
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+volumes:
+  mongodb_data:
+  pg_data:

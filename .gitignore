@@ -1,77 +1,49 @@
-HELP.md
-.gradle
-build/
-!gradle/wrapper/gradle-wrapper.jar
-!**/src/main/**/build/
-!**/src/test/**/build/
-
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
-bin/
-!**/src/main/**/bin/
-!**/src/test/**/bin/
-
-### IntelliJ IDEA ###
-.idea
+# ===== OS / Editor =====
+.DS_Store
+.idea/
+.vscode/
 *.iws
 *.iml
 *.ipr
-out/
-!**/src/main/**/out/
-!**/src/test/**/out/
-
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-
-### VS Code ###
-.vscode/
-
-### Mac ###
-.DS_Store
-
-### Test Scripts ###
-get-test-players.js
-test-*.js
-test-*.sh
-test-*.py
-.esm-wrapper.mjs
-.npmignore
-
-### Node.js ###
-node_modules/
-npm-debug.log*
-package-lock.json
-package.json
-
-### Python ###
-*.pyc
-__pycache__/
-.pytest_cache/
-
-### Temporary files ###
-*.tmp
-*.temp
 *.swp
 *~
 
-### Application logs ###
+# ===== Secrets =====
+# Never commit real env files. Templates (.env.example) are the exception.
+.env
+.env.*
+!.env.example
+
+# ===== Java / Gradle (backend/) =====
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+bin/
+out/
+HELP.md
+
+# ===== Node / Next.js (frontend/) =====
+node_modules/
+.next/
+.vercel
+/coverage
+*.tsbuildinfo
+next-env.d.ts
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# ===== Logs =====
 *.log
 logs/
 
-### Build reports ###
-build/reports/
+# ===== Monitoring runtime data (infra/monitoring/) =====
+infra/monitoring/data/
+infra/monitoring/prometheus-local.yml
 
-# Environment variables
-.env
-.env.local
-.env.production
+# ===== Misc =====
+*.tmp
+*.temp
+*.bak
+*.pem
