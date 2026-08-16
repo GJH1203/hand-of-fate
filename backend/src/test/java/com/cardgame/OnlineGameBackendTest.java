@@ -8,11 +8,14 @@ import com.cardgame.repository.GameRepository;
 import com.cardgame.repository.PlayerRepository;
 import com.cardgame.service.player.PlayerService;
 import com.cardgame.support.IntegrationTestBase;
+import com.cardgame.support.TestJwtSupport;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -32,6 +35,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * creates the players it needs.
  */
 @AutoConfigureMockMvc
+@Import(TestJwtSupport.class)
 @TestPropertySource(properties = "spring.data.mongodb.database=card_game_test_onlinegame")
 public class OnlineGameBackendTest extends IntegrationTestBase {
 
@@ -50,6 +54,9 @@ public class OnlineGameBackendTest extends IntegrationTestBase {
     @Autowired
     private GameRepository gameRepository;
 
+    private static final String HOST_SUPABASE_ID = "supabase-onlinehost";
+    private static final String GUEST_SUPABASE_ID = "supabase-onlineguest";
+
     private String hostId;
     private String guestId;
 
@@ -57,20 +64,29 @@ public class OnlineGameBackendTest extends IntegrationTestBase {
     void setUp() {
         gameRepository.deleteAll();
         playerRepository.deleteAll();
-        hostId = createPlayer("OnlineHost");
-        guestId = createPlayer("OnlineGuest");
+        hostId = createPlayer("OnlineHost", HOST_SUPABASE_ID);
+        guestId = createPlayer("OnlineGuest", GUEST_SUPABASE_ID);
     }
 
-    private String createPlayer(String name) {
+    private String createPlayer(String name, String supabaseUserId) {
         Player player = playerService.createPlayer(
-                name, name.toLowerCase() + "@example.test", "supabase-" + name.toLowerCase(), null);
+                name, name.toLowerCase() + "@example.test", supabaseUserId, null);
         playerService.createDefaultDeckForPlayer(player.getId());
         return player.getId();
     }
 
     @Test
+    public void testAnonymousCallerCannotCreateAMatch() throws Exception {
+        mockMvc.perform(post("/api/online-game/create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     public void testOnlineGameFlow() throws Exception {
         MvcResult createResult = performAsync(post("/api/online-game/create")
+                .header(HttpHeaders.AUTHORIZATION, TestJwtSupport.bearerFor(HOST_SUPABASE_ID))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(new CreateMatchRequest(hostId))));
 
@@ -82,13 +98,15 @@ public class OnlineGameBackendTest extends IntegrationTestBase {
         joinRequest.setPlayerId(guestId);
 
         MatchResponse joined = readMatch(performAsync(post("/api/online-game/join/" + created.getMatchId())
+                .header(HttpHeaders.AUTHORIZATION, TestJwtSupport.bearerFor(GUEST_SUPABASE_ID))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(joinRequest))));
 
         assertEquals("IN_PROGRESS", joined.getStatus());
         assertNotNull(joined.getGameId());
 
-        mockMvc.perform(get("/api/online-game/match/" + created.getMatchId() + "/state"))
+        mockMvc.perform(get("/api/online-game/match/" + created.getMatchId() + "/state")
+                        .header(HttpHeaders.AUTHORIZATION, TestJwtSupport.bearerFor(HOST_SUPABASE_ID)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").exists())
                 .andExpect(jsonPath("$.gameState").value("IN_PROGRESS"));

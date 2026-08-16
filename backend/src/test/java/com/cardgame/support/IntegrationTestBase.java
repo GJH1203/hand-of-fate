@@ -1,9 +1,15 @@
 package com.cardgame.support;
 
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.TestPropertySource;
 
 /**
  * Shared setup for the tests that boot the whole application.
+ *
+ * <p>The application refuses to start without a JWKS URI, on the grounds that a backend
+ * which cannot verify a token has no business answering requests. The address below is
+ * never fetched — tests that need to authenticate replace the decoder with
+ * {@link TestJwtSupport}.
  *
  * <p>Subclasses are expected to add a database of their own:
  *
@@ -17,5 +23,8 @@ import org.springframework.boot.test.context.SpringBootTest;
  * while keeping its host and credentials.
  */
 @SpringBootTest
+@TestPropertySource(properties = {
+        "security.jwt.jwk-set-uri=http://localhost/jwks-not-fetched-in-tests"
+})
 public abstract class IntegrationTestBase {
 }

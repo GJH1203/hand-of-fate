@@ -24,6 +24,11 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-web")
 	implementation("org.springframework.boot:spring-boot-starter-websocket")
 
+	// Authentication. The resource-server starter is what verifies the Supabase JWT;
+	// spring-boot-starter-security on its own would only give us the filter chain.
+	implementation("org.springframework.boot:spring-boot-starter-security")
+	implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
+
 	// Logging
 	implementation("org.springframework.boot:spring-boot-starter-logging")
 
@@ -44,6 +49,7 @@ dependencies {
 	implementation("com.google.guava:guava:32.1.2-jre")
 
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
+	testImplementation("org.springframework.security:spring-security-test")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
