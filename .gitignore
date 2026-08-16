@@ -47,3 +47,8 @@ infra/monitoring/prometheus-local.yml
 *.temp
 *.bak
 *.pem
+
+# Appended by `vercel link`. It is broader than the .env rules above and, being
+# later in the file, would re-exclude the template — hence the negation.
+.env*
+!.env.example
