@@ -10,6 +10,7 @@ import { Card, Position, GameState } from '@/types/game';
 import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
 import { useRouter } from 'next/navigation';
 import { playerService } from '@/services/playerService';
+import { apiFetch } from '@/lib/apiClient';
 
 const DEFAULT_BOARD_WIDTH = 3;  // Adjusted to match backend
 const DEFAULT_BOARD_HEIGHT = 5; // Adjusted to match backend
@@ -99,7 +100,7 @@ export default function GameBoard() {
             // Check if players have decks, create them if missing
             if (!currentPlayerData.currentDeck) {
                 console.log('Current player missing deck, creating default deck...');
-                const createDeckResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/players/${currentPlayerData.id}/create-deck`, {
+                const createDeckResponse = await apiFetch(`/players/${currentPlayerData.id}/create-deck`, {
                     method: 'POST'
                 });
                 if (createDeckResponse.ok) {
@@ -112,7 +113,7 @@ export default function GameBoard() {
             
             if (!opponentData.currentDeck) {
                 console.log('Opponent missing deck, creating default deck...');
-                const createDeckResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/players/${opponentData.id}/create-deck`, {
+                const createDeckResponse = await apiFetch(`/players/${opponentData.id}/create-deck`, {
                     method: 'POST'
                 });
                 if (createDeckResponse.ok) {

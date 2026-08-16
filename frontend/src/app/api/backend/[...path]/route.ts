@@ -2,6 +2,22 @@ import { NextRequest } from 'next/server'
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8080'
 
+/**
+ * Carries the caller's bearer token through to the backend.
+ *
+ * Dropping it would make every proxied request anonymous, and the backend now refuses
+ * those. Nothing routes through here today, but a proxy that quietly strips credentials
+ * is a trap for whoever wires it up.
+ */
+function forwardedHeaders(request: NextRequest): HeadersInit {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  const authorization = request.headers.get('authorization')
+  if (authorization) {
+    headers['Authorization'] = authorization
+  }
+  return headers
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
@@ -16,9 +32,7 @@ export async function POST(
     
     const response = await fetch(`${BACKEND_URL}/${pathString}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: forwardedHeaders(request),
       body: body,
     })
     
@@ -54,9 +68,7 @@ export async function GET(
   try {
     const response = await fetch(`${BACKEND_URL}/${pathString}`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: forwardedHeaders(request),
     })
     
     const data = await response.json()

@@ -17,6 +17,7 @@ import { WifiOff, Wifi, Users, AlertCircle } from 'lucide-react';
 import { onlineGameService } from '@/services/onlineGameService';
 import { gameWebSocketService } from '@/services/gameWebSocketService';
 import { gamePollingService } from '@/services/gamePollingService';
+import { apiFetch } from '@/lib/apiClient';
 
 const DEFAULT_BOARD_WIDTH = 3;
 const DEFAULT_BOARD_HEIGHT = 5;
@@ -478,11 +479,8 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
         
         try {
             // Send pass action through REST API
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/game/${gameState.id}/pass`, {
+            const response = await apiFetch(`/game/${gameState.id}/pass`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
                 body: JSON.stringify({
                     playerId: user!.playerId
                 }),
@@ -505,11 +503,8 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
         if (!isMyTurn || !gameState) return;
         
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/game/${gameState.id}/request-win`, {
+            const response = await apiFetch(`/game/${gameState.id}/request-win`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
                 body: JSON.stringify({
                     playerId: user!.playerId
                 }),
@@ -531,11 +526,8 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
         if (!isMyTurn || !gameState) return;
         
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/game/${gameState.id}/respond-win-request`, {
+            const response = await apiFetch(`/game/${gameState.id}/respond-win-request`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
                 body: JSON.stringify({
                     playerId: user!.playerId,
                     accepted: accept

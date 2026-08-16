@@ -1,6 +1,5 @@
 import {Card} from "@/types/game";
-
-const API_BASE_URL = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/players`;
+import {apiFetch} from "@/lib/apiClient";
 
 export interface PlayerDto {
     id: string;
@@ -22,11 +21,8 @@ export interface PlayerDto {
 class PlayerService {
     async createPlayer(name: string): Promise<PlayerDto> {
         try {
-            const response = await fetch(`${API_BASE_URL}?name=${encodeURIComponent(name)}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
+            const response = await apiFetch(`/players?name=${encodeURIComponent(name)}`, {
+                method: 'POST'
             });
 
             if (!response.ok) {
@@ -41,7 +37,7 @@ class PlayerService {
 
     async getPlayer(playerId: string): Promise<PlayerDto> {
         try {
-            const response = await fetch(`${API_BASE_URL}/${playerId}`);
+            const response = await apiFetch(`/players/${playerId}`);
 
             if (!response.ok) {
                 throw new Error('Failed to fetch player');
@@ -55,7 +51,7 @@ class PlayerService {
 
     async getPlayerHand(playerId: string): Promise<Array<Card>> {
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/game/players/${playerId}/hand`);
+            const response = await apiFetch(`/game/players/${playerId}/hand`);
 
             if (!response.ok) {
                 throw new Error('Failed to fetch player hand');
@@ -69,7 +65,7 @@ class PlayerService {
 
     async getPlayerByUsername(username: string): Promise<PlayerDto> {
         try {
-            const response = await fetch(`${API_BASE_URL}/by-name/${encodeURIComponent(username)}`);
+            const response = await apiFetch(`/players/by-name/${encodeURIComponent(username)}`);
 
             if (!response.ok) {
                 if (response.status === 404) {
