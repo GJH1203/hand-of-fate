@@ -15,7 +15,13 @@ RUN ./gradlew bootJar --no-daemon -x test
 FROM eclipse-temurin:17-jre
 WORKDIR /app
 
-RUN useradd --system --uid 10001 --create-home appuser
+# curl is here for the container health check, which both Compose and the ECS
+# task definition rely on to know when Spring has finished starting.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends curl \
+ && rm -rf /var/lib/apt/lists/* \
+ && useradd --system --uid 10001 --create-home appuser
+
 COPY --from=build --chown=appuser:appuser /build/build/libs/*.jar app.jar
 USER appuser
 
