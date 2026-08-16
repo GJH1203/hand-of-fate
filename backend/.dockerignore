@@ -1,0 +1,12 @@
+.git
+.gradle
+build
+.idea
+data
+grafana
+local-dev-cardgame
+*.md
+.env
+.env.*
+!.env.example
+*.log
