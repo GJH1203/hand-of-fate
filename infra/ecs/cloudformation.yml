@@ -99,6 +99,30 @@ Parameters:
       Nakama's Postgres. It holds accounts and leaderboards for a game aiming at a
       hundred concurrent players, so this is sized for headroom rather than need.
 
+  BackupImage:
+    Type: String
+    Default: ""
+    Description: >
+      Full ECR image URI for the backup job, built from infra/backup. Leave empty to
+      deploy without scheduled backups.
+
+  BackupSchedule:
+    Type: String
+    Default: cron(0 9 * * ? *)
+    Description: >
+      When to run the backup, in UTC. The default is 09:00 UTC, which is the small
+      hours in US Pacific where the players are.
+
+  BackupRetentionDays:
+    Type: Number
+    Default: 30
+    MinValue: 1
+    Description: How long to keep an archive before S3 deletes it.
+
+Conditions:
+  # Everything to do with backups is skipped until an image exists to run.
+  BackupsEnabled: !Not [!Equals [!Ref BackupImage, ""]]
+
 Resources:
 
   # ---------------------------------------------------------------- logging
@@ -502,6 +526,136 @@ Resources:
               awslogs-group: !Ref LogGroup
               awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: cloudflared
+
+  # ------------------------------------------------------------- backups
+
+  # Atlas M0 has no backups and no way to turn them on, so the player data had no
+  # recovery path at all. A dump lands here every night.
+  BackupBucket:
+    Type: AWS::S3::Bucket
+    Condition: BackupsEnabled
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Sub ${ProjectName}-backups-${AWS::AccountId}
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault: { SSEAlgorithm: AES256 }
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: expire-archives
+            Status: Enabled
+            Prefix: mongodb/
+            ExpirationInDays: !Ref BackupRetentionDays
+          - Id: drop-old-versions
+            Status: Enabled
+            NoncurrentVersionExpirationInDays: 7
+          - Id: abandon-incomplete-uploads
+            Status: Enabled
+            AbortIncompleteMultipartUpload: { DaysAfterInitiation: 1 }
+
+  BackupTaskRole:
+    Type: AWS::IAM::Role
+    Condition: BackupsEnabled
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: ecs-tasks.amazonaws.com }
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: write-backups
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              # Write and read back what it just wrote, to check the size. No
+              # blanket delete: the only object it may remove is a partial archive
+              # under the prefix it owns.
+              - Effect: Allow
+                Action: [s3:PutObject, s3:GetObject, s3:DeleteObject]
+                Resource: !Sub ${BackupBucket.Arn}/mongodb/*
+
+  BackupTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Condition: BackupsEnabled
+    Properties:
+      Family: !Sub ${ProjectName}-backup
+      NetworkMode: host
+      RequiresCompatibilities: [EC2]
+      ExecutionRoleArn: !GetAtt TaskExecutionRole.Arn
+      TaskRoleArn: !GetAtt BackupTaskRole.Arn
+      ContainerDefinitions:
+        - Name: backup
+          Image: !Ref BackupImage
+          Essential: true
+          # Runs beside the live stack on a 2 GiB box, so it gets what is spare.
+          # The dump is streamed, never buffered to disk or held in memory.
+          MemoryReservation: 64
+          Memory: 200
+          Environment:
+            - { Name: BACKUP_BUCKET, Value: !Ref BackupBucket }
+          Secrets:
+            # The same connection string the backend uses. Read access to Atlas is
+            # all a dump needs, and it is already granted to this instance's IP.
+            - Name: MONGODB_URI
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${MongoUriParameter}
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref LogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: backup
+
+  BackupSchedulerRole:
+    Type: AWS::IAM::Role
+    Condition: BackupsEnabled
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: events.amazonaws.com }
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: run-backup-task
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: ecs:RunTask
+                Resource: !Ref BackupTaskDefinition
+                Condition:
+                  ArnEquals: { ecs:cluster: !GetAtt Cluster.Arn }
+              - Effect: Allow
+                Action: iam:PassRole
+                Resource:
+                  - !GetAtt TaskExecutionRole.Arn
+                  - !GetAtt BackupTaskRole.Arn
+
+  BackupScheduleRule:
+    Type: AWS::Events::Rule
+    Condition: BackupsEnabled
+    Properties:
+      Name: !Sub ${ProjectName}-backup
+      Description: Nightly mongodump of Atlas into S3.
+      ScheduleExpression: !Ref BackupSchedule
+      State: ENABLED
+      Targets:
+        - Id: backup-task
+          Arn: !GetAtt Cluster.Arn
+          RoleArn: !GetAtt BackupSchedulerRole.Arn
+          EcsParameters:
+            TaskDefinitionArn: !Ref BackupTaskDefinition
+            TaskCount: 1
+            LaunchType: EC2
 
   Service:
     Type: AWS::ECS::Service

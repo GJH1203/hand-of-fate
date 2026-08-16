@@ -131,6 +131,49 @@ arm64, push to ECR, roll the service — but only when you run it by hand, and
 only once an OIDC role ARN is in the `AWS_DEPLOY_ROLE_ARN` secret. It is manual
 on purpose: see below.
 
+### Backups
+
+Atlas M0 has no backups and no setting to turn them on, so the player data had no
+recovery path at all. A scheduled ECS task now runs `mongodump` every night and
+streams the archive straight into S3 — nothing is written to the instance's disk on
+the way through.
+
+It runs on the existing instance on purpose: Atlas restricts access by IP and that
+instance's elastic IP is already on the list, which a GitHub Actions runner's
+address never would be.
+
+Build and push the image, then point the stack at it:
+
+```bash
+cd infra/backup
+docker build --platform linux/arm64 -t hand-of-fate-backup .
+docker tag hand-of-fate-backup:latest <account>.dkr.ecr.us-west-2.amazonaws.com/hand-of-fate/backup:latest
+docker push <account>.dkr.ecr.us-west-2.amazonaws.com/hand-of-fate/backup:latest
+
+aws cloudformation deploy ... --parameter-overrides \
+  BackupImage=<account>.dkr.ecr.us-west-2.amazonaws.com/hand-of-fate/backup:latest
+```
+
+`BackupImage` is empty by default and every backup resource is conditional on it,
+so a stack without the image deploys as before. The ECR repository needs creating
+once: `aws ecr create-repository --repository-name hand-of-fate/backup`.
+
+Archives land at `s3://hand-of-fate-backups-<account>/mongodb/YYYY/MM/DD/`, expire
+after `BackupRetentionDays` (30 by default), and the bucket is `Retain` so a stack
+teardown does not take the backups with it.
+
+Restoring, given an archive key:
+
+```bash
+aws s3 cp s3://hand-of-fate-backups-<account>/mongodb/2026/08/16/card_game-....archive.gz - \
+  | mongorestore --uri="<atlas-uri-without-a-database>" --archive --gzip \
+      --nsFrom='card_game.*' --nsTo='card_game_restored.*'
+```
+
+Restore beside the live database rather than over it, and swap once you have looked
+at what came back. Note the URI must not name a database — mongorestore scopes
+itself to it and the namespace remapping then silently restores nothing.
+
 ### The data volume
 
 Nakama's Postgres lives on an EBS volume separate from the instance, mounted at
