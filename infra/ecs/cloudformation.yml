@@ -93,11 +93,13 @@ Parameters:
 
   DataVolumeSizeGb:
     Type: Number
-    Default: 8
+    Default: 4
     MinValue: 4
     Description: >
-      Nakama's Postgres. It holds accounts and leaderboards for a game aiming at a
-      hundred concurrent players, so this is sized for headroom rather than need.
+      Nakama's Postgres, which holds accounts and leaderboards. Four gigabytes is far
+      more than a game aiming at a hundred concurrent players will put in it, and gp3
+      bills per provisioned gigabyte whether or not it is used. Raising it later is a
+      parameter change; the filesystem needs growing to match.
 
   BackupImage:
     Type: String
