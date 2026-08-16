@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { unifiedAuthService, UnifiedAuthResponse } from '@/services/unifiedAuthService';
+import { SESSION_EXPIRED_EVENT, resetSessionExpiry } from '@/lib/apiClient';
 import { useRouter } from 'next/navigation';
 import { User } from '@supabase/supabase-js';
 
@@ -98,8 +99,21 @@ export function UnifiedAuthProvider({ children }: { children: ReactNode }) {
         return () => subscription.unsubscribe();
     }, []);
 
+    // The backend refused the session and refreshing it did not help. Sign out properly
+    // rather than leaving the app to answer every action with a fetch error.
+    useEffect(() => {
+        const onExpired = () => {
+            console.warn('Session expired, signing out');
+            logout();
+        };
+        window.addEventListener(SESSION_EXPIRED_EVENT, onExpired);
+        return () => window.removeEventListener(SESSION_EXPIRED_EVENT, onExpired);
+    }, []);
+
     const login = (authData: UnifiedAuthResponse) => {
         if (authData.isSuccess && authData.playerId) {
+            // A fresh session should be able to announce its own expiry later.
+            resetSessionExpiry();
             unifiedAuthService.storeAuthData(authData);
             setIsAuthenticated(true);
             setUser({
