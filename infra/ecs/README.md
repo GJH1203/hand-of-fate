@@ -83,7 +83,23 @@ aws cloudformation deploy \
   --parameter-overrides \
       VpcId=vpc-xxxxxxxx \
       SubnetId=subnet-xxxxxxxx \
-      BackendImage=<account>.dkr.ecr.us-west-2.amazonaws.com/hand-of-fate/backend:latest
+      BackendImage=<account>.dkr.ecr.us-west-2.amazonaws.com/hand-of-fate/backend:latest \
+      SupabaseJwksUri=https://<project-ref>.supabase.co/auth/v1/.well-known/jwks.json \
+      SupabaseJwtIssuer=https://<project-ref>.supabase.co/auth/v1
+```
+
+The two Supabase values are not secrets and so are stack parameters rather than
+SSM entries: the project signs session tokens with an asymmetric key and
+publishes the public half at that JWKS address. The backend fetches it and
+verifies every request against it, and refuses to start without it — a service
+that cannot check a token should not be answering.
+
+`AdminSupabaseUserIds` is the comma-separated list of Supabase user ids allowed
+to reach `/admin/**`. It defaults to empty, which means nobody is an admin and
+those endpoints answer 403 to every caller. Add your own id when you need them:
+
+```bash
+aws cloudformation deploy ... --parameter-overrides AdminSupabaseUserIds=<your-supabase-user-id>
 ```
 
 Then add the stack's `EgressIp` output to the Atlas IP access list:
@@ -101,6 +117,11 @@ Push a new image, then force a new deployment:
 ```bash
 aws ecs update-service --cluster hand-of-fate --service hand-of-fate --force-new-deployment
 ```
+
+The `Deploy backend` GitHub Actions workflow does the same three steps — build
+arm64, push to ECR, roll the service — but only when you run it by hand, and
+only once an OIDC role ARN is in the `AWS_DEPLOY_ROLE_ARN` secret. It is manual
+on purpose: see below.
 
 There is one instance and the task uses host networking, so two copies cannot
 run at once. The service is set to `MinimumHealthyPercent: 0` — a deploy takes

@@ -60,7 +60,7 @@ move, so a client never receives the opponent's hand.
 | Realtime | Spring WebSocket, Nakama 3.x |
 | Data | MongoDB (game state), Postgres (Nakama) |
 | Frontend | Next.js 15, React 19, TypeScript, Tailwind, shadcn/ui |
-| Auth | Supabase (email + verification), Nakama sessions |
+| Auth | Supabase (email + verification) issues the JWT the backend verifies; Nakama issues game sessions |
 | Deploy | ECS on EC2 (arm64 / Graviton), Vercel, Cloudflare |
 | Observability | Spring Actuator, Micrometer, Prometheus, Grafana |
 
@@ -94,8 +94,11 @@ cd frontend && npm install && npm run dev
 ```
 
 The frontend needs `frontend/.env.local` with a Supabase project URL and anon
-key. The backend reads `MONGODB_URI` and the `NAKAMA_*` variables; see
-`backend/.env.example`.
+key. The backend reads `MONGODB_URI`, the `NAKAMA_*` variables, and
+`SUPABASE_JWKS_URI` — see `backend/.env.example` and `infra/local/.env.example`.
+It will not start without the JWKS URI: the backend verifies every request
+against Supabase's published signing key, and one that cannot do so has no
+business answering requests.
 
 > On Apple Silicon and on Graviton, everything runs native arm64. Nakama only
 > publishes arm64 images from **3.26.0** onward — older tags are amd64-only and
@@ -107,5 +110,10 @@ key. The backend reads `MONGODB_URI` and the `NAKAMA_*` variables; see
 cd backend && ./gradlew test
 ```
 
-Note that these currently require a live MongoDB, since every test class is a
-`@SpringBootTest`. Bringing up `infra/local` first is enough.
+Most of these need a live MongoDB, since most test classes are a
+`@SpringBootTest`; bringing up `infra/local` first is enough. Each class uses a
+database of its own, so they no longer delete each other's data. Nakama is not
+required.
+
+CI runs the same suite on every push and pull request against a MongoDB service
+container, alongside the frontend's lint, type check, and build.
