@@ -145,10 +145,9 @@ Resources:
   SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: >
-        No inbound rules. Traffic arrives through the Cloudflare tunnel, which
-        is an outbound connection, so nothing needs to reach this instance from
-        the internet — including SSH.
+      # EC2 rejects non-ASCII in this field, so keep it plain and short. The
+      # reasoning lives in infra/ecs/README.md.
+      GroupDescription: "No inbound rules; ingress arrives via Cloudflare Tunnel (outbound)"
       VpcId: !Ref VpcId
       SecurityGroupEgress:
         - IpProtocol: -1
