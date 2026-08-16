@@ -97,7 +97,13 @@ function UnifiedAuthPageContent() {
     try {
       const result = await unifiedAuthService.signUp(email, password, username);
       
-      if (!result.success) {
+      if (result.alreadyRegistered) {
+        // Not a failure worth a red banner — they have an account, they are just on the
+        // wrong form. Send them to the other one with the address kept.
+        setIsSignUp(false);
+        setPassword('');
+        setMessage(result.error || 'That email already has an account. Sign in below.');
+      } else if (!result.success) {
         setError(result.error || 'Sign up failed');
       } else if (result.needsEmailVerification) {
         setPendingVerification(true);

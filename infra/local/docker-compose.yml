@@ -63,6 +63,10 @@ services:
 
   nakama:
     container_name: nakama
+    # The server key has to be set here as well as on the backend. Production passes it
+    # to both; this file used to pass it only to the backend, so Nakama fell back to its
+    # built-in "defaultkey" and every local run agreed with the backend no matter what
+    # the backend was configured with. A key mismatch could not be reproduced.
     # 3.26.0 is the earliest tag published for arm64; anything older is
     # amd64-only and will not run on Graviton without emulation.
     image: registry.heroiclabs.com/heroiclabs/nakama:3.26.0
@@ -75,6 +79,7 @@ services:
         exec /nakama/nakama
         --name nakama1
         --database.address postgres:${POSTGRES_PASSWORD:-localdb}@postgres:5432/nakama
+        --socket.server_key ${NAKAMA_SERVER_KEY:-defaultkey}
         --logger.level INFO
         --session.token_expiry_sec 7200
     depends_on:

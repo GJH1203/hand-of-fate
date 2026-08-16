@@ -85,6 +85,46 @@ Parameters:
       Supabase user ids allowed to reach /admin/**. Empty means nobody is, and the
       admin endpoints answer 403 to every caller.
 
+  DataVolumeAvailabilityZone:
+    Type: AWS::EC2::AvailabilityZone::Name
+    Description: >
+      Must be the availability zone SubnetId lives in — an EBS volume can only attach
+      to an instance in its own zone.
+
+  DataVolumeSizeGb:
+    Type: Number
+    Default: 4
+    MinValue: 4
+    Description: >
+      Nakama's Postgres, which holds accounts and leaderboards. Four gigabytes is far
+      more than a game aiming at a hundred concurrent players will put in it, and gp3
+      bills per provisioned gigabyte whether or not it is used. Raising it later is a
+      parameter change; the filesystem needs growing to match.
+
+  BackupImage:
+    Type: String
+    Default: ""
+    Description: >
+      Full ECR image URI for the backup job, built from infra/backup. Leave empty to
+      deploy without scheduled backups.
+
+  BackupSchedule:
+    Type: String
+    Default: cron(0 9 * * ? *)
+    Description: >
+      When to run the backup, in UTC. The default is 09:00 UTC, which is the small
+      hours in US Pacific where the players are.
+
+  BackupRetentionDays:
+    Type: Number
+    Default: 30
+    MinValue: 1
+    Description: How long to keep an archive before S3 deletes it.
+
+Conditions:
+  # Everything to do with backups is skipped until an image exists to run.
+  BackupsEnabled: !Not [!Equals [!Ref BackupImage, ""]]
+
 Resources:
 
   # ---------------------------------------------------------------- logging
@@ -113,7 +153,7 @@ Resources:
         # Shell access without opening port 22.
         - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
       Policies:
-        - PolicyName: claim-elastic-ip
+        - PolicyName: claim-elastic-ip-and-data-volume
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -121,6 +161,10 @@ Resources:
               # instance comes back on the same address Atlas already trusts.
               - Effect: Allow
                 Action: [ec2:AssociateAddress, ec2:DescribeAddresses]
+                Resource: "*"
+              # Same idea for the data volume: a replaced instance picks it back up.
+              - Effect: Allow
+                Action: [ec2:AttachVolume, ec2:DescribeVolumes]
                 Resource: "*"
 
   InstanceProfile:
@@ -193,6 +237,24 @@ Resources:
         - Key: Name
           Value: !Sub ${ProjectName}-stable-egress
 
+  # Nakama's Postgres used to live on the instance's root volume, which the auto
+  # scaling group throws away whenever it replaces the instance — so the mechanism
+  # meant to keep the service alive was also what destroyed its data. This volume
+  # outlives the instance, and outlives the stack: losing accounts and leaderboards
+  # to a `cloudformation delete` would be worse than leaving a volume behind.
+  DataVolume:
+    Type: AWS::EC2::Volume
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      AvailabilityZone: !Ref DataVolumeAvailabilityZone
+      Size: !Ref DataVolumeSizeGb
+      VolumeType: gp3
+      Encrypted: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-data
+
   LaunchTemplate:
     Type: AWS::EC2::LaunchTemplate
     Properties:
@@ -213,6 +275,9 @@ Resources:
         UserData:
           Fn::Base64: !Sub |
             #!/bin/bash
+            set -x
+            # The agent is held back until the data volume is mounted, further down.
+            systemctl stop ecs || true
             echo "ECS_CLUSTER=${ProjectName}" >> /etc/ecs/ecs.config
             echo "ECS_ENABLE_CONTAINER_METADATA=true" >> /etc/ecs/ecs.config
 
@@ -234,10 +299,39 @@ Resources:
             swapon /swapfile
             echo "/swapfile none swap sw 0 0" >> /etc/fstab
 
-            # Nakama's Postgres data lives on the host so it survives task
-            # restarts. It does not survive instance replacement — acceptable
-            # here because Nakama accounts are recreated on login.
+            # Nakama's Postgres lives on a volume of its own so it survives both
+            # task restarts and instance replacement. ECS is told to wait: a
+            # container that started against an empty mount point would initialise
+            # a fresh database on top of the real one.
+            VOL=${DataVolume}
+            aws ec2 attach-volume --region ${AWS::Region} \
+              --volume-id "$VOL" --instance-id "$IID" --device /dev/sdf
+
+            # Nitro exposes EBS as NVMe under a name that has nothing to do with
+            # the one requested above; the by-id link is the reliable handle.
+            DEV=/dev/disk/by-id/nvme-Amazon_Elastic_Block_Store_$(echo "$VOL" | tr -d '-')
+            for _ in $(seq 1 60); do [ -e "$DEV" ] && break; sleep 2; done
+
+            # A brand new volume has no filesystem. An existing one must never be
+            # reformatted, so only make one when blkid finds nothing at all.
+            if ! blkid "$DEV" >/dev/null 2>&1; then
+              mkfs.ext4 -L hand-of-fate-data "$DEV"
+            fi
+
+            mkdir -p /var/lib/hand-of-fate
+            echo "LABEL=hand-of-fate-data /var/lib/hand-of-fate ext4 defaults,nofail 0 2" >> /etc/fstab
+            mount /var/lib/hand-of-fate
+
+            # An instance that runs tasks without the volume would quietly start a
+            # brand new Postgres on the root disk and look perfectly healthy while
+            # doing it. Better to sit here doing nothing and be noticed.
+            if ! mountpoint -q /var/lib/hand-of-fate; then
+              echo "data volume is not mounted; not starting ECS" >&2
+              exit 1
+            fi
+
             mkdir -p /var/lib/hand-of-fate/postgres
+            systemctl start ecs
         TagSpecifications:
           - ResourceType: instance
             Tags:
@@ -434,6 +528,136 @@ Resources:
               awslogs-group: !Ref LogGroup
               awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: cloudflared
+
+  # ------------------------------------------------------------- backups
+
+  # Atlas M0 has no backups and no way to turn them on, so the player data had no
+  # recovery path at all. A dump lands here every night.
+  BackupBucket:
+    Type: AWS::S3::Bucket
+    Condition: BackupsEnabled
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Sub ${ProjectName}-backups-${AWS::AccountId}
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault: { SSEAlgorithm: AES256 }
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: expire-archives
+            Status: Enabled
+            Prefix: mongodb/
+            ExpirationInDays: !Ref BackupRetentionDays
+          - Id: drop-old-versions
+            Status: Enabled
+            NoncurrentVersionExpirationInDays: 7
+          - Id: abandon-incomplete-uploads
+            Status: Enabled
+            AbortIncompleteMultipartUpload: { DaysAfterInitiation: 1 }
+
+  BackupTaskRole:
+    Type: AWS::IAM::Role
+    Condition: BackupsEnabled
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: ecs-tasks.amazonaws.com }
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: write-backups
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              # Write and read back what it just wrote, to check the size. No
+              # blanket delete: the only object it may remove is a partial archive
+              # under the prefix it owns.
+              - Effect: Allow
+                Action: [s3:PutObject, s3:GetObject, s3:DeleteObject]
+                Resource: !Sub ${BackupBucket.Arn}/mongodb/*
+
+  BackupTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Condition: BackupsEnabled
+    Properties:
+      Family: !Sub ${ProjectName}-backup
+      NetworkMode: host
+      RequiresCompatibilities: [EC2]
+      ExecutionRoleArn: !GetAtt TaskExecutionRole.Arn
+      TaskRoleArn: !GetAtt BackupTaskRole.Arn
+      ContainerDefinitions:
+        - Name: backup
+          Image: !Ref BackupImage
+          Essential: true
+          # Runs beside the live stack on a 2 GiB box, so it gets what is spare.
+          # The dump is streamed, never buffered to disk or held in memory.
+          MemoryReservation: 64
+          Memory: 200
+          Environment:
+            - { Name: BACKUP_BUCKET, Value: !Ref BackupBucket }
+          Secrets:
+            # The same connection string the backend uses. Read access to Atlas is
+            # all a dump needs, and it is already granted to this instance's IP.
+            - Name: MONGODB_URI
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${MongoUriParameter}
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref LogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: backup
+
+  BackupSchedulerRole:
+    Type: AWS::IAM::Role
+    Condition: BackupsEnabled
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: events.amazonaws.com }
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: run-backup-task
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: ecs:RunTask
+                Resource: !Ref BackupTaskDefinition
+                Condition:
+                  ArnEquals: { ecs:cluster: !GetAtt Cluster.Arn }
+              - Effect: Allow
+                Action: iam:PassRole
+                Resource:
+                  - !GetAtt TaskExecutionRole.Arn
+                  - !GetAtt BackupTaskRole.Arn
+
+  BackupScheduleRule:
+    Type: AWS::Events::Rule
+    Condition: BackupsEnabled
+    Properties:
+      Name: !Sub ${ProjectName}-backup
+      Description: Nightly mongodump of Atlas into S3.
+      ScheduleExpression: !Ref BackupSchedule
+      State: ENABLED
+      Targets:
+        - Id: backup-task
+          Arn: !GetAtt Cluster.Arn
+          RoleArn: !GetAtt BackupSchedulerRole.Arn
+          EcsParameters:
+            TaskDefinitionArn: !Ref BackupTaskDefinition
+            TaskCount: 1
+            LaunchType: EC2
 
   Service:
     Type: AWS::ECS::Service

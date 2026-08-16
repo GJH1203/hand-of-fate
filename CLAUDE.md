@@ -57,6 +57,8 @@ Live at **handoffate.org**. Do not assume anything below is still true — check
 | Auth | Supabase project `Hand-of-Fate` issues the JWT; Nakama issues game sessions |
 | Secrets | SSM Parameter Store under `/hand-of-fate/`, read at task start |
 | Cost | ~$6/month until the t4g free trial ends 2026-12-31, ~$19 after |
+| Backups | Nightly `mongodump` to S3, run as a scheduled ECS task. Atlas M0 has none of its own |
+| Email | Supabase sends through Resend, from `noreply@mail.handoffate.org` |
 
 Shell access is SSM Session Manager, not SSH — there is no open port 22.
 `infra/ecs/README.md` explains why the architecture looks the way it does; the
@@ -69,7 +71,17 @@ If it is ever recovered it becomes an alias, not a replacement.
 
 ## Known problems
 
-These are real and confirmed, not speculation. None are fixed.
+These are real and confirmed, not speculation.
+
+**No rate limiting anywhere.** Not on login, not on anything. Supabase throttles its
+own endpoints; this service does not.
+
+**Nakama passwords are derivable.** `UnifiedAuthController` derives each player's
+Nakama password from their player id and a constant that is in this repository, and
+any signed-in user can get somebody else's player id from `/players/by-name/{name}`.
+Not currently reachable — the security group has no inbound rules and Nakama's port
+is not published — but exposing Nakama for any reason turns it into account
+takeover.
 
 **Game state lives on the Player document.** Hand, placed cards, and the active
 deck are fields on `Player`, not on the game. A player can therefore only be in
@@ -84,6 +96,11 @@ instance. `getMatchState` scans the entire games collection on every call.
 
 **No concurrency control.** No `@Version` on documents, no transactions.
 Simultaneous writes overwrite each other.
+
+**A dangling DNS record.** `monitoring.handoffate.org` points at `134.199.238.66`,
+a DigitalOcean address that looks like the retired Prometheus droplet in
+`infra/monitoring`. If that machine is gone, anyone who lands on the address owns
+the subdomain.
 
 **Most tests still need infrastructure.** The suite runs in CI now, and the
 security tests are plain unit tests, but everything else is still
@@ -141,7 +158,8 @@ a checklist:
    test, fix what it finds, decide whether one `t4g.small` is still the right
    size.
 6. **Frontend.** Break up the 900-line components, fix reconnection, delete the
-   dead services, replace the fake stats on the home page.
+   dead services. (The home page's Power Score is real data, not a placeholder —
+   that item was stale.)
 
 Ordering is deliberate: 3 and 4 rewrite the core, so 2 comes first.
 

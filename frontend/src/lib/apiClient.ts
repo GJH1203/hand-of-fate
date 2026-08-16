@@ -16,20 +16,6 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
  * a refresh is actually due.
  */
 
-export class UnauthorizedError extends Error {
-  constructor(message = 'Your session has expired. Please sign in again.') {
-    super(message)
-    this.name = 'UnauthorizedError'
-  }
-}
-
-export class ForbiddenError extends Error {
-  constructor(message = 'You are not allowed to do that.') {
-    super(message)
-    this.name = 'ForbiddenError'
-  }
-}
-
 /** The current Supabase access token, or null when nobody is signed in. */
 export async function getAccessToken(): Promise<string | null> {
   if (!supabase) return null
@@ -48,14 +34,29 @@ function joinUrl(path: string): string {
 }
 
 /**
- * `fetch` with the caller's identity attached.
+ * Fired when the backend refuses the session and refreshing it did not help.
  *
- * Pass a path (`/players/123`) and it is resolved against `NEXT_PUBLIC_API_URL`; pass a
- * full URL and it is used as-is.
+ * `UnifiedAuthProvider` listens for this and signs the user out. Dispatching an event
+ * rather than redirecting from here keeps this module free of a dependency on the auth
+ * service, which imports it.
  */
-export async function apiFetch(path: string, init: RequestInit = {}): Promise<Response> {
-  const token = await getAccessToken()
+export const SESSION_EXPIRED_EVENT = 'handoffate:session-expired'
 
+/** Guards against a burst of parallel 401s each announcing the same dead session. */
+let expiryAnnounced = false
+
+function announceSessionExpired(): void {
+  if (typeof window === 'undefined' || expiryAnnounced) return
+  expiryAnnounced = true
+  window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT))
+}
+
+/** Call after a successful sign-in so a later expiry is announced again. */
+export function resetSessionExpiry(): void {
+  expiryAnnounced = false
+}
+
+function withAuth(init: RequestInit, token: string | null): RequestInit {
   const headers = new Headers(init.headers)
   if (token) {
     headers.set('Authorization', `Bearer ${token}`)
@@ -63,30 +64,48 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
   if (init.body !== undefined && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json')
   }
-
-  return fetch(joinUrl(path), { ...init, headers })
+  return { ...init, headers }
 }
 
 /**
- * `apiFetch` that returns parsed JSON and turns the two rejections worth distinguishing
- * into named errors, so callers can tell "sign in again" from "not yours to touch".
+ * `fetch` with the caller's identity attached.
+ *
+ * Pass a path (`/players/123`) and it is resolved against `NEXT_PUBLIC_API_URL`; pass a
+ * full URL and it is used as-is.
+ *
+ * A 401 is worth one retry: Supabase refreshes access tokens on its own, but a tab left
+ * open across the expiry can still send the stale one. If a forced refresh produces a
+ * different token the request goes again; if the answer is still 401 the session is
+ * genuinely gone and that is announced rather than handed back to the caller as another
+ * "failed to fetch", which is what left people staring at errors with no way out.
  */
-export async function apiFetchJson<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const response = await apiFetch(path, init)
+export async function apiFetch(path: string, init: RequestInit = {}): Promise<Response> {
+  const token = await getAccessToken()
+  const url = joinUrl(path)
+
+  let response = await fetch(url, withAuth(init, token))
+  if (response.status !== 401) {
+    return response
+  }
+
+  const refreshed = token ? await forceRefresh() : null
+  if (refreshed && refreshed !== token) {
+    response = await fetch(url, withAuth(init, refreshed))
+  }
 
   if (response.status === 401) {
-    throw new UnauthorizedError()
+    announceSessionExpired()
   }
-  if (response.status === 403) {
-    throw new ForbiddenError()
-  }
-  if (!response.ok) {
-    const body = await response.text().catch(() => '')
-    throw new Error(body || `Request to ${path} failed with ${response.status}`)
-  }
+  return response
+}
 
-  if (response.status === 204) {
-    return undefined as T
+async function forceRefresh(): Promise<string | null> {
+  if (!supabase) return null
+  try {
+    const { data, error } = await supabase.auth.refreshSession()
+    if (error) return null
+    return data.session?.access_token ?? null
+  } catch {
+    return null
   }
-  return (await response.json()) as T
 }

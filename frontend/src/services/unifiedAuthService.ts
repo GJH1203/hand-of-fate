@@ -49,6 +49,15 @@ export class UnifiedAuthService {
         }
       }
 
+      if (result.alreadyRegistered) {
+        return {
+          success: false,
+          alreadyRegistered: true,
+          error: 'That email already has an account. Sign in instead, or reset your password.',
+          needsEmailVerification: false
+        }
+      }
+
       // Check if email verification is needed
       if (result.user && !result.user.email_confirmed_at) {
         return {
