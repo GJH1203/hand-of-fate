@@ -34,12 +34,14 @@ export class SupabaseAuthService {
         return { user: null, session: null, error }
       }
 
-      // If user needs to verify email
-      if (data.user && !data.user.email_confirmed_at) {
+      // An existing address comes back as a success with no identities attached. Left
+      // unread, the caller goes on to promise an email that Supabase never sent.
+      if (data.user && (data.user.identities?.length ?? 0) === 0) {
         return {
-          user: data.user,
-          session: data.session,
-          error: null
+          user: null,
+          session: null,
+          error: null,
+          alreadyRegistered: true
         }
       }
 
