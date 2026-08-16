@@ -15,6 +15,7 @@ this one in August 2026. A lot of the code still reflects its origins.
 ## Layout
 
 ```
+.github/workflows/ CI on every push and PR; backend deploy is manual only.
 backend/           Spring Boot 3.4 / Java 17, Gradle. arm64 Dockerfile.
 frontend/          Next.js 15 / React 19 / TypeScript / Tailwind.
 infra/local/       Compose stack: MongoDB, Postgres, Nakama.
@@ -31,6 +32,14 @@ cd frontend && npm install && npm run dev   # :3000
 
 `BACKEND_PORT` overrides 8080 if it is taken. The frontend needs
 `frontend/.env.local` with Supabase credentials — ask, they are not in the repo.
+The backend needs `SUPABASE_JWKS_URI` in `infra/local/.env` and refuses to start
+without it; `infra/local/.env.example` is the template. It is not a secret.
+
+Running the backend tests wants the same file sourced, for `MONGODB_URI`:
+
+```bash
+cd backend && set -a && . ../infra/local/.env && set +a && ./gradlew test
+```
 
 Everything is arm64: the deploy target is Graviton and the dev machine is Apple
 Silicon. Nakama only ships arm64 images from **3.26.0** onward.
@@ -62,13 +71,6 @@ If it is ever recovered it becomes an alias, not a replacement.
 
 These are real and confirmed, not speculation. None are fixed.
 
-**Authentication is not enforced.** There is no Spring Security dependency at
-all. `POST /api/auth/login-with-supabase` accepts a bare `supabaseUserId` string
-and never verifies the Supabase JWT, so knowing any user's id is enough to
-obtain their session. The WebSocket handler trusts the `playerId` the client
-sends in `JOIN_MATCH`, so a client can act as its opponent. `/admin/**` and
-`DELETE /api/auth/cleanup-duplicates` are unauthenticated and can wipe data.
-
 **Game state lives on the Player document.** Hand, placed cards, and the active
 deck are fields on `Player`, not on the game. A player can therefore only be in
 one game at a time, `convertToDto` re-reads every player on every state
@@ -83,10 +85,13 @@ instance. `getMatchState` scans the entire games collection on every call.
 **No concurrency control.** No `@Version` on documents, no transactions.
 Simultaneous writes overwrite each other.
 
-**Tests cannot run without infrastructure.** All eight test classes are
-`@SpringBootTest` and need a live MongoDB; there are no unit tests, no
-Testcontainers, and no CI anywhere. One test is `@Disabled` with a note that
-adjacency validation wrongly permits some moves — an actual rule bug.
+**Most tests still need infrastructure.** The suite runs in CI now, and the
+security tests are plain unit tests, but everything else is still
+`@SpringBootTest` against a live MongoDB — there is no Testcontainers. Each
+class uses a database of its own; they used to share one and delete each other's
+data. Two tests are `@Disabled`, each with the reason on it: adjacency
+validation wrongly permits some moves, and player creation does not reject a
+second account on an existing email.
 
 **Frontend reconnect is dead code.** `connect()` sets `isReconnecting = true`
 on entry and `handleReconnect()` returns early when it is true, so a dropped
@@ -101,14 +106,13 @@ cannot run side by side and the service is set to `MinimumHealthyPercent: 0`.
 Build, push to ECR, then
 `aws ecs update-service --cluster hand-of-fate --service hand-of-fate --force-new-deployment`.
 
-**Fixing authentication breaks login unless both sides ship together.** The
-frontend already holds a real Supabase JWT but does not send it — `loginToBackend`
-in `frontend/src/services/unifiedAuthService.ts` posts `supabaseUserId` in the
-body with no `Authorization` header. The moment the backend starts verifying a
-bearer token, every login fails until the frontend sends one. Change them in the
-same PR, and keep in mind the frontend deploys on push to `main` while the
-backend needs an explicit ECR push, so they do not go live at the same instant.
-Plan for a window where the two disagree, or gate the check behind a flag.
+**The frontend has to be live before the backend that requires it.** Both sides
+now speak bearer tokens, but they do not ship at the same instant: the frontend
+deploys on push to `main` while the backend needs an explicit ECR push. That
+ordering is the safe one and it happens on its own — a frontend that sends an
+`Authorization` header works fine against a backend that ignores it, so merge,
+let Vercel finish, then deploy the backend. Doing it the other way round logs
+everybody out until the frontend catches up.
 
 ## The goal
 
@@ -117,12 +121,17 @@ severe bugs, and a codebase that reads as production work rather than
 coursework. Roughly in dependency order — each is a session's worth of work, not
 a checklist:
 
-1. **Make the backend trustworthy.** Verify the Supabase JWT, authenticate the
-   WebSocket, put the admin surface behind something. Nothing else matters if
-   the auth layer is decorative.
-2. **Make it testable, then test it.** Unit-testable game logic, Testcontainers
-   for the rest, and CI that runs on every push. This is also what makes the
-   later refactors safe.
+1. ~~**Make the backend trustworthy.**~~ Done. Every request carries a Supabase
+   JWT verified against the project's published JWKS, the WebSocket handshake is
+   authenticated and the socket's player id comes from the token, and
+   `/admin/**` needs a Supabase id on an allowlist that is empty by default.
+   Still open: `/players/by-name/{name}` answers with more of another player
+   than a caller needs, and `/auth/**` and `/chat/**` are shut behind the admin
+   role rather than removed.
+2. **Make it testable, then test it.** CI runs on every push now. What is left
+   is unit-testable game logic and Testcontainers, so the suite stops needing a
+   MongoDB somebody remembered to start. This is also what makes the later
+   refactors safe.
 3. **Move game state onto the game.** The single change that unblocks
    concurrent games per player, kills the N+1 reads, and makes crash recovery
    possible.

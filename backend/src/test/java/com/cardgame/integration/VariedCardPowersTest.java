@@ -11,11 +11,12 @@ import com.cardgame.service.DeckInitializationService;
 import com.cardgame.service.player.PlayerService;
 import com.cardgame.service.GameService;
 import com.cardgame.dto.GameDto;
+import com.cardgame.support.IntegrationTestBase;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 import java.util.List;
 import java.util.Map;
@@ -24,9 +25,9 @@ import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest
 @ActiveProfiles("test")
-public class VariedCardPowersTest {
+@TestPropertySource(properties = "spring.data.mongodb.database=card_game_test_cardpowers")
+public class VariedCardPowersTest extends IntegrationTestBase {
 
     @Autowired
     private PlayerService playerService;

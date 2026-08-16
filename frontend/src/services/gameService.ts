@@ -1,7 +1,8 @@
 import { Card, GameState, InitializePayload, MovePayload, Position, WinRequestPayload, WinResponsePayload } from '@/types/game';
 import { playerService } from './playerService';
+import { apiFetch } from '@/lib/apiClient';
 
-const API_BASE_URL = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/game`;
+const API_BASE_URL = '/game';
 
 class GameService {
     async initializeGame(
@@ -16,11 +17,8 @@ class GameService {
                 deckIds: [deck1Id, deck2Id]
             };
 
-            const response = await fetch(`${API_BASE_URL}/initialize`, {
+            const response = await apiFetch(`${API_BASE_URL}/initialize`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
                 body: JSON.stringify(payload),
             });
 
@@ -45,11 +43,8 @@ class GameService {
                 moveData
             });
 
-            const response = await fetch(`${API_BASE_URL}/${gameId}/moves`, {
+            const response = await apiFetch(`${API_BASE_URL}/${gameId}/moves`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
                 body: JSON.stringify({
                     playerId: moveData.playerId,
                     card: moveData.card,
@@ -72,7 +67,7 @@ class GameService {
 
     async getGame(gameId: string): Promise<GameState> {
         try {
-            const response = await fetch(`${API_BASE_URL}/${gameId}`);
+            const response = await apiFetch(`${API_BASE_URL}/${gameId}`);
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => null);
@@ -92,11 +87,8 @@ class GameService {
         try {
             const payload: WinRequestPayload = { playerId };
             
-            const response = await fetch(`${API_BASE_URL}/${gameId}/request-win`, {
+            const response = await apiFetch(`${API_BASE_URL}/${gameId}/request-win`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
                 body: JSON.stringify(payload),
             });
 
@@ -116,11 +108,8 @@ class GameService {
         try {
             const payload: WinResponsePayload = { playerId, accepted: acceptRequest };
             
-            const response = await fetch(`${API_BASE_URL}/${gameId}/respond-win-request`, {
+            const response = await apiFetch(`${API_BASE_URL}/${gameId}/respond-win-request`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
                 body: JSON.stringify(payload),
             });
 
@@ -138,11 +127,8 @@ class GameService {
 
     async processMove(action: any, gameId: string): Promise<GameState> {
         try {
-            const response = await fetch(`${API_BASE_URL}/${gameId}/actions`, {
+            const response = await apiFetch(`${API_BASE_URL}/${gameId}/actions`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
                 body: JSON.stringify(action),
             });
 

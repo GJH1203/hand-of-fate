@@ -109,6 +109,12 @@ services:
       - NAKAMA_PORT=7349
       - NAKAMA_SERVER_KEY=${NAKAMA_SERVER_KEY:-defaultkey}
       - CORS_ALLOWED_ORIGINS=http://localhost:3000
+      # The backend verifies every request against Supabase's published signing key and
+      # refuses to start without knowing where to fetch it. Both values are public and
+      # live in infra/local/.env; see infra/local/.env.example.
+      - SUPABASE_JWKS_URI=${SUPABASE_JWKS_URI:?set SUPABASE_JWKS_URI in infra/local/.env}
+      - SUPABASE_JWT_ISSUER=${SUPABASE_JWT_ISSUER:-}
+      - ADMIN_SUPABASE_USER_IDS=${ADMIN_SUPABASE_USER_IDS:-}
     ports:
       # Override with BACKEND_PORT if 8080 is already taken on your machine.
       - "${BACKEND_PORT:-8080}:8080"

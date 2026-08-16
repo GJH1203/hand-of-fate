@@ -1,3 +1,5 @@
+import { apiFetch } from '@/lib/apiClient';
+
 export interface LeaderboardRecord {
     playerId: string;
     username: string;
@@ -11,12 +13,12 @@ export interface LeaderboardResponse {
     prevCursor: string;
 }
 
-const API_BASE_URL = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/leaderboards`;
+const API_BASE_URL = '/leaderboards';
 
 class LeaderboardService {
     async getWeeklyLeaderboard(limit: number = 20): Promise<LeaderboardResponse> {
         try {
-            const response = await fetch(`${API_BASE_URL}/weekly?limit=${limit}`);
+            const response = await apiFetch(`${API_BASE_URL}/weekly?limit=${limit}`);
             
             if (!response.ok) {
                 throw new Error('Failed to fetch weekly leaderboard');
@@ -31,7 +33,7 @@ class LeaderboardService {
 
     async getAllTimeLeaderboard(limit: number = 20): Promise<LeaderboardResponse> {
         try {
-            const response = await fetch(`${API_BASE_URL}/all-time?limit=${limit}`);
+            const response = await apiFetch(`${API_BASE_URL}/all-time?limit=${limit}`);
             
             if (!response.ok) {
                 throw new Error('Failed to fetch all-time leaderboard');
@@ -51,7 +53,7 @@ class LeaderboardService {
     ): Promise<LeaderboardResponse> {
         try {
             const leaderboardId = leaderboardType === 'weekly' ? 'weekly_score' : 'all_time_score';
-            const response = await fetch(
+            const response = await apiFetch(
                 `${API_BASE_URL}/around-player/${encodeURIComponent(nakamaUserId)}?leaderboardId=${leaderboardId}&limit=${limit}`
             );
             

@@ -1,6 +1,5 @@
+import { apiFetch } from '@/lib/apiClient';
 import { GameState } from '@/types/game';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
 interface PollingCallbacks {
   onGameStateUpdate?: (state: GameState) => void;
@@ -41,11 +40,8 @@ class GamePollingService {
     if (!this.currentMatchId || !this.currentPlayerId) return;
 
     try {
-      const response = await fetch(`${API_URL}/online-game/${this.currentMatchId}/state`, {
+      const response = await apiFetch(`/online-game/${this.currentMatchId}/state`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
       });
 
       if (!response.ok) {
@@ -61,11 +57,8 @@ class GamePollingService {
   }
 
   async createMatch(playerId: string): Promise<{ matchId: string }> {
-    const response = await fetch(`${API_URL}/online-game/create-match`, {
+    const response = await apiFetch(`/online-game/create-match`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify({ playerId }),
     });
 
@@ -79,11 +72,8 @@ class GamePollingService {
   }
 
   async joinMatch(matchId: string, playerId: string): Promise<any> {
-    const response = await fetch(`${API_URL}/online-game/join-match`, {
+    const response = await apiFetch(`/online-game/join-match`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify({ matchId, playerId }),
     });
 
@@ -95,11 +85,8 @@ class GamePollingService {
   }
 
   async makeMove(gameId: string, playerId: string, move: any): Promise<any> {
-    const response = await fetch(`${API_URL}/game/${gameId}/play`, {
+    const response = await apiFetch(`/game/${gameId}/play`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify({
         playerId,
         action: move.action,

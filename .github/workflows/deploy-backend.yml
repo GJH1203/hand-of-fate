@@ -1,0 +1,92 @@
+name: Deploy backend
+
+# Manual only, and deliberately so. The site runs on one instance with host
+# networking and MinimumHealthyPercent 0, so a deployment takes it down for the length
+# of a container start. That is a decision to make on purpose, not a side effect of
+# merging.
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: Tag to push and deploy
+        required: false
+        default: latest
+
+concurrency:
+  group: deploy-backend
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-west-2
+  ECR_REPOSITORY: hand-of-fate/backend
+  ECS_CLUSTER: hand-of-fate
+  ECS_SERVICE: hand-of-fate
+
+# Needed for the OIDC handshake with AWS. See the setup note at the bottom.
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    name: Build, push, redeploy
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # The deploy target is Graviton, so the image has to be arm64 whatever the
+      # runner happens to be.
+      - name: Build and push arm64 image
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          platforms: linux/arm64
+          push: true
+          tags: |
+            ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ inputs.image_tag }}
+            ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Roll the service
+        run: |
+          aws ecs update-service \
+            --cluster "$ECS_CLUSTER" \
+            --service "$ECS_SERVICE" \
+            --force-new-deployment \
+            --no-cli-pager
+
+      - name: Wait for the service to settle
+        run: |
+          aws ecs wait services-stable \
+            --cluster "$ECS_CLUSTER" \
+            --services "$ECS_SERVICE"
+
+      - name: Check the site is answering
+        run: curl -fsS --retry 5 --retry-delay 10 https://handoffate.org/ > /dev/null
+
+# Before this can run, two things need to exist:
+#
+#   1. An IAM role GitHub can assume through OIDC, trusted for this repository and
+#      allowed to push to the ECR repository above and call ecs:UpdateService and
+#      ecs:DescribeServices. Its ARN goes in the AWS_DEPLOY_ROLE_ARN secret.
+#   2. A "production" environment on the repository, so a deployment can be gated on a
+#      review if you want one.
+#
+# Until then this workflow fails at the credentials step, which is the right failure:
+# it cannot deploy anything by accident.

@@ -4,6 +4,7 @@ import com.cardgame.dto.nakama.AuthDto;
 import com.cardgame.dto.nakama.ImmutableAuthDto;
 import com.cardgame.dto.CreatePlayerFromSupabaseRequest;
 import com.cardgame.model.Player;
+import com.cardgame.security.CurrentUser;
 import com.cardgame.service.nakama.NakamaAuthService;
 import com.cardgame.service.player.PlayerService;
 import com.heroiclabs.nakama.Session;
@@ -21,12 +22,16 @@ import java.util.stream.Collectors;
 
 /**
  * Unified Authentication Controller
- * 
+ *
  * This controller implements the unified authentication workflow:
  * 1. Sign up creates a Supabase account (with email verification)
  * 2. After email verification, user data syncs to backend
  * 3. Upon first login after verification, a Nakama account is automatically created
  * 4. All subsequent logins use Supabase for auth, then retrieve Nakama session
+ *
+ * <p>Every endpoint here reads the caller's Supabase id from the verified bearer token.
+ * The {@code supabaseUserId} in the request body is ignored: honouring it meant knowing
+ * somebody's id was enough to obtain their session.
  */
 @RestController
 @RequestMapping("/api/auth")
@@ -39,14 +44,17 @@ public class UnifiedAuthController {
     private final NakamaAuthService nakamaAuthService;
     private final PlayerService playerService;
     private final Counter playerLoginCounter;
+    private final CurrentUser currentUser;
 
     @Autowired
-    public UnifiedAuthController(NakamaAuthService nakamaAuthService, 
+    public UnifiedAuthController(NakamaAuthService nakamaAuthService,
                                 PlayerService playerService,
-                                Counter playerLoginCounter) {
+                                Counter playerLoginCounter,
+                                CurrentUser currentUser) {
         this.nakamaAuthService = nakamaAuthService;
         this.playerService = playerService;
         this.playerLoginCounter = playerLoginCounter;
+        this.currentUser = currentUser;
     }
 
     /**
@@ -56,55 +64,53 @@ public class UnifiedAuthController {
     @PostMapping("/sync-verified-user")
     public ResponseEntity<?> syncVerifiedUser(@RequestBody CreatePlayerFromSupabaseRequest request) {
         try {
-            logger.info("Syncing verified Supabase user: {}", request.getSupabaseUserId());
-            
-            // Validate input
-            if (request.getSupabaseUserId() == null || request.getSupabaseUserId().trim().isEmpty()) {
-                return ResponseEntity.badRequest().body("Supabase user ID is required");
-            }
-            if (request.getEmail() == null || request.getEmail().trim().isEmpty()) {
+            String supabaseUserId = currentUser.supabaseUserId();
+            String email = resolveEmail(request);
+            logger.info("Syncing verified Supabase user: {}", supabaseUserId);
+
+            if (email == null) {
                 return ResponseEntity.badRequest().body("Email is required");
             }
             if (request.getUsername() == null || request.getUsername().trim().isEmpty()) {
                 return ResponseEntity.badRequest().body("Username is required");
             }
-            
+
             // Check if player already exists
-            Optional<Player> existingPlayer = playerService.findPlayerBySupabaseUserId(request.getSupabaseUserId());
+            Optional<Player> existingPlayer = playerService.findPlayerBySupabaseUserId(supabaseUserId);
             if (existingPlayer.isPresent()) {
                 Player player = existingPlayer.get();
-                
+
                 // If player exists but no Nakama ID, create Nakama account
                 if (player.getNakamaUserId() == null) {
-                    Session nakamaSession = createNakamaAccount(player, request.getEmail());
+                    Session nakamaSession = createNakamaAccount(player, email);
                     if (nakamaSession != null) {
                         player.setNakamaUserId(nakamaSession.getUserId());
                         playerService.savePlayer(player);
                     }
                 }
-                
+
                 return ResponseEntity.ok(buildAuthResponse(player));
             }
-            
+
             // Create new player using unified method
             Player newPlayer = playerService.createPlayer(
-                request.getUsername(), 
-                request.getEmail(), 
-                request.getSupabaseUserId(),
+                request.getUsername(),
+                email,
+                supabaseUserId,
                 null  // Nakama ID will be set later
             );
-            
+
             // Create Nakama account for the new player
-            Session nakamaSession = createNakamaAccount(newPlayer, request.getEmail());
+            Session nakamaSession = createNakamaAccount(newPlayer, email);
             if (nakamaSession != null) {
                 newPlayer.setNakamaUserId(nakamaSession.getUserId());
                 playerService.savePlayer(newPlayer);
-                
+
                 return ResponseEntity.ok(buildAuthResponse(newPlayer, nakamaSession));
             }
-            
+
             return ResponseEntity.ok(buildAuthResponse(newPlayer));
-            
+
         } catch (IllegalArgumentException e) {
             logger.error("Failed to sync user: {}", e.getMessage());
             return ResponseEntity.badRequest().body("Failed to sync user: " + e.getMessage());
@@ -121,37 +127,31 @@ public class UnifiedAuthController {
     @PostMapping("/login-with-supabase")
     public ResponseEntity<AuthDto> loginWithSupabase(@RequestBody CreatePlayerFromSupabaseRequest request) {
         try {
-            logger.info("Login attempt for Supabase user: {}", request.getSupabaseUserId());
-            
-            // Validate input
-            if (request.getSupabaseUserId() == null || request.getSupabaseUserId().trim().isEmpty()) {
-                return ResponseEntity.badRequest().body(ImmutableAuthDto.builder()
-                        .isSuccess(false)
-                        .message("Supabase user ID is required")
-                        .build());
-            }
-            
+            String supabaseUserId = currentUser.supabaseUserId();
+            String email = resolveEmail(request);
+            logger.info("Login attempt for Supabase user: {}", supabaseUserId);
+
             // Find player by Supabase ID
-            Optional<Player> playerOpt = playerService.findPlayerBySupabaseUserId(request.getSupabaseUserId());
+            Optional<Player> playerOpt = playerService.findPlayerBySupabaseUserId(supabaseUserId);
             if (playerOpt.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ImmutableAuthDto.builder()
                         .isSuccess(false)
                         .message("Player not found. Please complete registration first.")
                         .build());
             }
-            
+
             Player player = playerOpt.get();
-            
+
             // Ensure player has a deck
             if (player.getCurrentDeck() == null) {
                 logger.info("Creating default deck for player: {}", player.getId());
                 playerService.createDefaultDeckForPlayer(player.getId());
             }
-            
+
             // If player doesn't have Nakama account yet, create one
             if (player.getNakamaUserId() == null) {
                 logger.info("Creating Nakama account for player: {}", player.getId());
-                Session nakamaSession = createNakamaAccount(player, request.getEmail());
+                Session nakamaSession = createNakamaAccount(player, email);
                 if (nakamaSession == null) {
                     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ImmutableAuthDto.builder()
                             .isSuccess(false)
@@ -187,29 +187,49 @@ public class UnifiedAuthController {
     }
 
     /**
-     * Validate Nakama token (for game operations)
+     * Check whether the caller's stored Nakama game session is still usable.
+     *
+     * <p>The Nakama token travels in {@code X-Nakama-Token} because {@code Authorization}
+     * now carries the Supabase token that authenticates the request. It also has to
+     * belong to the caller: this used to hand back the matching player for any valid
+     * Nakama token, whoever presented it.
      */
     @GetMapping("/validate-nakama-token")
-    public ResponseEntity<AuthDto> validateNakamaToken(@RequestHeader("Authorization") String token) {
+    public ResponseEntity<AuthDto> validateNakamaToken(@RequestHeader("X-Nakama-Token") String token) {
         Session session = nakamaAuthService.getSessionFromToken(token);
-        
+
         if (session == null || session.isExpired(new java.util.Date())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ImmutableAuthDto.builder()
                     .isSuccess(false)
                     .message("Invalid or expired token")
                     .build());
         }
-        
-        // Find player by Nakama user ID
-        Optional<Player> player = playerService.findPlayerByNakamaUserId(session.getUserId());
-        if (player.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ImmutableAuthDto.builder()
+
+        Player player = currentUser.requirePlayer();
+        if (!session.getUserId().equals(player.getNakamaUserId())) {
+            logger.warn("Player {} presented a Nakama token belonging to {}",
+                    player.getId(), session.getUserId());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ImmutableAuthDto.builder()
                     .isSuccess(false)
-                    .message("Player not found")
+                    .message("That game session belongs to a different account")
                     .build());
         }
-        
-        return ResponseEntity.ok(buildAuthResponse(player.get(), session));
+
+        return ResponseEntity.ok(buildAuthResponse(player, session));
+    }
+
+    /**
+     * The email to register this player under.
+     *
+     * <p>Supabase puts the verified address in the token, so that wins; the body is only
+     * a fallback for tokens issued without an email claim (phone sign-in, for instance).
+     */
+    private String resolveEmail(CreatePlayerFromSupabaseRequest request) {
+        return currentUser.email()
+                .or(() -> Optional.ofNullable(request.getEmail())
+                        .map(String::trim)
+                        .filter(email -> !email.isEmpty()))
+                .orElse(null);
     }
 
     /**

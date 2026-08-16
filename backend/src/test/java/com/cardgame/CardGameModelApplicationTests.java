@@ -1,10 +1,11 @@
 package com.cardgame;
 
+import com.cardgame.support.IntegrationTestBase;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.TestPropertySource;
 
-@SpringBootTest
-class CardGameModelApplicationTests {
+@TestPropertySource(properties = "spring.data.mongodb.database=card_game_test_contextload")
+class CardGameModelApplicationTests extends IntegrationTestBase {
 
 	@Test
 	void contextLoads() {

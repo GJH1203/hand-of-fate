@@ -1,4 +1,14 @@
 import { GameState } from '@/types/game';
+import { getAccessToken } from '@/lib/apiClient';
+
+/**
+ * First entry of Sec-WebSocket-Protocol, marking the second as the token.
+ *
+ * A browser cannot set headers on a WebSocket handshake, so the credential travels as a
+ * subprotocol pair — the same trick the Kubernetes API uses. Not a query parameter: those
+ * end up in access logs and proxy traces.
+ */
+const BEARER_SUBPROTOCOL = 'bearer';
 
 export enum MessageType {
   // Connection
@@ -53,7 +63,14 @@ class GameWebSocketService {
   private currentMatchId: string | null = null;
   private currentPlayerId: string | null = null;
 
-  connect(callbacks: GameWebSocketCallbacks): Promise<void> {
+  async connect(callbacks: GameWebSocketCallbacks): Promise<void> {
+    // Read before opening the socket: the backend rejects a handshake it cannot attribute
+    // to a player, and there is no second chance to present a credential afterwards.
+    const token = await getAccessToken();
+    if (!token) {
+      throw new Error('Not signed in — cannot open a game connection');
+    }
+
     return new Promise((resolve, reject) => {
       try {
         // Reset connection state for fresh start
@@ -110,7 +127,7 @@ class GameWebSocketService {
         
         console.log('Connecting to WebSocket:', wsUrl);
         
-        this.ws = new WebSocket(wsUrl);
+        this.ws = new WebSocket(wsUrl, [BEARER_SUBPROTOCOL, token]);
         
         this.ws.onopen = () => {
           console.log('WebSocket connected');
@@ -175,6 +192,8 @@ class GameWebSocketService {
 
       const message: WebSocketMessage = {
         type: MessageType.JOIN_MATCH,
+        // The server takes the player id from the handshake token and ignores this one;
+        // it is sent only so a mismatch shows up in the server log.
         data: { matchId, playerId }
       };
 

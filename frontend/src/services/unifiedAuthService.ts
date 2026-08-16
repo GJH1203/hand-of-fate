@@ -1,4 +1,5 @@
 import { SupabaseAuthService } from './supabaseAuthService'
+import { apiFetch } from '@/lib/apiClient'
 import { User } from '@supabase/supabase-js'
 
 export interface UnifiedAuthResponse {
@@ -26,7 +27,6 @@ interface BackendSyncRequest {
  */
 export class UnifiedAuthService {
   private supabaseAuth: SupabaseAuthService
-  private backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
 
   constructor() {
     this.supabaseAuth = new SupabaseAuthService()
@@ -161,11 +161,8 @@ export class UnifiedAuthService {
                       supabaseUser.email?.split('@')[0] || 
                       'User'
       
-      const response = await fetch(`${this.backendUrl}/api/auth/sync-verified-user`, {
+      const response = await apiFetch('/api/auth/sync-verified-user', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           supabaseUserId: supabaseUser.id,
           email: supabaseUser.email,
@@ -198,11 +195,8 @@ export class UnifiedAuthService {
                       supabaseUser.email?.split('@')[0] || 
                       'User'
       
-      const response = await fetch(`${this.backendUrl}/api/auth/login-with-supabase`, {
+      const response = await apiFetch('/api/auth/login-with-supabase', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           supabaseUserId: supabaseUser.id,
           email: supabaseUser.email,
@@ -318,15 +312,18 @@ export class UnifiedAuthService {
    */
   async validateNakamaToken(token: string): Promise<UnifiedAuthResponse> {
     try {
-      const response = await fetch(`${this.backendUrl}/validate-nakama-token`, {
+      const response = await apiFetch('/api/auth/validate-nakama-token', {
         method: 'GET',
         headers: {
-          'Authorization': token,
+          'X-Nakama-Token': token,
         },
       })
 
-      const data = await response.json()
-      return data
+      if (!response.ok) {
+        return { isSuccess: false, message: 'Token validation failed' }
+      }
+
+      return await response.json()
     } catch (error) {
       return {
         isSuccess: false,

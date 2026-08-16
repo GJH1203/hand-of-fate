@@ -1,3 +1,4 @@
+import { apiFetch } from '@/lib/apiClient';
 import { GameState } from '@/types/game';
 
 export interface OnboardingPlayer {
@@ -22,16 +23,13 @@ export interface OnboardingStatus {
 }
 
 class TutorialService {
-  private baseUrl = process.env.NODE_ENV === 'production' 
-    ? 'https://your-backend-domain.com' 
-    : 'http://localhost:8080';
+  // The base URL now comes from apiFetch, which reads NEXT_PUBLIC_API_URL. This class
+  // used to carry its own, and in production it pointed at the literal placeholder
+  // https://your-backend-domain.com.
 
   async checkOnboardingStatus(playerId: string): Promise<OnboardingStatus> {
-    const response = await fetch(`${this.baseUrl}/api/tutorial/check-onboarding/${playerId}`, {
+    const response = await apiFetch(`/api/tutorial/check-onboarding/${playerId}`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
     });
 
     if (!response.ok) {
@@ -42,11 +40,8 @@ class TutorialService {
   }
 
   async startTutorial(playerId: string): Promise<GameState> {
-    const response = await fetch(`${this.baseUrl}/api/tutorial/start`, {
+    const response = await apiFetch(`/api/tutorial/start`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify({ playerId }),
     });
 
@@ -58,11 +53,8 @@ class TutorialService {
   }
 
   async getTutorialGame(gameId: string): Promise<GameState> {
-    const response = await fetch(`${this.baseUrl}/api/tutorial/game/${gameId}`, {
+    const response = await apiFetch(`/api/tutorial/game/${gameId}`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
     });
 
     if (!response.ok) {
@@ -73,11 +65,8 @@ class TutorialService {
   }
 
   async makeTutorialMove(gameId: string, playerAction: any): Promise<GameState> {
-    const response = await fetch(`${this.baseUrl}/api/tutorial/move/${gameId}`, {
+    const response = await apiFetch(`/api/tutorial/move/${gameId}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify(playerAction),
     });
 
@@ -89,11 +78,8 @@ class TutorialService {
   }
 
   async completeTutorial(playerId: string, gameId: string): Promise<OnboardingPlayer> {
-    const response = await fetch(`${this.baseUrl}/api/tutorial/complete`, {
+    const response = await apiFetch(`/api/tutorial/complete`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify({ playerId, gameId }),
     });
 
@@ -105,11 +91,8 @@ class TutorialService {
   }
 
   async skipTutorial(playerId: string): Promise<OnboardingPlayer> {
-    const response = await fetch(`${this.baseUrl}/api/tutorial/skip`, {
+    const response = await apiFetch(`/api/tutorial/skip`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify({ playerId }),
     });
 
@@ -121,11 +104,8 @@ class TutorialService {
   }
 
   async getTutorialProgress(gameId: string): Promise<TutorialProgress> {
-    const response = await fetch(`${this.baseUrl}/api/tutorial/progress/${gameId}`, {
+    const response = await apiFetch(`/api/tutorial/progress/${gameId}`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
     });
 
     if (!response.ok) {
@@ -140,11 +120,8 @@ class TutorialService {
     // This would mark the player as needing onboarding again
     // For testing purposes, we can just call skip then unset it
     try {
-      const response = await fetch(`${this.baseUrl}/api/tutorial/reset`, {
+      const response = await apiFetch(`/api/tutorial/reset`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({ playerId }),
       });
 

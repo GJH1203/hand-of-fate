@@ -5,6 +5,7 @@ import com.cardgame.exception.game.InvalidMoveException;
 import com.cardgame.model.*;
 import com.cardgame.repository.*;
 import com.cardgame.service.validator.DefaultGameValidator;
+import com.cardgame.support.IntegrationTestBase;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
@@ -15,16 +16,16 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.TestPropertySource;
 
 import java.util.*;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest
 @DisplayName("Adjacency Rule Tests - Cards must be placed orthogonally adjacent to own cards")
-class GameLogicIntegrationTest {
+@TestPropertySource(properties = "spring.data.mongodb.database=card_game_test_gamelogic")
+class GameLogicIntegrationTest extends IntegrationTestBase {
 
     @Autowired
     private GameService gameService;
@@ -43,6 +44,9 @@ class GameLogicIntegrationTest {
 
     @Autowired
     private GameRepository gameRepository;
+
+    /** A deck is five cards. These fixtures were built for the fifteen-card rule. */
+    private static final int DECK_SIZE = 5;
 
     private String player1Id;
     private String player2Id;
@@ -75,12 +79,12 @@ class GameLogicIntegrationTest {
      * Sets up player1, player2, deck1, and deck2 for game initialization.
      */
     private void setupTestPlayers() {
-        List<Card> cards = new ArrayList<>();
-        for (int i = 1; i <= 15; i++) {
-            Card card = new Card("card_" + i, i, "Card " + i);
-            cards.add(card);
-            cardRepository.save(card);
-        }
+        // Distinct ids per player. Both decks used to hold the same card objects, and
+        // adjacency is decided by comparing card ids, so whenever the two opening cards
+        // happened to be the same one a player counted their opponent's card as their
+        // own. Real decks are built with a fresh id per card, so this matches production.
+        List<Card> player1Cards = createCards("p1");
+        List<Card> player2Cards = createCards("p2");
 
         Player player1 = new Player();
         player1.setId("player1");
@@ -97,18 +101,28 @@ class GameLogicIntegrationTest {
         Deck deck1 = new Deck();
         deck1.setId("deck1");
         deck1.setOwnerId(player1Id);
-        deck1.setCards(new ArrayList<>(cards));
-        deck1.setRemainingCards(15);
+        deck1.setCards(new ArrayList<>(player1Cards));
+        deck1.setRemainingCards(DECK_SIZE);
         deck1 = deckRepository.save(deck1);
         deck1Id = deck1.getId();
 
         Deck deck2 = new Deck();
         deck2.setId("deck2");
         deck2.setOwnerId(player2Id);
-        deck2.setCards(new ArrayList<>(cards));
-        deck2.setRemainingCards(15);
+        deck2.setCards(new ArrayList<>(player2Cards));
+        deck2.setRemainingCards(DECK_SIZE);
         deck2 = deckRepository.save(deck2);
         deck2Id = deck2.getId();
+    }
+
+    private List<Card> createCards(String prefix) {
+        List<Card> cards = new ArrayList<>();
+        for (int i = 1; i <= DECK_SIZE; i++) {
+            Card card = new Card(prefix + "_card_" + i, i, "Card " + i);
+            cards.add(card);
+            cardRepository.save(card);
+        }
+        return cards;
     }
 
     /**
@@ -516,21 +530,26 @@ class GameLogicIntegrationTest {
         }
 
         /**
-         * Tests that first move after initialization can be placed anywhere.
-         * Clears player1's placed cards to simulate first move scenario.
-         * Any empty position should be valid when player has no cards on board.
+         * Tests the first move after initialization.
+         *
+         * <p>This used to clear the player's placed cards and assert that any empty
+         * position was then legal. Initialization always puts a card on the board for
+         * each player, so that state does not occur, and the validator has no exemption
+         * for it — adjacency applies from the very first move. What follows asserts the
+         * rule the game actually plays by.
          */
         @Test
         @DisplayName("Valid first move after initialization")
         void testValidMove_FirstMoveAfterInitialization() {
-            Player player1 = playerRepository.findById(player1Id).orElseThrow();
-            player1.setPlacedCards(new HashMap<>());
-            playerRepository.save(player1);
+            // The fixture puts player 1's card at (1,2).
+            PlayerAction adjacent = createValidatorPlaceCardAction(player1Id, new Position(1, 1));
+            assertDoesNotThrow(() -> gameValidator.validateMove(gameModel, adjacent),
+                    "Should allow a first move orthogonally adjacent to the opening card");
 
-            PlayerAction action = createValidatorPlaceCardAction(player1Id, new Position(2, 2));
-
-            assertDoesNotThrow(() -> gameValidator.validateMove(gameModel, action),
-                    "Should allow first move at any empty position");
+            PlayerAction detached = createValidatorPlaceCardAction(player1Id, new Position(2, 4));
+            assertThrows(InvalidMoveException.class,
+                    () -> gameValidator.validateMove(gameModel, detached),
+                    "Should not allow a first move detached from the opening card");
         }
     }
 
@@ -785,14 +804,15 @@ class GameLogicIntegrationTest {
             }
             playerRepository.save(player1);
 
-            // Should not be able to place anywhere now (board column is full)
+            // The board is three wide, so a full column of your own cards touches every
+            // remaining cell. This previously asserted the opposite and only passed
+            // because the fixture blew up in setUp before reaching it.
             for (int x = 0; x < 3; x++) {
                 if (x == 1) continue; // Skip the occupied column
                 for (int y = 0; y < 5; y++) {
                     PlayerAction action = createValidatorPlaceCardAction(player1Id, new Position(x, y));
-                    assertThrows(InvalidMoveException.class,
-                            () -> gameValidator.validateMove(gameModel, action),
-                            "Should NOT allow placement away from vertical chain");
+                    assertDoesNotThrow(() -> gameValidator.validateMove(gameModel, action),
+                            "Every cell beside a full column is orthogonally adjacent to it");
                 }
             }
         }
