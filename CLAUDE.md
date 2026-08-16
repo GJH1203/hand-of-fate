@@ -93,6 +93,23 @@ on entry and `handleReconnect()` returns early when it is true, so a dropped
 socket never reconnects. `gameSocketService.ts` and `userSyncService.ts` have no
 importers at all.
 
+## Before changing the backend
+
+**The site is live.** Deploying takes it down for the length of a container
+start: there is one instance and the task uses host networking, so two copies
+cannot run side by side and the service is set to `MinimumHealthyPercent: 0`.
+Build, push to ECR, then
+`aws ecs update-service --cluster hand-of-fate --service hand-of-fate --force-new-deployment`.
+
+**Fixing authentication breaks login unless both sides ship together.** The
+frontend already holds a real Supabase JWT but does not send it — `loginToBackend`
+in `frontend/src/services/unifiedAuthService.ts` posts `supabaseUserId` in the
+body with no `Authorization` header. The moment the backend starts verifying a
+bearer token, every login fails until the frontend sends one. Change them in the
+same PR, and keep in mind the frontend deploys on push to `main` while the
+backend needs an explicit ECR push, so they do not go live at the same instant.
+Plan for a window where the two disagree, or gate the check behind a flag.
+
 ## The goal
 
 A stable, genuinely deployable product: roughly **100 concurrent players**, no
