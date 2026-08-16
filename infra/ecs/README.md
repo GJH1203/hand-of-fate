@@ -85,7 +85,15 @@ aws cloudformation deploy \
       SubnetId=subnet-xxxxxxxx \
       BackendImage=<account>.dkr.ecr.us-west-2.amazonaws.com/hand-of-fate/backend:latest \
       SupabaseJwksUri=https://<project-ref>.supabase.co/auth/v1/.well-known/jwks.json \
-      SupabaseJwtIssuer=https://<project-ref>.supabase.co/auth/v1
+      SupabaseJwtIssuer=https://<project-ref>.supabase.co/auth/v1 \
+      DataVolumeAvailabilityZone=us-west-2a
+```
+
+`DataVolumeAvailabilityZone` has to be the zone `SubnetId` sits in — an EBS volume
+only attaches within its own zone. Check it with:
+
+```bash
+aws ec2 describe-subnets --subnet-ids <subnet> --query 'Subnets[0].AvailabilityZone'
 ```
 
 The two Supabase values are not secrets and so are stack parameters rather than
@@ -122,6 +130,31 @@ The `Deploy backend` GitHub Actions workflow does the same three steps — build
 arm64, push to ECR, roll the service — but only when you run it by hand, and
 only once an OIDC role ARN is in the `AWS_DEPLOY_ROLE_ARN` secret. It is manual
 on purpose: see below.
+
+### The data volume
+
+Nakama's Postgres lives on an EBS volume separate from the instance, mounted at
+`/var/lib/hand-of-fate`. It used to sit on the root volume, which the auto scaling
+group discards when it replaces the instance — so the mechanism that keeps the
+service alive was also the one that destroyed its data.
+
+The volume is `Retain` on both delete and replace: losing accounts and leaderboards
+to a `cloudformation delete` would be worse than leaving a volume behind. If you
+tear the stack down, delete it by hand once you are sure.
+
+The instance claims the volume in user data, the same way it claims the elastic IP,
+and refuses to start ECS if the mount is not there — an instance running tasks
+without it would quietly start a fresh Postgres on the root disk and look healthy
+while doing it.
+
+**Deploying this does not move existing data.** Changing the launch template leaves
+the running instance alone; the volume is only picked up by the next instance, and
+whatever was on the old root disk goes with it. Terminate the instance when you are
+ready to take that loss:
+
+```bash
+aws ec2 terminate-instances --instance-ids <id>   # the ASG brings back a replacement
+```
 
 There is one instance and the task uses host networking, so two copies cannot
 run at once. The service is set to `MinimumHealthyPercent: 0` — a deploy takes
