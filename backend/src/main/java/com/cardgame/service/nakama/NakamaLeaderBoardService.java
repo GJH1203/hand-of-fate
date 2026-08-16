@@ -5,19 +5,16 @@ import com.cardgame.dto.nakama.ImmutableLeaderboardResponseDto;
 import com.cardgame.dto.nakama.LeaderboardRecordDto;
 import com.cardgame.dto.nakama.LeaderboardResponseDto;
 import com.heroiclabs.nakama.Client;
-import com.heroiclabs.nakama.DefaultClient;
 import com.heroiclabs.nakama.Session;
 import com.heroiclabs.nakama.api.LeaderboardRecord;
 import com.heroiclabs.nakama.api.LeaderboardRecordList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
@@ -29,38 +26,31 @@ public class NakamaLeaderBoardService {
     private static final String WEEKLY_LEADERBOARD = "weekly_score";
     private static final String ALLTIME_LEADERBOARD = "all_time_score";
 
-    @Value("${nakama.host:localhost}")
-    private String host;
+    /**
+     * Identifies this service's own Nakama account.
+     *
+     * <p>It used to be a fresh UUID on every boot, which meant a new Nakama account for
+     * every restart and redeploy. One stable id reuses the same one.
+     */
+    private static final String SERVICE_DEVICE_ID = "hand-of-fate-leaderboard-service";
 
-    @Value("${nakama.port:7349}")
-    private int port;
+    private final Client client;
 
-    @Value("${nakama.serverKey:defaultkey}")
-    private String serverKey;
-
-    @Value("${nakama.ssl:false}")
-    private boolean ssl;
-
-    private Client client;
     private Session adminSession;
     private boolean initialized = false;
+
+    public NakamaLeaderBoardService(Client client) {
+        this.client = client;
+    }
 
     @PostConstruct
     public void init() {
         try {
-            // Initialize the Nakama client
-            logger.info("Initializing Nakama client with host: {}, port: {}, ssl: {}", host, port, ssl);
-            this.client = new DefaultClient(serverKey, host, port, ssl);
-
-            // Create an admin session with a unique device ID
-            String uniqueDeviceId = UUID.randomUUID().toString();
-            logger.info("Authenticating with device ID: {}", uniqueDeviceId);
-            this.adminSession = client.authenticateDevice(uniqueDeviceId).get();
+            this.adminSession = client.authenticateDevice(SERVICE_DEVICE_ID).get();
             this.initialized = true;
-
-            logger.info("Nakama client initialized successfully with device ID: {}", uniqueDeviceId);
+            logger.info("Leaderboard service authenticated with Nakama");
         } catch (Exception e) {
-            logger.error("Failed to initialize Nakama client: {}", e.getMessage(), e);
+            logger.error("Failed to authenticate the leaderboard service with Nakama: {}", e.getMessage(), e);
             this.initialized = false;
         }
     }
@@ -78,8 +68,7 @@ public class NakamaLeaderBoardService {
         } else if (adminSession == null) {
             try {
                 logger.info("Re-initializing Nakama session");
-                String uniqueDeviceId = UUID.randomUUID().toString();
-                this.adminSession = client.authenticateDevice(uniqueDeviceId).get();
+                this.adminSession = client.authenticateDevice(SERVICE_DEVICE_ID).get();
             } catch (Exception e) {
                 logger.error("Failed to re-initialize Nakama session", e);
                 this.initialized = false;
