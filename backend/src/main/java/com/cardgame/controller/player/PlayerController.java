@@ -7,8 +7,10 @@ import java.util.Optional;
 import com.cardgame.dto.PlayerDto;
 import com.cardgame.model.Card;
 import com.cardgame.model.Player;
+import com.cardgame.security.CurrentUser;
 import com.cardgame.service.player.PlayerService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -22,25 +24,38 @@ import org.springframework.web.bind.annotation.RestController;
 public class PlayerController {
 
     private final PlayerService playerService;
+    private final CurrentUser currentUser;
 
-    public PlayerController(PlayerService playerService) {
+    public PlayerController(PlayerService playerService, CurrentUser currentUser) {
         this.playerService = playerService;
+        this.currentUser = currentUser;
     }
 
     // Removed auto-creation endpoint to prevent unauthorized player creation
     // Players should only be created through proper authentication flow
 
+    /** A player's own record. It carries their hand, so it is not somebody else's to read. */
     @GetMapping("/{playerId}")
     public ResponseEntity<PlayerDto> getPlayer(@PathVariable String playerId) {
+        currentUser.requireSelf(playerId);
         return ResponseEntity.ok(playerService.getPlayerDto(playerId));
     }
 
     @GetMapping("/game/players/{playerId}/hand")
     public ResponseEntity<List<Card>> getPlayerHand(@PathVariable String playerId) {
+        currentUser.requireSelf(playerId);
         Player player = playerService.getPlayer(playerId);
         return ResponseEntity.ok(player.getHand());
     }
 
+    /**
+     * Look up an opponent by username, which is how local hot-seat mode finds the other
+     * seat and the only reason this endpoint exists.
+     *
+     * <p>It still answers with the full PlayerDto, so a signed-in user can see more of a
+     * stranger than they need to. Narrowing it means giving hot-seat a shape of its own,
+     * which belongs with the wider work of moving game state off the Player document.
+     */
     @GetMapping("/by-name/{name}")
     public ResponseEntity<PlayerDto> getPlayerByName(@PathVariable String name) {
         Player player = playerService.findPlayerByName(name);
@@ -52,6 +67,9 @@ public class PlayerController {
 
     @GetMapping("/by-supabase-id/{supabaseUserId}")
     public ResponseEntity<com.cardgame.dto.PlayerResponse> getPlayerBySupabaseId(@PathVariable String supabaseUserId) {
+        if (!currentUser.isAdmin() && !supabaseUserId.equals(currentUser.supabaseUserId())) {
+            throw new AccessDeniedException("You may only look up your own account");
+        }
         Optional<Player> player = playerService.findPlayerBySupabaseUserId(supabaseUserId);
         if (player.isEmpty()) {
             return ResponseEntity.notFound().build();
@@ -73,6 +91,7 @@ public class PlayerController {
     
     @DeleteMapping("/{playerId}")
     public ResponseEntity<String> deletePlayerById(@PathVariable String playerId) {
+        currentUser.requireSelf(playerId);
         try {
             // Check if player exists first
             Player player = playerService.getPlayer(playerId);
@@ -88,6 +107,7 @@ public class PlayerController {
         }
     }
 
+    /** Admin-only; enforced in SecurityConfig. */
     @DeleteMapping("/all")
     public ResponseEntity<String> deleteAllPlayers() {
         try {

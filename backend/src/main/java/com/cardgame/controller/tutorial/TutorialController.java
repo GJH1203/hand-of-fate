@@ -3,6 +3,8 @@ package com.cardgame.controller.tutorial;
 import com.cardgame.dto.GameDto;
 import com.cardgame.dto.OnboardingPlayerDto;
 import com.cardgame.dto.PlayerAction;
+import com.cardgame.security.CurrentUser;
+import com.cardgame.security.GameAccess;
 import com.cardgame.service.tutorial.TutorialGameService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,9 +23,15 @@ public class TutorialController {
     private static final Logger logger = LoggerFactory.getLogger(TutorialController.class);
     
     private final TutorialGameService tutorialGameService;
+    private final CurrentUser currentUser;
+    private final GameAccess gameAccess;
 
-    public TutorialController(TutorialGameService tutorialGameService) {
+    public TutorialController(TutorialGameService tutorialGameService,
+                              CurrentUser currentUser,
+                              GameAccess gameAccess) {
         this.tutorialGameService = tutorialGameService;
+        this.currentUser = currentUser;
+        this.gameAccess = gameAccess;
     }
 
     /**
@@ -31,6 +39,7 @@ public class TutorialController {
      */
     @GetMapping("/check-onboarding/{playerId}")
     public ResponseEntity<Map<String, Object>> checkOnboardingStatus(@PathVariable String playerId) {
+        currentUser.requireSelf(playerId);
         try {
             logger.info("Checking onboarding status for player: {}", playerId);
             
@@ -53,13 +62,10 @@ public class TutorialController {
      */
     @PostMapping("/start")
     public ResponseEntity<GameDto> startTutorial(@RequestBody Map<String, String> request) {
+        String playerId = currentUser.requirePlayerId();
+        logger.info("Starting tutorial for player: {}", playerId);
+
         try {
-            String playerId = request.get("playerId");
-            logger.info("Starting tutorial for player: {}", playerId);
-            
-            if (playerId == null || playerId.trim().isEmpty()) {
-                return ResponseEntity.badRequest().build();
-            }
             
             GameDto tutorialGame = tutorialGameService.startTutorialGame(playerId);
             
@@ -78,6 +84,8 @@ public class TutorialController {
     public ResponseEntity<GameDto> makeTutorialMove(
             @PathVariable String gameId,
             @RequestBody PlayerAction playerAction) {
+        gameAccess.requireParticipant(gameId);
+        currentUser.requireSelf(playerAction.getPlayerId());
         try {
             logger.info("Player move in tutorial game {}: {}", gameId, playerAction.getType());
             
@@ -96,6 +104,7 @@ public class TutorialController {
      */
     @GetMapping("/game/{gameId}")
     public ResponseEntity<GameDto> getTutorialGame(@PathVariable String gameId) {
+        gameAccess.requireParticipant(gameId);
         try {
             logger.info("Getting tutorial game state: {}", gameId);
             
@@ -114,15 +123,11 @@ public class TutorialController {
      */
     @PostMapping("/complete")
     public ResponseEntity<OnboardingPlayerDto> completeTutorial(@RequestBody Map<String, String> request) {
+        String playerId = currentUser.requirePlayerId();
+        String gameId = request.get("gameId");
+        logger.info("Completing tutorial for player: {} in game: {}", playerId, gameId);
+
         try {
-            String playerId = request.get("playerId");
-            String gameId = request.get("gameId");
-            
-            logger.info("Completing tutorial for player: {} in game: {}", playerId, gameId);
-            
-            if (playerId == null || playerId.trim().isEmpty()) {
-                return ResponseEntity.badRequest().build();
-            }
             
             OnboardingPlayerDto updatedPlayer = tutorialGameService.completeTutorial(playerId, gameId);
             
@@ -139,13 +144,10 @@ public class TutorialController {
      */
     @PostMapping("/skip")
     public ResponseEntity<OnboardingPlayerDto> skipTutorial(@RequestBody Map<String, String> request) {
+        String playerId = currentUser.requirePlayerId();
+        logger.info("Skipping tutorial for player: {}", playerId);
+
         try {
-            String playerId = request.get("playerId");
-            logger.info("Skipping tutorial for player: {}", playerId);
-            
-            if (playerId == null || playerId.trim().isEmpty()) {
-                return ResponseEntity.badRequest().build();
-            }
             
             OnboardingPlayerDto updatedPlayer = tutorialGameService.skipTutorial(playerId);
             
@@ -162,6 +164,7 @@ public class TutorialController {
      */
     @GetMapping("/progress/{gameId}")
     public ResponseEntity<Map<String, Object>> getTutorialProgress(@PathVariable String gameId) {
+        gameAccess.requireParticipant(gameId);
         try {
             logger.info("Getting tutorial progress for game: {}", gameId);
             

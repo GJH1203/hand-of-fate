@@ -8,6 +8,7 @@ import com.cardgame.model.Card;
 import com.cardgame.model.Deck;
 import com.cardgame.model.Player;
 import com.cardgame.repository.CardRepository;
+import com.cardgame.security.CurrentUser;
 import com.cardgame.service.player.DeckService;
 import com.cardgame.service.player.PlayerService;
 import org.springframework.http.ResponseEntity;
@@ -27,11 +28,16 @@ public class DeckController {
     private final DeckService deckService;
 
     private final CardRepository cardRepository;
+    private final CurrentUser currentUser;
 
-    public DeckController(PlayerService playerService, DeckService deckService, CardRepository cardRepository) {
+    public DeckController(PlayerService playerService,
+                          DeckService deckService,
+                          CardRepository cardRepository,
+                          CurrentUser currentUser) {
         this.playerService = playerService;
         this.deckService = deckService;
         this.cardRepository = cardRepository;
+        this.currentUser = currentUser;
     }
 
     @PostMapping("/{deckId}/cards/{cardId}")
@@ -39,7 +45,9 @@ public class DeckController {
             @PathVariable String deckId,
             @PathVariable String cardId,
             @RequestParam String playerId) {
-        // Verify the player owns this deck
+        // The deck must belong to playerId, and playerId must be the caller — the
+        // ownership check alone was satisfied by simply naming the owner.
+        currentUser.requireSelf(playerId);
         Player player = playerService.getPlayer(playerId);
         if (!player.getCurrentDeck().getId().equals(deckId)) {
             throw new InvalidDeckException("This deck doesn't belong to the player");
@@ -64,7 +72,9 @@ public class DeckController {
             @PathVariable String deckId,
             @PathVariable String cardId,
             @RequestParam String playerId) {
-        // Verify the player owns this deck
+        // The deck must belong to playerId, and playerId must be the caller — the
+        // ownership check alone was satisfied by simply naming the owner.
+        currentUser.requireSelf(playerId);
         Player player = playerService.getPlayer(playerId);
         if (!player.getCurrentDeck().getId().equals(deckId)) {
             throw new InvalidDeckException("This deck doesn't belong to the player");
@@ -84,7 +94,9 @@ public class DeckController {
     public ResponseEntity<DeckDto> getDeck(
             @PathVariable String deckId,
             @RequestParam String playerId) {
-        // Verify the player owns this deck
+        // The deck must belong to playerId, and playerId must be the caller — the
+        // ownership check alone was satisfied by simply naming the owner.
+        currentUser.requireSelf(playerId);
         Player player = playerService.getPlayer(playerId);
         if (!player.getCurrentDeck().getId().equals(deckId)) {
             throw new InvalidDeckException("This deck doesn't belong to the player");
@@ -98,7 +110,9 @@ public class DeckController {
     public ResponseEntity<Map<String, Object>> validateDeck(
             @PathVariable String deckId,
             @RequestParam String playerId) {
-        // Verify the player owns this deck
+        // The deck must belong to playerId, and playerId must be the caller — the
+        // ownership check alone was satisfied by simply naming the owner.
+        currentUser.requireSelf(playerId);
         Player player = playerService.getPlayer(playerId);
         if (!player.getCurrentDeck().getId().equals(deckId)) {
             throw new InvalidDeckException("This deck doesn't belong to the player");

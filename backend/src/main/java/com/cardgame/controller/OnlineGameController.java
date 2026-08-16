@@ -5,35 +5,48 @@ import com.cardgame.dto.online.CreateMatchRequest;
 import com.cardgame.dto.online.JoinMatchRequest;
 import com.cardgame.dto.online.MatchResponse;
 import com.cardgame.model.GameModel;
+import com.cardgame.security.CurrentUser;
 import com.cardgame.service.nakama.NakamaMatchService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * Online match endpoints.
+ *
+ * <p>The player id always comes from the verified token rather than from the path or
+ * body. It used to come from the request, so anyone could create, join, or abandon a
+ * match as somebody else just by naming them.
+ */
 @RestController
 @RequestMapping("/api/online-game")
 public class OnlineGameController {
     private static final Logger logger = LoggerFactory.getLogger(OnlineGameController.class);
-    
+
     @Autowired
     private NakamaMatchService nakamaMatchService;
+
+    @Autowired
+    private CurrentUser currentUser;
     
     /**
      * Create a new online match
      */
     @PostMapping("/create")
     public CompletableFuture<ResponseEntity<MatchResponse>> createMatch(@RequestBody CreateMatchRequest request) {
-        logger.info("Creating online match for player: {}", request.getPlayerId());
-        
-        return nakamaMatchService.createMatch(request.getPlayerId())
+        String playerId = currentUser.requirePlayerId();
+        logger.info("Creating online match for player: {}", playerId);
+
+        return nakamaMatchService.createMatch(playerId)
             .thenApply(matchId -> {
-                logger.info("Successfully created match with ID: {} for player: {}", matchId, request.getPlayerId());
+                logger.info("Successfully created match with ID: {} for player: {}", matchId, playerId);
                 MatchResponse response = new MatchResponse();
                 response.setMatchId(matchId);
                 response.setStatus("WAITING");
@@ -41,7 +54,7 @@ public class OnlineGameController {
                 return ResponseEntity.ok(response);
             })
             .exceptionally(ex -> {
-                logger.error("Failed to create match for player: {}", request.getPlayerId(), ex);
+                logger.error("Failed to create match for player: {}", playerId, ex);
                 MatchResponse errorResponse = new MatchResponse();
                 errorResponse.setStatus("ERROR");
                 errorResponse.setMessage("Failed to create match: " + ex.getMessage());
@@ -56,14 +69,15 @@ public class OnlineGameController {
     public CompletableFuture<ResponseEntity<MatchResponse>> joinMatch(
             @PathVariable String matchId,
             @RequestBody JoinMatchRequest request) {
-        logger.info("Player {} joining match {}", request.getPlayerId(), matchId);
-        
+        String playerId = currentUser.requirePlayerId();
+        logger.info("Player {} joining match {}", playerId, matchId);
+
         // First check if this is a reconnection attempt
-        GameModel existingGame = nakamaMatchService.findActiveGameForPlayer(request.getPlayerId());
-        if (existingGame != null && existingGame.getNakamaMatchId() != null && 
+        GameModel existingGame = nakamaMatchService.findActiveGameForPlayer(playerId);
+        if (existingGame != null && existingGame.getNakamaMatchId() != null &&
             existingGame.getNakamaMatchId().contains(matchId)) {
             // This is a reconnection to an existing game
-            logger.info("Player {} reconnecting to existing game {}", request.getPlayerId(), existingGame.getId());
+            logger.info("Player {} reconnecting to existing game {}", playerId, existingGame.getId());
             
             MatchResponse response = new MatchResponse();
             response.setMatchId(matchId);
@@ -75,7 +89,7 @@ public class OnlineGameController {
         }
         
         // Otherwise, proceed with normal join
-        return nakamaMatchService.joinMatch(request.getPlayerId(), matchId)
+        return nakamaMatchService.joinMatch(playerId, matchId)
             .thenApply(game -> {
                 MatchResponse response = new MatchResponse();
                 response.setMatchId(matchId);
@@ -106,6 +120,10 @@ public class OnlineGameController {
      */
     @GetMapping("/match/{matchId}/state")
     public ResponseEntity<?> getMatchState(@PathVariable String matchId) {
+        String playerId = currentUser.requirePlayerId();
+        if (!nakamaMatchService.isPlayerInMatch(matchId, playerId)) {
+            throw new AccessDeniedException("You are not a player in this match");
+        }
         try {
             GameModel game = nakamaMatchService.getMatchState(matchId);
             return ResponseEntity.ok(game);
@@ -122,12 +140,17 @@ public class OnlineGameController {
     public CompletableFuture<ResponseEntity<String>> sendAction(
             @PathVariable String matchId,
             @RequestBody PlayerAction action) {
-        logger.info("Player {} sending action in match {}", action.getPlayerId(), matchId);
-        
-        // Convert PlayerAction to Map for NakamaMatchService
+        String playerId = currentUser.requirePlayerId();
+        if (!nakamaMatchService.isPlayerInMatch(matchId, playerId)) {
+            throw new AccessDeniedException("You are not a player in this match");
+        }
+        logger.info("Player {} sending action in match {}", playerId, matchId);
+
+        // Convert PlayerAction to Map for NakamaMatchService. The acting id is the
+        // caller's own; the one in the body is ignored.
         Map<String, Object> actionData = new HashMap<>();
         actionData.put("type", action.getType().toString());
-        actionData.put("playerId", action.getPlayerId());
+        actionData.put("playerId", playerId);
         if (action.getCard() != null) {
             actionData.put("card", action.getCard());
         }
@@ -150,6 +173,7 @@ public class OnlineGameController {
     public ResponseEntity<String> handleDisconnect(
             @PathVariable String matchId,
             @PathVariable String playerId) {
+        currentUser.requireSelf(playerId);
         logger.info("Player {} disconnecting from match {}", playerId, matchId);
         
         try {
@@ -167,6 +191,7 @@ public class OnlineGameController {
      */
     @PostMapping("/leave-all/{playerId}")
     public ResponseEntity<Map<String, Object>> leaveAllMatches(@PathVariable String playerId) {
+        currentUser.requireSelf(playerId);
         logger.info("Player {} leaving all matches", playerId);
         
         Map<String, Object> response = new HashMap<>();
@@ -189,6 +214,7 @@ public class OnlineGameController {
      */
     @GetMapping("/active-game/{playerId}")
     public ResponseEntity<Map<String, Object>> getActiveGame(@PathVariable String playerId) {
+        currentUser.requireSelf(playerId);
         logger.info("Checking for active games for player: {}", playerId);
         
         Map<String, Object> response = new HashMap<>();

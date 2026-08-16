@@ -287,6 +287,39 @@ public class NakamaMatchService {
     }
     
     /**
+     * Whether a player belongs to a match.
+     *
+     * <p>Checks the subscription set first — that covers a match still waiting for its
+     * second player — and falls back to the game document, which is what survives a
+     * player reconnecting after the game has started.
+     *
+     * @param matchId The match ID
+     * @param playerId The player ID
+     * @return true if the player is a participant
+     */
+    public boolean isPlayerInMatch(String matchId, String playerId) {
+        if (matchId == null || playerId == null) {
+            return false;
+        }
+
+        Set<String> subscribers = matchSubscriptions.get(matchId);
+        if (subscribers != null && subscribers.contains(playerId)) {
+            return true;
+        }
+
+        MatchMetadata metadata = matchMetadata.get(matchId);
+        if (metadata != null && playerId.equals(metadata.creatorId)) {
+            return true;
+        }
+
+        try {
+            return getMatchState(matchId).getPlayerIds().contains(playerId);
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    /**
      * Get the current state of a match
      * @param matchId The match ID
      * @return The current game state

@@ -12,6 +12,8 @@ import com.cardgame.dto.game.WinRequestRequest;
 import com.cardgame.dto.game.WinResponseRequest;
 import com.cardgame.model.GameModel;
 import com.cardgame.model.GameMode;
+import com.cardgame.security.CurrentUser;
+import com.cardgame.security.GameAccess;
 import com.cardgame.service.GameService;
 import com.cardgame.websocket.GameWebSocketHandler;
 import org.slf4j.Logger;
@@ -19,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -33,12 +36,16 @@ public class GameController {
     private static final Logger log = LoggerFactory.getLogger(GameController.class.getName());
 
     private final GameService gameService;
-    
+    private final GameAccess gameAccess;
+    private final CurrentUser currentUser;
+
     @Autowired
     private GameWebSocketHandler gameWebSocketHandler;
 
-    public GameController(GameService gameService) {
+    public GameController(GameService gameService, GameAccess gameAccess, CurrentUser currentUser) {
         this.gameService = gameService;
+        this.gameAccess = gameAccess;
+        this.currentUser = currentUser;
     }
 
     @GetMapping("/create")
@@ -55,17 +62,25 @@ public class GameController {
 
     @GetMapping("/{gameId}")
     public ResponseEntity<GameDto> getGame(@PathVariable String gameId) {
+        gameAccess.requireParticipant(gameId);
         GameDto game = gameService.getGame(gameId);
         return ResponseEntity.ok(game);
     }
 
     @PostMapping("/initialize")
     public ResponseEntity<GameDto> initializeGame(@RequestBody GameInitializationRequest request) {
-        try {
-            if (request.getPlayerIds().size() != 2 || request.getDeckIds().size() != 2) {
-                return ResponseEntity.badRequest().build();
-            }
+        if (request.getPlayerIds().size() != 2 || request.getDeckIds().size() != 2) {
+            return ResponseEntity.badRequest().build();
+        }
 
+        // You can start a game you are in. Anything else would let a caller seat two
+        // other people at a board and hand out their decks. Checked outside the try so
+        // the catch-all below cannot turn a 403 into a 500.
+        if (!currentUser.isAdmin() && !request.getPlayerIds().contains(currentUser.requirePlayerId())) {
+            throw new AccessDeniedException("You are not one of this game's players");
+        }
+
+        try {
             GameDto gameDto = gameService.initializeGame(
                     request.getPlayerIds().get(0),
                     request.getPlayerIds().get(1),
@@ -84,6 +99,7 @@ public class GameController {
 
     @GetMapping("/{gameId}/current-player")
     public ResponseEntity<String> getCurrentPlayer(@PathVariable String gameId) {
+        gameAccess.requireParticipant(gameId);
         GameDto game = gameService.getGame(gameId);
         String currentPlayerId = game.getCurrentPlayerId();
         return ResponseEntity.ok(currentPlayerId);
@@ -93,6 +109,7 @@ public class GameController {
     public ResponseEntity<GameDto> makeMove(
             @PathVariable String gameId,
             @RequestBody PlayerMoveRequest moveRequest) {
+        gameAccess.requireMayActAs(gameId, moveRequest.getPlayerId());
         PlayerAction action = convertToPlayerAction(moveRequest);
         GameDto updatedGame = gameService.processMove(gameId, action);
         
@@ -106,6 +123,7 @@ public class GameController {
     public ResponseEntity<GameDto> pass(
             @PathVariable String gameId,
             @RequestBody PassRequest passRequest) {
+        gameAccess.requireMayActAs(gameId, passRequest.getPlayerId());
         PlayerAction action = ImmutablePlayerAction.builder()
                 .type(PlayerAction.ActionType.PASS)
                 .playerId(passRequest.getPlayerId())
@@ -146,6 +164,7 @@ public class GameController {
     public ResponseEntity<GameDto> requestWinCalculation(
             @PathVariable String gameId,
             @RequestBody WinRequestRequest request) {
+        gameAccess.requireMayActAs(gameId, request.getPlayerId());
         PlayerAction action = ImmutablePlayerAction.builder()
                 .type(PlayerAction.ActionType.REQUEST_WIN_CALCULATION)
                 .playerId(request.getPlayerId())
@@ -166,6 +185,7 @@ public class GameController {
     public ResponseEntity<GameDto> respondToWinRequest(
             @PathVariable String gameId,
             @RequestBody WinResponseRequest request) {
+        gameAccess.requireMayActAs(gameId, request.getPlayerId());
         PlayerAction action = ImmutablePlayerAction.builder()
                 .type(PlayerAction.ActionType.RESPOND_TO_WIN_REQUEST)
                 .playerId(request.getPlayerId())
