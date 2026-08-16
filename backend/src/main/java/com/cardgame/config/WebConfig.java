@@ -22,11 +22,14 @@ public class WebConfig implements WebMvcConfigurer {
             "http://localhost:3001",
             "https://card-game-frontend-*.vercel.app",
             "https://card-game-frontend.vercel.app",
-            "https://*.vercel.app",
-            "https://handoffate.net",
-            "https://www.handoffate.net",
-            "https://api.handoffate.net"
-            // CloudFlare domains will be added via environment variable
+            // The live domain is .org. The .net entries that used to be here
+            // never matched anything, which is why the custom domain could not
+            // talk to this API and only the *.vercel.app host worked.
+            "https://handoffate.org",
+            "https://www.handoffate.org"
+            // A bare https://*.vercel.app used to be listed. Combined with
+            // allowCredentials(true) that let any Vercel deployment on the
+            // internet make credentialed calls to this API.
         ));
         
         // Add any additional origins from environment variable

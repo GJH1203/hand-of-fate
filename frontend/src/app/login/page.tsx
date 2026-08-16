@@ -281,61 +281,29 @@ function UnifiedAuthPageContent() {
       
       {/* Main content */}
       <div className="relative z-10 w-full max-w-md">
-        {/* Mystical hand and cards animation */}
+        {/* Mystical portal and cards animation */}
         <div className="relative mb-8">
           <div className="relative w-64 h-64 mx-auto">
-            {/* Glowing hand silhouette */}
+            {/* Central mystical portal */}
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="relative">
-                <div className="absolute inset-0 blur-2xl">
-                  <div className="w-40 h-48 bg-gradient-to-t from-purple-600/60 to-blue-600/60 rounded-full transform scale-150 animate-pulse"></div>
+                {/* Subtle background glow behind portal */}
+                <div className="absolute inset-0 -inset-8 blur-3xl opacity-40">
+                  <div className="w-full h-full bg-gradient-to-r from-purple-600/30 via-blue-600/30 to-cyan-600/30 rounded-full animate-pulse"></div>
                 </div>
-                <div className="absolute inset-0 blur-md">
-                  <div className="w-36 h-44 bg-gradient-to-t from-purple-500/40 to-blue-500/40 rounded-full transform scale-125"></div>
-                </div>
-                <div className="relative text-8xl filter drop-shadow-2xl" style={{ 
-                  textShadow: '0 0 40px rgba(139, 92, 246, 0.9), 0 0 80px rgba(139, 92, 246, 0.5), 0 0 120px rgba(139, 92, 246, 0.3)',
-                  color: 'rgba(200, 180, 255, 0.95)',
-                  animation: 'handGlow 3s ease-in-out infinite'
-                }}>
-                  ✋
-                </div>
-              </div>
-            </div>
-            
-            {/* Orbiting cards around hand with magical trails */}
-            <div className="absolute inset-0" style={{ animation: 'rotate 20s linear infinite' }}>
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-8 w-16 h-24">
+                
+                {/* Custom mystical portal image */}
                 <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-br from-amber-600/20 to-orange-600/20 blur-md animate-pulse"></div>
-                  <div className="relative w-full h-full bg-gradient-to-br from-amber-700 to-orange-800 rounded-lg border-2 border-amber-500 shadow-2xl shadow-amber-600/70 transform hover:scale-110 transition-transform">
-                    <div className="absolute inset-0 bg-gradient-to-t from-transparent to-amber-400/20 rounded-lg"></div>
-                    <div className="flex items-center justify-center h-full text-amber-300 text-2xl font-bold">☀️</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="absolute inset-0" style={{ animation: 'rotate 20s linear infinite', animationDelay: '-6.66s' }}>
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-8 w-16 h-24">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-indigo-600/20 blur-md animate-pulse"></div>
-                  <div className="relative w-full h-full bg-gradient-to-br from-purple-700 to-indigo-800 rounded-lg border-2 border-purple-500 shadow-2xl shadow-purple-600/70">
-                    <div className="absolute inset-0 bg-gradient-to-t from-transparent to-purple-400/20 rounded-lg"></div>
-                    <div className="flex items-center justify-center h-full text-purple-300 text-2xl font-bold">🌙</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="absolute inset-0" style={{ animation: 'rotate 20s linear infinite', animationDelay: '-13.33s' }}>
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-8 w-16 h-24">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-br from-cyan-600/20 to-blue-600/20 blur-md animate-pulse"></div>
-                  <div className="relative w-full h-full bg-gradient-to-br from-cyan-700 to-blue-800 rounded-lg border-2 border-cyan-500 shadow-2xl shadow-cyan-600/70">
-                    <div className="absolute inset-0 bg-gradient-to-t from-transparent to-cyan-400/20 rounded-lg"></div>
-                    <div className="flex items-center justify-center h-full text-cyan-300 text-2xl font-bold">⭐</div>
-                  </div>
+                  <Image
+                    src="/images/mystical-portal.png"
+                    alt="Mystical Portal"
+                    width={200}
+                    height={200}
+                    className="relative z-10"
+                    style={{ 
+                      animation: 'portalGlow 4s ease-in-out infinite',
+                    }}
+                  />
                 </div>
               </div>
             </div>
@@ -499,17 +467,12 @@ function UnifiedAuthPageContent() {
           50% { transform: translateY(-20px) rotate(180deg); opacity: 0.3; }
         }
         
-        @keyframes rotate {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        
-        @keyframes handGlow {
+        @keyframes portalGlow {
           0%, 100% { 
-            filter: brightness(1) drop-shadow(0 0 40px rgba(139, 92, 246, 0.9));
+            filter: drop-shadow(0 0 30px rgba(139, 92, 246, 0.8)) drop-shadow(0 0 60px rgba(59, 130, 246, 0.5));
           }
           50% { 
-            filter: brightness(1.2) drop-shadow(0 0 60px rgba(139, 92, 246, 1));
+            filter: drop-shadow(0 0 40px rgba(139, 92, 246, 1)) drop-shadow(0 0 80px rgba(59, 130, 246, 0.8));
           }
         }
       `}</style>

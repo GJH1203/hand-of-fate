@@ -22,10 +22,8 @@ public class WebSocketConfig implements WebSocketConfigurer {
                     "http://localhost:3001",
                     "https://card-game-frontend-*.vercel.app",
                     "https://card-game-frontend.vercel.app",
-                    "https://*.vercel.app",
-                    "https://handoffate.net",
-                    "https://www.handoffate.net",
-                    "https://api.handoffate.net"
-                ); // Allow same origins as HTTP CORS
+                    "https://handoffate.org",
+                    "https://www.handoffate.org"
+                ); // Keep in step with WebConfig
     }
 }
