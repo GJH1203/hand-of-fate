@@ -8,11 +8,12 @@ import com.cardgame.repository.DeckRepository;
 import com.cardgame.repository.GameRepository;
 import com.cardgame.repository.PlayerRepository;
 import com.cardgame.service.GameService;
+import com.cardgame.support.IntegrationTestBase;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Disabled;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.TestPropertySource;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,8 +21,8 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest
-class GameFlowIntegrationTest {
+@TestPropertySource(properties = "spring.data.mongodb.database=card_game_test_gameflow")
+class GameFlowIntegrationTest extends IntegrationTestBase {
 
     @Autowired
     private GameService gameService;
@@ -37,6 +38,9 @@ class GameFlowIntegrationTest {
 
     @Autowired
     private GameRepository gameRepository;
+
+    /** A deck is five cards. These fixtures were built for the fifteen-card rule. */
+    private static final int DECK_SIZE = 5;
 
     private Player player1;
     private Player player2;
@@ -75,24 +79,24 @@ class GameFlowIntegrationTest {
         deck1.setId(UUID.randomUUID().toString());
         deck1.setOwnerId(player1.getId());
         deck1.setCards(testCards1);
-        deck1.setRemainingCards(15);
+        deck1.setRemainingCards(DECK_SIZE);
         deck1 = deckRepository.save(deck1);
 
         deck2 = new Deck();
         deck2.setId(UUID.randomUUID().toString());
         deck2.setOwnerId(player2.getId());
         deck2.setCards(testCards2);
-        deck2.setRemainingCards(15);
+        deck2.setRemainingCards(DECK_SIZE);
         deck2 = deckRepository.save(deck2);
     }
 
     private List<Card> createTestCards(String prefix) {
         List<Card> cards = new ArrayList<>();
-        for (int i = 1; i <= 15; i++) {
+        for (int i = 1; i <= DECK_SIZE; i++) {
             Card card = new Card();
             card.setId(prefix + "_card_" + i);
             card.setName(prefix + " Card " + i);
-            card.setPower(i); // Power values 1-15
+            card.setPower(i); // Power values 1-5, distinct so scoring is unambiguous
             cards.add(card);
         }
         return cards;
@@ -299,7 +303,8 @@ class GameFlowIntegrationTest {
                 .type(PlayerAction.ActionType.PLACE_CARD)
                 .playerId(player1.getId())
                 .card(card)
-                .targetPosition(new Position(1, 3)) // Diagonally adjacent to (2,4)
+                // Player 1 opens at (1,3). (2,4) touches it only at the corner.
+                .targetPosition(new Position(2, 4))
                 .timestamp(System.currentTimeMillis())
                 .build();
 
@@ -307,7 +312,7 @@ class GameFlowIntegrationTest {
         InvalidMoveException exception = assertThrows(InvalidMoveException.class, () -> {
             gameService.processMove(game.getId(), action);
         });
-        assertEquals("Diagonal adjacency is not allowed", exception.getMessage());
+        assertEquals("Must place card adjacent to your existing cards", exception.getMessage());
     }
 
     @Test
@@ -470,8 +475,8 @@ class GameFlowIntegrationTest {
         Deck storedDeck1 = deckRepository.findById(originalDeck1Id).orElseThrow();
         Deck storedDeck2 = deckRepository.findById(originalDeck2Id).orElseThrow();
 
-        assertEquals(15, storedDeck1.getCards().size()); // Original deck intact
-        assertEquals(15, storedDeck2.getCards().size()); // Original deck intact
+        assertEquals(DECK_SIZE, storedDeck1.getCards().size()); // Original deck intact
+        assertEquals(DECK_SIZE, storedDeck2.getCards().size()); // Original deck intact
         
         // Verify that players still have their originalDeck references during active games
         Player player1Final = playerRepository.findById(player1.getId()).orElseThrow();

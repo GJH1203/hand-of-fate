@@ -3,22 +3,37 @@ package com.cardgame;
 import com.cardgame.dto.online.CreateMatchRequest;
 import com.cardgame.dto.online.JoinMatchRequest;
 import com.cardgame.dto.online.MatchResponse;
+import com.cardgame.model.Player;
+import com.cardgame.repository.GameRepository;
+import com.cardgame.repository.PlayerRepository;
+import com.cardgame.service.player.PlayerService;
+import com.cardgame.support.IntegrationTestBase;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest
+/**
+ * The online match flow: one player opens a match, another joins it, both can read the
+ * state.
+ *
+ * <p>This used to hardcode two player ids with a comment hoping they existed in whatever
+ * database happened to be attached, so it never got past the first request. It now
+ * creates the players it needs.
+ */
 @AutoConfigureMockMvc
-public class OnlineGameBackendTest {
+@TestPropertySource(properties = "spring.data.mongodb.database=card_game_test_onlinegame")
+public class OnlineGameBackendTest extends IntegrationTestBase {
 
     @Autowired
     private MockMvc mockMvc;
@@ -26,56 +41,76 @@ public class OnlineGameBackendTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private PlayerService playerService;
+
+    @Autowired
+    private PlayerRepository playerRepository;
+
+    @Autowired
+    private GameRepository gameRepository;
+
+    private String hostId;
+    private String guestId;
+
+    @BeforeEach
+    void setUp() {
+        gameRepository.deleteAll();
+        playerRepository.deleteAll();
+        hostId = createPlayer("OnlineHost");
+        guestId = createPlayer("OnlineGuest");
+    }
+
+    private String createPlayer(String name) {
+        Player player = playerService.createPlayer(
+                name, name.toLowerCase() + "@example.test", "supabase-" + name.toLowerCase(), null);
+        playerService.createDefaultDeckForPlayer(player.getId());
+        return player.getId();
+    }
+
     @Test
     public void testOnlineGameFlow() throws Exception {
-        // Assuming these player IDs exist in your test database
-        String player1Id = "68437cb9cd65ec5dbbfa929d";
-        String player2Id = "68437caccd65ec5dbbfa929c";
-
-        // Step 1: Create a match
-        CreateMatchRequest createRequest = new CreateMatchRequest(player1Id);
-        
-        MvcResult createResult = mockMvc.perform(post("/api/online-game/create")
+        MvcResult createResult = performAsync(post("/api/online-game/create")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(createRequest)))
-                .andExpect(status().isOk())
-                .andReturn();
+                .content(objectMapper.writeValueAsString(new CreateMatchRequest(hostId))));
 
-        MatchResponse createResponse = objectMapper.readValue(
-            createResult.getResponse().getContentAsString(), 
-            MatchResponse.class
-        );
-        
-        assertNotNull(createResponse.getMatchId());
-        assertEquals("WAITING", createResponse.getStatus());
-        System.out.println("Created match: " + createResponse.getMatchId());
+        MatchResponse created = readMatch(createResult);
+        assertNotNull(created.getMatchId());
+        assertEquals("WAITING", created.getStatus());
 
-        // Step 2: Join the match
-        String matchId = createResponse.getMatchId();
         JoinMatchRequest joinRequest = new JoinMatchRequest();
-        joinRequest.setPlayerId(player2Id);
+        joinRequest.setPlayerId(guestId);
 
-        MvcResult joinResult = mockMvc.perform(post("/api/online-game/join/" + matchId)
+        MatchResponse joined = readMatch(performAsync(post("/api/online-game/join/" + created.getMatchId())
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(joinRequest)))
-                .andExpect(status().isOk())
-                .andReturn();
+                .content(objectMapper.writeValueAsString(joinRequest))));
 
-        MatchResponse joinResponse = objectMapper.readValue(
-            joinResult.getResponse().getContentAsString(), 
-            MatchResponse.class
-        );
-        
-        assertEquals("IN_PROGRESS", joinResponse.getStatus());
-        assertNotNull(joinResponse.getGameId());
-        System.out.println("Joined match successfully, game ID: " + joinResponse.getGameId());
+        assertEquals("IN_PROGRESS", joined.getStatus());
+        assertNotNull(joined.getGameId());
 
-        // Step 3: Get match state
-        mockMvc.perform(get("/api/online-game/match/" + matchId + "/state"))
+        mockMvc.perform(get("/api/online-game/match/" + created.getMatchId() + "/state"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").exists())
-                .andExpect(jsonPath("$.gameState").value("INITIALIZED"));
+                .andExpect(jsonPath("$.gameState").value("IN_PROGRESS"));
+    }
 
-        System.out.println("Test completed successfully!");
+    /**
+     * These endpoints answer with a {@code CompletableFuture}, so the first exchange
+     * usually only starts the request and the body comes back empty without a second
+     * dispatch — which is what this test used to trip over once it got that far. A future
+     * that has already completed skips the async path entirely, so both are handled.
+     */
+    private MvcResult performAsync(MockHttpServletRequestBuilder request) throws Exception {
+        MvcResult result = mockMvc.perform(request).andReturn();
+        if (result.getRequest().isAsyncStarted()) {
+            result.getAsyncResult();
+            result = mockMvc.perform(asyncDispatch(result)).andReturn();
+        }
+        status().isOk().match(result);
+        return result;
+    }
+
+    private MatchResponse readMatch(MvcResult result) throws Exception {
+        return objectMapper.readValue(result.getResponse().getContentAsString(), MatchResponse.class);
     }
 }
