@@ -81,6 +81,8 @@ function UnifiedAuthPageContent() {
     if (searchParams.get('verified') === 'true') {
       setMessage('Email verified. You can sign in now.');
       setIsSignUp(false);
+    } else if (searchParams.get('expired') === '1') {
+      setError('Your session expired. Sign in again to pick up where you left off.');
     }
   }, [searchParams]);
 

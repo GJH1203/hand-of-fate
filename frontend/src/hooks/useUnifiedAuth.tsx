@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { unifiedAuthService, UnifiedAuthResponse } from '@/services/unifiedAuthService';
 import { SESSION_EXPIRED_EVENT, resetSessionExpiry } from '@/lib/apiClient';
 import { gameWebSocketService } from '@/services/gameWebSocketService';
@@ -29,6 +29,8 @@ export function UnifiedAuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<UnifiedAuthContextType['user']>(null);
     const [supabaseUser, setSupabaseUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    /** So a session that dies is told apart from never having had one. */
+    const wasSignedIn = useRef(false);
 
     useEffect(() => {
         // Check if user is already authenticated on mount
@@ -49,6 +51,7 @@ export function UnifiedAuthProvider({ children }: { children: ReactNode }) {
                             const validationResult = await unifiedAuthService.validateNakamaToken(storedAuth.token);
                             
                             if (validationResult.isSuccess) {
+                                wasSignedIn.current = true;
                                 setIsAuthenticated(true);
                                 setUser({
                                     playerId: storedAuth.playerId,
@@ -65,6 +68,7 @@ export function UnifiedAuthProvider({ children }: { children: ReactNode }) {
                             }
                         } else {
                             // No Nakama token, just set basic user info
+                            wasSignedIn.current = true;
                             setIsAuthenticated(true);
                             setUser({
                                 playerId: storedAuth.playerId,
@@ -90,10 +94,20 @@ export function UnifiedAuthProvider({ children }: { children: ReactNode }) {
         // Listen for Supabase auth changes
         const { data: { subscription } } = unifiedAuthService.onAuthStateChange((user) => {
             setSupabaseUser(user);
-            if (!user) {
-                // User signed out
-                setIsAuthenticated(false);
-                setUser(null);
+            if (user) return;
+
+            // Supabase dropped the session — an expiry its refresh could not repair, or
+            // a sign-out somewhere else. This used to only flip the flag, and the pages
+            // reacted by pushing to /login with the app's own keys still in storage and
+            // nothing said. Being returned to a sign-in form mid-duel with no
+            // explanation reads as the application losing your game.
+            setIsAuthenticated(false);
+            setUser(null);
+            if (wasSignedIn.current) {
+                wasSignedIn.current = false;
+                gameWebSocketService.disconnect();
+                unifiedAuthService.clearAuthData();
+                router.push('/login?expired=1');
             }
         });
 
@@ -116,6 +130,7 @@ export function UnifiedAuthProvider({ children }: { children: ReactNode }) {
             // A fresh session should be able to announce its own expiry later.
             resetSessionExpiry();
             unifiedAuthService.storeAuthData(authData);
+            wasSignedIn.current = true;
             setIsAuthenticated(true);
             setUser({
                 playerId: authData.playerId,
@@ -132,6 +147,7 @@ export function UnifiedAuthProvider({ children }: { children: ReactNode }) {
         // tab acts as themselves over somebody else's connection, and every match
         // action is refused by the server.
         gameWebSocketService.disconnect();
+        wasSignedIn.current = false;
         await unifiedAuthService.signOut();
         setIsAuthenticated(false);
         setUser(null);
