@@ -37,6 +37,15 @@ public interface GameRepository extends MongoRepository<GameModel, String> {
     Optional<GameModel> findByNakamaMatchId(String nakamaMatchId);
 
     /**
+     * Whether any game already carries this Nakama match id.
+     *
+     * <p>Used when handing out a match code, so that two games can never share one.
+     * {@link #findByNakamaMatchId} is the reason it matters: it expects a single result
+     * and throws if it finds two, which takes both games with it.
+     */
+    boolean existsByNakamaMatchId(String nakamaMatchId);
+
+    /**
      * Delete every game this player took part in, whatever state it is in.
      *
      * <p>A game names its participants and nothing else names the game, so a game whose

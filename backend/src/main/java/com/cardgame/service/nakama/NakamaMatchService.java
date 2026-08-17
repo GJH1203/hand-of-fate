@@ -51,6 +51,9 @@ public class NakamaMatchService {
     /** What a game's nakamaMatchId is prefixed with. Written once, read by getMatchState. */
     private static final String NAKAMA_MATCH_ID_PREFIX = "nakama_";
 
+    /** How many codes to draw before giving up on finding an unused one. */
+    private static final int MATCH_ID_ATTEMPTS = 20;
+
     // Store active socket connections
     private final Map<String, SocketClient> activeSockets = new ConcurrentHashMap<>();
     
@@ -491,8 +494,36 @@ public class NakamaMatchService {
     
     // Helper methods
     
+    /**
+     * A match code nobody else is using.
+     *
+     * <p>Six hex characters is 16.7 million codes, which sounds ample and is not: codes
+     * are never reused or retired, so by the birthday bound two games share one after
+     * about 4,800 have ever been created, with even odds. That is not a theoretical
+     * number — a load test making 850 games a run hit it, and when it did, the duplicate
+     * broke <em>both</em> games, because looking a match up expects one result and throws
+     * when it finds two.
+     *
+     * <p>The code stays six characters because a player reads it out to a friend. What
+     * changes is that it is now checked before being handed out, against the matches in
+     * memory and against every game ever saved. With a few thousand games in a space of
+     * 16.7 million, a retry is rare; the loop is bounded so that a genuinely exhausted
+     * space fails loudly rather than spinning.
+     */
     private String generateMatchId() {
-        return UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+        for (int attempt = 0; attempt < MATCH_ID_ATTEMPTS; attempt++) {
+            String candidate = UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+            if (matchMetadata.containsKey(candidate)) {
+                continue;
+            }
+            if (gameRepository.existsByNakamaMatchId(NAKAMA_MATCH_ID_PREFIX + candidate)) {
+                logger.info("Match code {} is already taken by a saved game, drawing another", candidate);
+                continue;
+            }
+            return candidate;
+        }
+        throw new IllegalStateException(
+                "Could not find an unused match code in " + MATCH_ID_ATTEMPTS + " attempts");
     }
 
     private String deckIdOf(Player player) {
