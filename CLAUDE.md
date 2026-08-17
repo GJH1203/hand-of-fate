@@ -125,10 +125,6 @@ names `funnygames.duckdns.org`, a host that has not existed for months. Vercel's
 own environment variables override it in the deployed build, so production is
 unaffected — but a local `npm run build` bakes the dead address in.
 
-**Orphaned games.** `DELETE /players/{playerId}` removes the player and leaves
-their games behind, holding ids that no longer resolve. `AdminController` has a
-delete that cleans up properly; the self-service one does not.
-
 **Most tests still need infrastructure.** The suite runs in CI now, and the
 security tests are plain unit tests, but everything else is still
 `@SpringBootTest` against a live MongoDB — there is no Testcontainers. Each
