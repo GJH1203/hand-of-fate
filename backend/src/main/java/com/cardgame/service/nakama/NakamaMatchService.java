@@ -48,6 +48,9 @@ public class NakamaMatchService {
     @Lazy  // Use @Lazy to avoid circular dependency
     private GameWebSocketHandler gameWebSocketHandler;
     
+    /** What a game's nakamaMatchId is prefixed with. Written once, read by getMatchState. */
+    private static final String NAKAMA_MATCH_ID_PREFIX = "nakama_";
+
     // Store active socket connections
     private final Map<String, SocketClient> activeSockets = new ConcurrentHashMap<>();
     
@@ -188,7 +191,7 @@ public class NakamaMatchService {
                 
                 // Set online mode fields
                 game.setGameMode(GameMode.ONLINE);
-                game.setNakamaMatchId("nakama_" + matchId);
+                game.setNakamaMatchId(NAKAMA_MATCH_ID_PREFIX + matchId);
                 
                 // Initialize player connections
                 Map<String, ConnectionStatus> connections = new HashMap<>();
@@ -325,12 +328,11 @@ public class NakamaMatchService {
      * @return The current game state
      */
     public GameModel getMatchState(String matchId) {
-        // Find game by Nakama match ID
-        Optional<GameModel> game = gameRepository.findAll().stream()
-            .filter(g -> g.getNakamaMatchId() != null && g.getNakamaMatchId().contains(matchId))
-            .findFirst();
-            
-        return game.orElseThrow(() -> new IllegalArgumentException("Match not found"));
+        // This used to read every game in the collection into the JVM and filter there,
+        // and isPlayerInMatch calls it on every join, so the cost grew with the number of
+        // games ever played. The stored value is exactly "nakama_" + matchId.
+        return gameRepository.findByNakamaMatchId(NAKAMA_MATCH_ID_PREFIX + matchId)
+            .orElseThrow(() -> new IllegalArgumentException("Match not found"));
     }
     
     /**
