@@ -106,10 +106,9 @@ class ApiSecurityIntegrationTest extends IntegrationTestBase {
     @Test
     @DisplayName("a player cannot read somebody else's record")
     void refusesReadingAnotherPlayer() throws Exception {
+        // The hand endpoint that used to be checked here as well is gone: a hand belongs
+        // to a game, not to a player, so there is nothing for it to answer with.
         mockMvc.perform(get("/players/" + bobPlayerId).header(HttpHeaders.AUTHORIZATION, bearer(ALICE_SUPABASE_ID)))
-                .andExpect(status().isForbidden());
-        mockMvc.perform(get("/players/game/players/" + bobPlayerId + "/hand")
-                        .header(HttpHeaders.AUTHORIZATION, bearer(ALICE_SUPABASE_ID)))
                 .andExpect(status().isForbidden());
 
         mockMvc.perform(get("/players/" + alicePlayerId).header(HttpHeaders.AUTHORIZATION, bearer(ALICE_SUPABASE_ID)))

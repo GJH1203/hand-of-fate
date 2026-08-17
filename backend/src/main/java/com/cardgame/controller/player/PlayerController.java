@@ -34,18 +34,11 @@ public class PlayerController {
     // Removed auto-creation endpoint to prevent unauthorized player creation
     // Players should only be created through proper authentication flow
 
-    /** A player's own record. It carries their hand, so it is not somebody else's to read. */
+    /** A player's own record. It carries their deck, so it is not somebody else's to read. */
     @GetMapping("/{playerId}")
     public ResponseEntity<PlayerDto> getPlayer(@PathVariable String playerId) {
         currentUser.requireSelf(playerId);
         return ResponseEntity.ok(playerService.getPlayerDto(playerId));
-    }
-
-    @GetMapping("/game/players/{playerId}/hand")
-    public ResponseEntity<List<Card>> getPlayerHand(@PathVariable String playerId) {
-        currentUser.requireSelf(playerId);
-        Player player = playerService.getPlayer(playerId);
-        return ResponseEntity.ok(player.getHand());
     }
 
     /**

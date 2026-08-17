@@ -7,10 +7,6 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 @Document(collection = "players")
 public class Player {
@@ -30,21 +26,13 @@ public class Player {
     @Indexed(unique = true)
     private String supabaseUserId;
 
+    /**
+     * The deck this player owns and plays with. A game no longer touches it: it reads the
+     * cards at the start and keeps the hand on itself, so nothing here changes for the
+     * length of a game and there is nothing to restore at the end of one.
+     */
     @DBRef(lazy = true)
     private Deck currentDeck;
-
-    @DBRef(lazy = true)
-    @Field("original_deck")
-    private Deck originalDeck;
-
-    @Field("hand")
-    private List<Card> hand = new ArrayList<>();
-
-    @Field("score")
-    private int score;
-
-    @Field("placed_cards")
-    private Map<String, Card> placedCards = new HashMap<>();
 
     @Field("lifetime_score")
     private int lifetimeScore = 0;
@@ -85,38 +73,6 @@ public class Player {
 
     public void setCurrentDeck(Deck currentDeck) {
         this.currentDeck = currentDeck;
-    }
-
-    public Deck getOriginalDeck() {
-        return originalDeck;
-    }
-
-    public void setOriginalDeck(Deck originalDeck) {
-        this.originalDeck = originalDeck;
-    }
-
-    public List<Card> getHand() {
-        return hand;
-    }
-
-    public void setHand(List<Card> hand) {
-        this.hand = hand;
-    }
-
-    public int getScore() {
-        return score;
-    }
-
-    public void setScore(int score) {
-        this.score = score;
-    }
-
-    public Map<String, Card> getPlacedCards() {
-        return placedCards;
-    }
-
-    public void setPlacedCards(Map<String, Card> placedCards) {
-        this.placedCards = placedCards;
     }
 
     public int getLifetimeScore() {

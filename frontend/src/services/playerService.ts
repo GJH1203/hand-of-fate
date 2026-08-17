@@ -1,11 +1,8 @@
-import {Card} from "@/types/game";
 import {apiFetch} from "@/lib/apiClient";
 
 export interface PlayerDto {
     id: string;
     name: string;
-    score: number;
-    handSize: number;
     lifetimeScore: number;
     playerCardCounts: Record<string, number>;
     currentDeck?: {  // Make this optional since it's not in the DTO
@@ -46,20 +43,6 @@ class PlayerService {
             return await response.json();
         } catch (error) {
             throw new Error(`Error fetching player: ${error instanceof Error ? error.message : String(error)}`);
-        }
-    }
-
-    async getPlayerHand(playerId: string): Promise<Array<Card>> {
-        try {
-            const response = await apiFetch(`/game/players/${playerId}/hand`);
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch player hand');
-            }
-
-            return await response.json();
-        } catch (error) {
-            throw new Error(`Error fetching player hand: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
 

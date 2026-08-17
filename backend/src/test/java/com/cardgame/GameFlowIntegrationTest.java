@@ -397,18 +397,13 @@ class GameFlowIntegrationTest extends IntegrationTestBase {
         assertDeckUndisturbed(originalDeck1Id, originalDeck2Id);
     }
 
-    /**
-     * Asserts that both players still own the deck they started with, and that neither is
-     * holding a deck on behalf of a game.
-     */
+    /** Asserts that both players still own the deck they started with. */
     private void assertDeckUndisturbed(String deck1Id, String deck2Id) {
         Player stored1 = playerRepository.findById(player1.getId()).orElseThrow();
         Player stored2 = playerRepository.findById(player2.getId()).orElseThrow();
 
         assertEquals(deck1Id, stored1.getCurrentDeck().getId());
         assertEquals(deck2Id, stored2.getCurrentDeck().getId());
-        assertNull(stored1.getOriginalDeck());
-        assertNull(stored2.getOriginalDeck());
     }
 
     @Test
