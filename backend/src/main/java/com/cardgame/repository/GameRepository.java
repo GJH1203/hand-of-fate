@@ -25,4 +25,16 @@ public interface GameRepository extends MongoRepository<GameModel, String> {
      */
     Optional<GameModel> findFirstByPlayerIdsContainingAndGameStateInOrderByUpdatedAtDesc(
         String playerId, List<GameState> states);
+
+    /**
+     * Delete every game this player took part in, whatever state it is in.
+     *
+     * <p>A game names its participants and nothing else names the game, so a game whose
+     * player has been deleted is unreachable: it can never be listed, resumed or scored,
+     * and it holds an id that no longer resolves.
+     *
+     * @param playerId The player ID to search for
+     * @return how many games were deleted
+     */
+    long deleteByPlayerIdsContaining(String playerId);
 }
