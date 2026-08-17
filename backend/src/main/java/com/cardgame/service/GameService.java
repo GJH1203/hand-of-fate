@@ -327,7 +327,8 @@ public class GameService {
         }
 
         // Check if game is over (for regular moves)
-        if (isGameOver(gameModel)) {
+        boolean completedByThisMove = isGameOver(gameModel);
+        if (completedByThisMove) {
             finalizeGame(gameModel);
         } else {
             handleTurnSwitching(gameModel);
@@ -337,7 +338,11 @@ public class GameService {
         gameModel.setUpdatedAt(Instant.now());
 
         // Save and return updated game state
-        return gameRepository.save(gameModel);
+        GameModel saved = gameRepository.save(gameModel);
+        if (completedByThisMove) {
+            recordGameCompleted(saved);
+        }
+        return saved;
     }
 
     private GameModel handleWinRequestResponse(GameModel gameModel, PlayerAction action) {
@@ -372,7 +377,11 @@ public class GameService {
         gameModel.setUpdatedAt(Instant.now());
 
         // Save and return updated game state
-        return gameRepository.save(gameModel);
+        GameModel saved = gameRepository.save(gameModel);
+        if (accepted) {
+            recordGameCompleted(saved);
+        }
+        return saved;
     }
 
     private boolean isGameOver(GameModel gameModel) {
@@ -421,16 +430,14 @@ public class GameService {
     /**
      * Finalizes a game when it's over, calculating scores and determining the winner.
      *
+     * <p>Changes the game and nothing else. Everything with an effect outside this
+     * document waits for {@link #recordGameCompleted}, once the save has gone through.
+     *
      * @param gameModel The game model to finalize
      */
     private void finalizeGame(GameModel gameModel) {
         // Set game state to completed
         gameModel.setGameState(GameState.COMPLETED);
-        
-        // Track metrics
-        gameCompletedCounter.increment();
-        metricsConfig.decrementActiveGames();
-        logger.info("Game completed with ID: {}", gameModel.getId());
 
         Map<Integer, ScoreCalculator.ColumnScore> columnScores = ScoreCalculator.calculateColumnScores(gameModel);
 
@@ -448,10 +455,19 @@ public class GameService {
         String winnerId = ScoreCalculator.determineWinner(gameModel);
         gameModel.setWinnerId(winnerId);
         gameModel.setTie(winnerId == null);
+    }
 
-        // A finished game touches its players once each, for the one thing that genuinely
-        // belongs to them and outlives the game.
-        settleLifetimeScores(gameModel, winnerId);
+    /**
+     * Everything a completed game owes the world outside its own document, run once the
+     * game has been saved. A finished game touches its players once each, for the one
+     * thing that genuinely belongs to them and outlives the game.
+     */
+    private void recordGameCompleted(GameModel gameModel) {
+        gameCompletedCounter.increment();
+        metricsConfig.decrementActiveGames();
+        logger.info("Game completed with ID: {}", gameModel.getId());
+
+        settleLifetimeScores(gameModel, gameModel.getWinnerId());
     }
 
     /**
