@@ -6,6 +6,7 @@ import com.cardgame.exception.game.GameNotFoundException;
 import com.cardgame.exception.game.InvalidMoveException;
 import com.cardgame.model.Board;
 import com.cardgame.model.Card;
+import com.cardgame.model.ConnectionStatus;
 import com.cardgame.model.Deck;
 import com.cardgame.model.GameModel;
 import com.cardgame.model.GameState;
@@ -25,6 +26,10 @@ import org.checkerframework.checker.units.qual.C;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -44,6 +49,7 @@ public class GameService {
     private static final int VICTORY_BONUS = 10;
 
     private final GameRepository gameRepository;
+    private final MongoTemplate mongoTemplate;
     private final PlayerService playerService;
     private final CardService cardService;
     private final DeckService deckService;
@@ -56,6 +62,7 @@ public class GameService {
     private final Counter gameCompletedCounter;
 
     public GameService(GameRepository gameRepository,
+                       MongoTemplate mongoTemplate,
                        PlayerService playerService,
                        CardService cardService,
                        DeckService deckService,
@@ -67,6 +74,7 @@ public class GameService {
                        Counter gameCreatedCounter,
                        Counter gameCompletedCounter) {
         this.gameRepository = gameRepository;
+        this.mongoTemplate = mongoTemplate;
         this.playerService = playerService;
         this.cardService = cardService;
         this.deckService = deckService;
@@ -81,6 +89,32 @@ public class GameService {
 
     public GameDto convertToDto(GameModel gameModel) {
         return convertToDto(gameModel, gameModel.getCurrentPlayerId());
+    }
+
+    /**
+     * Records whether a player's socket is attached, without touching anything else.
+     *
+     * <p>A targeted update rather than a read, a change and a save. Connection status is
+     * not part of the position — it does not conflict with a move and it has no business
+     * losing to one, or making one lose. Doing it the other way round made both players
+     * leaving a finished match at the same moment write over each other, which is exactly
+     * what the version check is for and exactly what it should not have been asked to
+     * arbitrate.
+     */
+    public void recordConnectionStatus(String gameId, String playerId, ConnectionStatus status) {
+        touch(gameId, new Update().set("playerConnections." + playerId, status));
+    }
+
+    /** Notes that the game was heard from, and nothing more. */
+    public void touchLastSync(String gameId) {
+        touch(gameId, new Update());
+    }
+
+    private void touch(String gameId, Update update) {
+        mongoTemplate.updateFirst(
+                Query.query(Criteria.where("_id").is(gameId)),
+                update.set("lastSyncTime", Instant.now()),
+                GameModel.class);
     }
 
     /**

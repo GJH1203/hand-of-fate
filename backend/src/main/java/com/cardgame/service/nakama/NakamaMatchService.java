@@ -234,9 +234,9 @@ public class NakamaMatchService {
                 // Update game state based on action
                 // This is simplified - in production you'd process different action types
                 if ("PLACE_CARD".equals(actionType)) {
-                    // Update game state
-                    game.setLastSyncTime(Instant.now());
-                    gameRepository.save(game);
+                    // A timestamp, not a move: moves arrive over the WebSocket. Written on
+                    // its own so it neither loses to a move in flight nor makes one lose.
+                    gameService.touchLastSync(game.getId());
                 }
                 
                 // Game state update will be handled by WebSocket handler
@@ -324,9 +324,7 @@ public class NakamaMatchService {
             try {
                 GameModel game = getMatchState(matchId);
                 if (game.getPlayerConnections() != null) {
-                    game.getPlayerConnections().put(playerId, ConnectionStatus.DISCONNECTED);
-                    game.setLastSyncTime(Instant.now());
-                    gameRepository.save(game);
+                    gameService.recordConnectionStatus(game.getId(), playerId, ConnectionStatus.DISCONNECTED);
                 }
             } catch (IllegalArgumentException e) {
                 // Game doesn't exist in database yet - this is ok for matches that haven't started
