@@ -3,14 +3,57 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert } from '@/components/ui/alert';
+import { BookOpen, Lock, Mail, ShieldCheck, User } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Field, Input } from '@/components/ui/input';
+import { InlineAlert } from '@/components/ui/inline-alert';
+import { Panel } from '@/components/ui/panel';
+import { Spinner } from '@/components/ui/spinner';
 import { unifiedAuthService } from '@/services/unifiedAuthService';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
-import { Sparkles, Shield, Mail, Lock, User, HelpCircle } from 'lucide-react';
-import ParticleEffect from '@/components/effects/ParticleEffect';
+import { humanizeAuthError } from '@/lib/authErrors';
 import GameTutorial from '@/components/tutorial/GameTutorial';
+
+/** The two card silhouettes drifting behind the form. Decoration, kept quiet. */
+function DriftingCards() {
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden opacity-[0.06]">
+      <div
+        className="absolute left-[14%] top-[22%] h-40 w-28 rounded-lg border border-gold-400 bg-surface-2"
+        style={{ transform: 'rotate(-11deg)', animation: 'drift 14s ease-in-out infinite' }}
+      />
+      <div
+        className="absolute right-[13%] bottom-[20%] h-40 w-28 rounded-lg border border-gold-400 bg-surface-2"
+        style={{
+          transform: 'rotate(9deg)',
+          animation: 'drift 17s ease-in-out infinite',
+          animationDelay: '2.5s',
+        }}
+      />
+    </div>
+  );
+}
+
+function BrandMark() {
+  return (
+    <div className="mb-8 text-center">
+      <Image
+        src="/images/mystical-portal.png"
+        alt=""
+        width={96}
+        height={96}
+        priority
+        className="mx-auto"
+        style={{ filter: 'drop-shadow(0 0 24px rgba(86,140,230,0.35))' }}
+      />
+      <h1 className="type-display text-gold-gradient mt-5">HAND OF FATE</h1>
+      <div className="rule-gold mx-auto mt-4 w-40" />
+      <p className="mt-3 text-[15px] text-ink-mid">Embrace Your Mystical Destiny</p>
+    </div>
+  );
+}
 
 function UnifiedAuthPageContent() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -28,52 +71,46 @@ function UnifiedAuthPageContent() {
   const searchParams = useSearchParams();
   const { login: authLogin, isAuthenticated } = useUnifiedAuth();
 
-  // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
       router.push('/');
     }
   }, [isAuthenticated, router]);
 
-  // Handle post-verification redirect
   useEffect(() => {
-    const checkVerification = async () => {
-      const verified = searchParams.get('verified');
-      if (verified === 'true') {
-        setMessage('Email verified successfully! You can now sign in.');
-        setIsSignUp(false); // Switch to login mode
-      }
-    };
-
-    checkVerification();
+    if (searchParams.get('verified') === 'true') {
+      setMessage('Email verified. You can sign in now.');
+      setIsSignUp(false);
+    }
   }, [searchParams]);
 
-  // Check if Supabase is configured
   if (!isSupabaseConfigured) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle>⚠️ Configuration Required</CardTitle>
-            <CardDescription>
-              Supabase credentials are required for authentication
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Alert>
-              <div className="space-y-2">
-                <p className="font-medium">To set up Supabase:</p>
-                <ol className="list-decimal list-inside text-sm space-y-1">
-                  <li>Create a project at <a href="https://supabase.com" target="_blank" className="text-blue-600 hover:underline">supabase.com</a></li>
-                  <li>Copy your Project URL and anon key</li>
-                  <li>Create <code className="bg-gray-100 px-1 rounded">.env.local</code> file in frontend/</li>
-                  <li>Add your credentials (see .env.local.example)</li>
-                </ol>
-              </div>
-            </Alert>
-          </CardContent>
-        </Card>
-      </div>
+      <main className="flex min-h-dvh items-center justify-center p-4">
+        <Panel className="w-full max-w-md p-8">
+          <h1 className="type-h2 text-ink-hi">Configuration required</h1>
+          <p className="type-small mt-2 text-ink-low">
+            Supabase credentials are needed before anyone can sign in.
+          </p>
+          <ol className="mt-5 list-decimal space-y-2 pl-5 text-sm text-ink-mid">
+            <li>
+              Create a project at{' '}
+              <a
+                href="https://supabase.com"
+                target="_blank"
+                rel="noreferrer"
+                className="text-arcane-300 hover:underline"
+              >
+                supabase.com
+              </a>
+            </li>
+            <li>Copy the project URL and the anon key</li>
+            <li>
+              Put them in <code className="rounded bg-surface-2 px-1.5 py-0.5">frontend/.env.local</code>
+            </li>
+          </ol>
+        </Panel>
+      </main>
     );
   }
 
@@ -83,39 +120,34 @@ function UnifiedAuthPageContent() {
     setMessage('');
 
     if (!email || !password || !username) {
-      setError('Please fill in all fields');
+      setError('Fill in every field to continue.');
       return;
     }
-
     if (password.length < 6) {
-      setError('Password must be at least 6 characters');
+      setError('Password must be at least 6 characters.');
       return;
     }
 
     setIsLoading(true);
-
     try {
       const result = await unifiedAuthService.signUp(email, password, username);
-      
+
       if (result.alreadyRegistered) {
-        // Not a failure worth a red banner — they have an account, they are just on the
-        // wrong form. Send them to the other one with the address kept.
+        // Not a failure worth a red banner — they have an account, they are just on
+        // the wrong form. Send them to the other one with the address kept.
         setIsSignUp(false);
         setPassword('');
-        setMessage(result.error || 'That email already has an account. Sign in below.');
+        setMessage('That email already has an account. Sign in below.');
       } else if (!result.success) {
-        setError(result.error || 'Sign up failed');
+        setError(humanizeAuthError(result.error));
       } else if (result.needsEmailVerification) {
         setPendingVerification(true);
         setVerificationEmail(email);
-        setMessage(result.message || 'Please check your email and click the verification link');
       } else {
-        setMessage('Account created successfully!');
-        // Shouldn't happen in normal flow as email verification is required
         router.push('/');
       }
     } catch (err: any) {
-      setError(err.message || 'An unexpected error occurred');
+      setError(humanizeAuthError(err?.message));
     } finally {
       setIsLoading(false);
     }
@@ -127,27 +159,21 @@ function UnifiedAuthPageContent() {
     setMessage('');
 
     if (!email || !password) {
-      setError('Please fill in all fields');
+      setError('Fill in every field to continue.');
       return;
     }
 
     setIsLoading(true);
-
     try {
       const result = await unifiedAuthService.signIn(email, password);
-      
       if (!result.success) {
-        setError(result.error || 'Sign in failed');
-      } else {
-        setMessage('Signed in successfully! Redirecting...');
-        // Update auth context with the login data
-        if (result.data) {
-          authLogin(result.data);
-        }
-        // The redirect will happen automatically via the useEffect when isAuthenticated becomes true
+        setError(humanizeAuthError(result.error));
+      } else if (result.data) {
+        authLogin(result.data);
+        // The redirect happens in the effect above once isAuthenticated flips.
       }
     } catch (err: any) {
-      setError(err.message || 'An unexpected error occurred');
+      setError(humanizeAuthError(err?.message));
     } finally {
       setIsLoading(false);
     }
@@ -155,344 +181,202 @@ function UnifiedAuthPageContent() {
 
   const handleResendVerification = async () => {
     if (!verificationEmail) return;
-    
+
     setIsLoading(true);
     setError('');
     setMessage('');
-    
     try {
       const result = await unifiedAuthService.resendVerification(verificationEmail);
       if (result.error) {
-        setError(result.error.message || 'Failed to resend verification');
+        setError(humanizeAuthError(result.error.message));
       } else {
-        setMessage('Verification email sent! Please check your inbox.');
+        setMessage('Verification email sent. Check your inbox.');
       }
-    } catch (err) {
-      setError('Failed to resend verification email');
+    } catch {
+      setError(humanizeAuthError(null));
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Pending verification screen
   if (pendingVerification) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 relative overflow-hidden flex items-center justify-center p-4">
-        {/* Animated background effects */}
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(120,80,200,0.3)_0%,transparent_50%)]"></div>
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(80,120,200,0.3)_0%,transparent_50%)]"></div>
-        </div>
-        
-        <ParticleEffect />
-        
-        <Card className="w-full max-w-md bg-black/40 backdrop-blur-xl border border-purple-500/30 shadow-2xl relative z-10">
-          <CardHeader className="text-center">
-            <div className="mx-auto w-20 h-20 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center mb-4">
-              <Mail className="w-10 h-10 text-white" aria-hidden="true" />
-            </div>
-            <CardTitle className="text-2xl font-bold text-purple-100">Mystical Verification Required</CardTitle>
-            <CardDescription className="text-purple-300/80">
-              A magical link has been sent to {verificationEmail}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {message && (
-              <Alert className="border-emerald-500/50 bg-emerald-900/20 text-emerald-300">
-                <p>{message}</p>
-              </Alert>
-            )}
-            
-            {error && (
-              <Alert className="border-red-500/50 bg-red-900/20 text-red-300">
-                <p>{error}</p>
-              </Alert>
-            )}
+      <main className="relative flex min-h-dvh items-center justify-center p-4">
+        <DriftingCards />
+        <Panel className="relative z-10 w-full max-w-[420px] p-8 text-center">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-gold-400/40 bg-gold-400/10">
+            <Mail size={22} strokeWidth={1.75} className="text-gold-300" />
+          </div>
+          <h1 className="type-h2 mt-5 text-ink-hi">Check your inbox</h1>
+          <p className="type-small mt-2 text-ink-low">
+            A verification link is on its way to {verificationEmail}.
+          </p>
 
-            <div className="text-center space-y-4">
-              <p className="text-sm text-purple-200/80">
-                Haven't received the email? Check your spam folder or request another.
-              </p>
-              
-              <button
-                onClick={handleResendVerification}
-                disabled={isLoading}
-                className="w-full px-6 py-3 rounded-lg font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group bg-gradient-to-br from-purple-800/80 via-purple-700/80 to-purple-900/80 hover:from-purple-700/90 hover:via-purple-600/90 hover:to-purple-800/90 text-purple-100 border border-purple-500/50 shadow-lg shadow-purple-900/50"
-              >
-                <span className="relative z-10">
-                  {isLoading ? 'Sending...' : 'Resend Verification Email'}
-                </span>
-                <div className="absolute inset-0 bg-gradient-to-t from-transparent via-purple-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              </button>
+          {message && (
+            <InlineAlert tone="success" className="mt-5 text-left">
+              {message}
+            </InlineAlert>
+          )}
+          {error && (
+            <InlineAlert tone="danger" className="mt-5 text-left">
+              {error}
+            </InlineAlert>
+          )}
 
-              <button
-                onClick={() => {
-                  setPendingVerification(false);
-                  setVerificationEmail('');
-                  setEmail('');
-                  setPassword('');
-                  setUsername('');
-                  setIsSignUp(false);
-                }}
-                className="text-purple-300 hover:text-purple-100 transition-colors duration-200 text-sm font-medium"
-              >
-                Return to Portal Entrance
-              </button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          <p className="type-small mt-6 text-ink-mid">
+            Nothing yet? Check the spam folder, or send it again.
+          </p>
+
+          <Button
+            variant="primary"
+            size="lg"
+            className="mt-4 w-full"
+            onClick={handleResendVerification}
+            disabled={isLoading}
+          >
+            {isLoading && <Spinner size={16} />}
+            {isLoading ? 'Sending…' : 'Resend verification email'}
+          </Button>
+
+          <Button
+            variant="ghost"
+            className="mt-2 w-full"
+            onClick={() => {
+              setPendingVerification(false);
+              setVerificationEmail('');
+              setPassword('');
+              setUsername('');
+              setIsSignUp(false);
+            }}
+          >
+            Back to sign in
+          </Button>
+        </Panel>
+      </main>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-950 via-purple-900 to-blue-950 relative overflow-hidden flex items-center justify-center p-4">
-      {/* Deep space background effect */}
-      <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(99,102,241,0.15)_0%,transparent_50%)]"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(139,92,246,0.15)_0%,transparent_50%)]"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(217,70,239,0.1)_0%,transparent_70%)]"></div>
-      </div>
-      
-      {/* Floating particles */}
-      <ParticleEffect />
-      
-      {/* Mystical nebula effects */}
-      <div className="absolute top-1/4 -left-20 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
-      
-      {/* Floating mystical cards */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-20 h-28 transform rotate-12 animate-float opacity-20">
-          <div className="w-full h-full bg-gradient-to-br from-amber-600/30 to-orange-700/30 rounded-lg border border-amber-400/30 shadow-lg shadow-amber-600/20">
-            <div className="flex items-center justify-center h-full text-amber-400/50 text-3xl">☀️</div>
-          </div>
-        </div>
-        <div className="absolute top-1/3 right-1/4 w-20 h-28 transform -rotate-12 animate-float opacity-20" style={{ animationDelay: '1s' }}>
-          <div className="w-full h-full bg-gradient-to-br from-purple-600/30 to-indigo-700/30 rounded-lg border border-purple-400/30 shadow-lg shadow-purple-600/20">
-            <div className="flex items-center justify-center h-full text-purple-400/50 text-3xl">⚡</div>
-          </div>
-        </div>
-        <div className="absolute bottom-1/4 right-1/3 w-20 h-28 transform rotate-6 animate-float opacity-20" style={{ animationDelay: '2s' }}>
-          <div className="w-full h-full bg-gradient-to-br from-cyan-600/30 to-blue-700/30 rounded-lg border border-cyan-400/30 shadow-lg shadow-cyan-600/20">
-            <div className="flex items-center justify-center h-full text-cyan-400/50 text-3xl">✨</div>
-          </div>
-        </div>
-        <div className="absolute bottom-1/3 left-1/3 w-20 h-28 transform -rotate-6 animate-float opacity-20" style={{ animationDelay: '1.5s' }}>
-          <div className="w-full h-full bg-gradient-to-br from-emerald-600/30 to-green-700/30 rounded-lg border border-emerald-400/30 shadow-lg shadow-emerald-600/20">
-            <div className="flex items-center justify-center h-full text-emerald-400/50 text-3xl">🍀</div>
-          </div>
-        </div>
-      </div>
-      
-      {/* Main content */}
-      <div className="relative z-10 w-full max-w-md">
-        {/* Mystical portal and cards animation */}
-        <div className="relative mb-8">
-          <div className="relative w-64 h-64 mx-auto">
-            {/* Central mystical portal */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="relative">
-                {/* Subtle background glow behind portal */}
-                <div className="absolute inset-0 -inset-8 blur-3xl opacity-40">
-                  <div className="w-full h-full bg-gradient-to-r from-purple-600/30 via-blue-600/30 to-cyan-600/30 rounded-full animate-pulse"></div>
-                </div>
-                
-                {/* Custom mystical portal image */}
-                <div className="relative">
-                  <Image
-                    src="/images/mystical-portal.png"
-                    alt="Mystical Portal"
-                    width={200}
-                    height={200}
-                    className="relative z-10"
-                    style={{ 
-                      animation: 'portalGlow 4s ease-in-out infinite',
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div className="text-center mt-8">
-            <h1 className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-purple-400 to-cyan-400 mb-2 tracking-wider">
-              HAND OF FATE
-            </h1>
-            <p className="text-purple-200/80 text-lg">Embrace Your Mystical Destiny</p>
-          </div>
-        </div>
-        
-        <Card className="bg-black/40 backdrop-blur-xl border border-purple-500/30 shadow-2xl">
-          <CardHeader className="text-center relative">
-            <div className="absolute inset-0 bg-gradient-to-b from-purple-600/10 to-transparent rounded-t-lg" />
-            <CardTitle className="text-2xl font-bold text-purple-100 relative z-10">
+    <main className="relative flex min-h-dvh items-center justify-center p-4 py-10">
+      <DriftingCards />
+
+      <div className="relative z-10 w-full max-w-[420px]">
+        <BrandMark />
+
+        <Panel className="p-8">
+          <div className="text-center">
+            <h2 className="type-h2 text-ink-hi">
               {isSignUp ? 'Begin Your Journey' : 'Return to the Realm'}
-            </CardTitle>
-            <CardDescription className="text-purple-300/80 relative z-10">
-              {isSignUp 
-                ? 'Create your destiny in the mystical realm' 
-                : 'Your cards await your return'
-              }
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={isSignUp ? handleSignUp : handleSignIn} className="space-y-4">
-              {isSignUp && (
-                <div className="relative">
-                  <label htmlFor="username" className="block text-sm font-medium mb-2 text-purple-200">
-                    <User className="inline w-4 h-4 mr-1" aria-hidden="true" />
-                    Username
-                  </label>
-                  <div className="relative">
-                    <input
-                      id="username"
-                      type="text"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      placeholder="Choose a unique username"
-                      className="w-full px-4 py-3 bg-purple-900/30 border border-purple-500/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent text-purple-100 placeholder-purple-400/50 transition-all duration-200"
-                      required={isSignUp}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 to-blue-600/10 rounded-lg pointer-events-none opacity-0 hover:opacity-100 transition-opacity duration-300" />
-                  </div>
-                </div>
-              )}
+            </h2>
+            <p className="type-small mt-1 text-ink-low">
+              {isSignUp ? 'Create your destiny in the realm' : 'Your cards await your return'}
+            </p>
+          </div>
 
-              <div className="relative">
-                <label htmlFor="email" className="block text-sm font-medium mb-2 text-purple-200">
-                  <Mail className="inline w-4 h-4 mr-1" aria-hidden="true" />
-                  Email
-                </label>
-                <div className="relative">
-                  <input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter your email"
-                    className="w-full px-4 py-3 bg-purple-900/30 border border-purple-500/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent text-purple-100 placeholder-purple-400/50 transition-all duration-200"
-                    required
-                  />
-                </div>
-              </div>
+          <form onSubmit={isSignUp ? handleSignUp : handleSignIn} className="mt-7 space-y-4">
+            {isSignUp && (
+              <Field label="Username" htmlFor="username" icon={User}>
+                <Input
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Choose a unique username"
+                  autoComplete="username"
+                  required
+                />
+              </Field>
+            )}
 
-              <div className="relative">
-                <label htmlFor="password" className="block text-sm font-medium mb-2 text-purple-200">
-                  <Lock className="inline w-4 h-4 mr-1" aria-hidden="true" />
-                  Password
-                </label>
-                <div className="relative">
-                  <input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder={isSignUp ? "Minimum 6 characters" : "Enter your password"}
-                    className="w-full px-4 py-3 bg-purple-900/30 border border-purple-500/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent text-purple-100 placeholder-purple-400/50 transition-all duration-200"
-                    required
-                  />
-                </div>
-                {isSignUp && (
-                  <p className="text-xs text-purple-300/60 mt-2 flex items-center">
-                    <Shield className="w-3 h-3 mr-1" aria-hidden="true" />
-                    Must be at least 6 characters
-                  </p>
-                )}
-              </div>
+            <Field label="Email" htmlFor="email" icon={Mail}>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                autoComplete="email"
+                required
+              />
+            </Field>
 
-              {error && (
-                <Alert className="border-red-500/50 bg-red-900/20 text-red-300">
-                  <p>{error}</p>
-                </Alert>
-              )}
+            <Field
+              label="Password"
+              htmlFor="password"
+              icon={Lock}
+              hint={isSignUp ? 'Must be at least 6 characters' : undefined}
+              hintIcon={ShieldCheck}
+            >
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder={isSignUp ? 'Minimum 6 characters' : 'Enter your password'}
+                autoComplete={isSignUp ? 'new-password' : 'current-password'}
+                required
+              />
+            </Field>
 
-              {message && (
-                <Alert className="border-emerald-500/50 bg-emerald-900/20 text-emerald-300">
-                  <p>{message}</p>
-                </Alert>
-              )}
+            {error && <InlineAlert tone="danger">{error}</InlineAlert>}
+            {message && <InlineAlert tone="success">{message}</InlineAlert>}
 
+            <Button type="submit" variant="primary" size="lg" className="w-full" disabled={isLoading}>
+              {isLoading && <Spinner size={16} />}
+              {isLoading
+                ? isSignUp
+                  ? 'Forging…'
+                  : 'Entering…'
+                : isSignUp
+                  ? 'Forge Your Destiny'
+                  : 'Enter the Realm'}
+            </Button>
+          </form>
+
+          <div className="mt-6 space-y-3 text-center">
+            <p className="type-small text-ink-low">
+              {isSignUp ? 'Already have powers? ' : 'New to this realm? '}
               <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full px-6 py-3 rounded-lg font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group bg-gradient-to-br from-purple-600 via-purple-500 to-blue-600 hover:from-purple-500 hover:via-purple-400 hover:to-blue-500 text-white shadow-lg shadow-purple-900/50 transform hover:scale-[1.02] active:scale-[0.98]"
+                type="button"
+                onClick={() => {
+                  setIsSignUp(!isSignUp);
+                  setError('');
+                  setMessage('');
+                  setPassword('');
+                  if (!isSignUp) setUsername('');
+                }}
+                className="rounded-sm text-arcane-300 transition-colors duration-150 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcane-400"
               >
-                <span className="relative z-10 flex items-center justify-center gap-2">
-                  <Sparkles className="w-5 h-5" aria-hidden="true" />
-                  {isLoading 
-                    ? (isSignUp ? 'Forging Your Destiny...' : 'Opening Portal...')
-                    : (isSignUp ? 'Forge Your Destiny' : 'Enter the Realm')
-                  }
-                </span>
-                <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                {isSignUp ? 'Sign in to your realm' : 'Begin your mystical journey'}
               </button>
-            </form>
+            </p>
 
-            <div className="mt-6 space-y-3">
-              <div className="text-center">
-                <button
-                  onClick={() => {
-                    setIsSignUp(!isSignUp);
-                    setError('');
-                    setMessage('');
-                    setPassword('');
-                    if (!isSignUp) setUsername('');
-                  }}
-                  className="text-purple-300 hover:text-purple-100 transition-colors duration-200 text-sm font-medium"
-                >
-                  {isSignUp 
-                    ? 'Already have powers? Sign In to your realm' 
-                    : 'New to this realm? Begin your mystical journey'
-                  }
-                </button>
-              </div>
-              
-              <div className="text-center">
-                <button
-                  onClick={() => setShowTutorial(true)}
-                  className="inline-flex items-center gap-2 text-purple-300 hover:text-purple-100 transition-colors duration-200 text-sm font-medium"
-                >
-                  <HelpCircle className="w-4 h-4" />
-                  How to Play
-                </button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            <Button variant="ghost" size="md" onClick={() => setShowTutorial(true)}>
+              <BookOpen size={16} strokeWidth={1.75} />
+              How to Play
+            </Button>
+          </div>
+        </Panel>
       </div>
-      
-      {/* Tutorial Modal */}
-      {showTutorial && (
-        <GameTutorial onClose={() => setShowTutorial(false)} />
-      )}
-      
-      <style jsx>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.6; }
-          50% { transform: translateY(-20px) rotate(180deg); opacity: 0.3; }
-        }
-        
-        @keyframes portalGlow {
-          0%, 100% { 
-            filter: drop-shadow(0 0 30px rgba(139, 92, 246, 0.8)) drop-shadow(0 0 60px rgba(59, 130, 246, 0.5));
-          }
-          50% { 
-            filter: drop-shadow(0 0 40px rgba(139, 92, 246, 1)) drop-shadow(0 0 80px rgba(59, 130, 246, 0.8));
-          }
-        }
-      `}</style>
-    </div>
+
+      <GameTutorial
+        open={showTutorial}
+        onClose={() => setShowTutorial(false)}
+        finishLabel="Got it"
+      />
+    </main>
   );
 }
 
 export default function UnifiedAuthPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-indigo-950 via-purple-900 to-blue-950 flex items-center justify-center">
-        <div className="text-purple-100 text-xl">Loading...</div>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="flex min-h-dvh items-center justify-center">
+          <Spinner size={28} className="text-arcane-300" />
+        </div>
+      }
+    >
       <UnifiedAuthPageContent />
     </Suspense>
   );
