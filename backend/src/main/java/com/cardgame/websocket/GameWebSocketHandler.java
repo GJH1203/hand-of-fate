@@ -303,15 +303,13 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             // Broadcast updated game state to all players in the match
             Set<WebSocketSession> sessions = matchSessions.get(info.matchId);
             if (sessions != null) {
-                // Read each player once for the whole broadcast instead of once per
-                // conversion. This is the hot path: it runs on every move, for every
-                // connected socket.
-                var players = gameService.loadPlayers(updatedGame);
                 for (WebSocketSession s : sessions) {
                     SessionInfo sInfo = sessionInfoMap.get(s.getId());
                     if (sInfo != null) {
-                        // Get game DTO specific to each player
-                        var playerGameDto = gameService.convertToDto(updatedGame, sInfo.playerId, players);
+                        // Get game DTO specific to each player. Building this reads
+                        // nothing now that the game carries its own state, so the hot
+                        // path costs one write of one document however many are watching.
+                        var playerGameDto = gameService.convertToDto(updatedGame, sInfo.playerId);
                         sendMessage(s, new WebSocketMessage(
                             MessageType.GAME_STATE_UPDATE,
                             playerGameDto

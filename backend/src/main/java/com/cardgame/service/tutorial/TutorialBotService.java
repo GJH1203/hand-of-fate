@@ -3,9 +3,7 @@ package com.cardgame.service.tutorial;
 import com.cardgame.model.Board;
 import com.cardgame.model.Card;
 import com.cardgame.model.GameModel;
-import com.cardgame.model.Player;
 import com.cardgame.model.Position;
-import com.cardgame.service.player.PlayerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -22,12 +20,6 @@ import java.util.Random;
 public class TutorialBotService {
     private static final Logger logger = LoggerFactory.getLogger(TutorialBotService.class);
     private static final Random random = new Random();
-    
-    private final PlayerService playerService;
-
-    public TutorialBotService(PlayerService playerService) {
-        this.playerService = playerService;
-    }
 
     /**
      * Make a move for the tutorial bot
@@ -37,9 +29,9 @@ public class TutorialBotService {
      */
     public BotMove makeBotMove(GameModel gameModel, String botPlayerId) {
         logger.info("Tutorial bot making move for player: {}", botPlayerId);
-        
-        Player botPlayer = playerService.getPlayer(botPlayerId);
-        if (botPlayer.getHand() == null || botPlayer.getHand().isEmpty()) {
+
+        List<Card> hand = gameModel.handOf(botPlayerId);
+        if (hand.isEmpty()) {
             logger.warn("Bot has no cards in hand");
             return null;
         }
@@ -53,7 +45,7 @@ public class TutorialBotService {
 
         // Simple bot strategy: prefer middle columns, then random
         Position chosenPosition = chooseBestPosition(availablePositions);
-        Card chosenCard = chooseBestCard(botPlayer.getHand(), chosenPosition);
+        Card chosenCard = chooseBestCard(hand, chosenPosition);
 
         logger.info("Bot chose card '{}' (power: {}) at position ({}, {})", 
                    chosenCard.getName(), chosenCard.getPower(), 
@@ -124,14 +116,14 @@ public class TutorialBotService {
      * Check if bot should pass (simple logic - pass if hand is very weak)
      */
     public boolean shouldBotPass(GameModel gameModel, String botPlayerId) {
-        Player botPlayer = playerService.getPlayer(botPlayerId);
-        
-        if (botPlayer.getHand() == null || botPlayer.getHand().isEmpty()) {
+        List<Card> hand = gameModel.handOf(botPlayerId);
+
+        if (hand.isEmpty()) {
             return true;
         }
-        
+
         // Bot passes if all cards in hand are very weak (power < 2)
-        boolean allWeak = botPlayer.getHand().stream()
+        boolean allWeak = hand.stream()
                 .allMatch(card -> card.getPower() < 2);
         
         // Add some randomness - bot might pass 20% of the time even with good cards

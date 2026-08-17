@@ -136,22 +136,25 @@ class GameLogicIntegrationTest extends IntegrationTestBase {
         testCard.setPower(5);
         cardRepository.save(testCard);
 
-        Player player1 = playerRepository.findById(player1Id).orElseThrow();
-        player1.getHand().add(testCard);
-        playerRepository.save(player1);
-
         gameModel = new GameModel();
         gameModel.setId("test_game_validator");
         gameModel.setGameState(GameState.IN_PROGRESS);
         gameModel.setPlayerIds(Arrays.asList(player1Id, player2Id));
         gameModel.setCurrentPlayerId(player1Id);
+        gameModel.setBoard(new Board());
 
-        Board board = new Board();
-        board.placeCard(new Position(1, 2), "validator_card");
-        gameModel.setBoard(board);
+        gameModel.seatPlayer(player1Id, "Player 1", List.of(testCard));
+        gameModel.seatPlayer(player2Id, "Player 2", List.of());
+        gameModel.playCard(player1Id, new Position(1, 2), new Card("validator_card", 1, "Validator Card"));
+    }
 
-        player1.getPlacedCards().put("1,2", new Card("validator_card", 1, "Validator Card"));
-        playerRepository.save(player1);
+    /**
+     * The cards a player has on the board, for tests that build a position directly rather
+     * than by playing into it. Reading through the game is deliberately non-creating, so
+     * writing needs a way in.
+     */
+    private Map<String, Card> placedCardsFor(String playerId) {
+        return gameModel.getPlacedCards().computeIfAbsent(playerId, id -> new HashMap<>());
     }
 
     @Nested
@@ -229,8 +232,7 @@ class GameLogicIntegrationTest extends IntegrationTestBase {
         @Test
         @DisplayName("Invalid move - wrong player turn")
         void testInvalidMove_WrongPlayerTurn() {
-            Player player2 = playerRepository.findById(player2Id).orElseThrow();
-            Card card = player2.getHand().get(0);
+            Card card = gameRepository.findById(game.getId()).orElseThrow().handOf(player2Id).get(0);
             PlayerAction action = createPlaceCardAction(player2Id,
                     ImmutableCardDto.builder()
                             .id(card.getId())
@@ -322,10 +324,8 @@ class GameLogicIntegrationTest extends IntegrationTestBase {
         @Test
         @DisplayName("Valid orthogonal chain building")
         void testValidMove_OrthogonalChain() {
-            Player player1 = playerRepository.findById(player1Id).orElseThrow();
-            player1.getPlacedCards().put("1,1", new Card("chain_card", 2, "Chain Card"));
+            placedCardsFor(player1Id).put("1,1", new Card("chain_card", 2, "Chain Card"));
             gameModel.getBoard().placeCard(new Position(1, 1), "chain_card");
-            playerRepository.save(player1);
 
             PlayerAction action = createValidatorPlaceCardAction(player1Id, new Position(1, 0));
 
@@ -341,10 +341,8 @@ class GameLogicIntegrationTest extends IntegrationTestBase {
         @Test
         @DisplayName("Invalid diagonal placement from chain")
         void testInvalidMove_DiagonalFromChain() {
-            Player player1 = playerRepository.findById(player1Id).orElseThrow();
-            player1.getPlacedCards().put("1,1", new Card("chain_card", 2, "Chain Card"));
+            placedCardsFor(player1Id).put("1,1", new Card("chain_card", 2, "Chain Card"));
             gameModel.getBoard().placeCard(new Position(1, 1), "chain_card");
-            playerRepository.save(player1);
 
             PlayerAction action = createValidatorPlaceCardAction(player1Id, new Position(0, 0));
 
@@ -361,10 +359,8 @@ class GameLogicIntegrationTest extends IntegrationTestBase {
         @Test
         @DisplayName("Valid placement when adjacent to both own and opponent cards")
         void testValidMove_AdjacentToBothPlayers() {
-            Player player2 = playerRepository.findById(player2Id).orElseThrow();
-            player2.getPlacedCards().put("0,2", new Card("opponent_card", 3, "Opponent Card"));
+            placedCardsFor(player2Id).put("0,2", new Card("opponent_card", 3, "Opponent Card"));
             gameModel.getBoard().placeCard(new Position(0, 2), "opponent_card");
-            playerRepository.save(player2);
 
             PlayerAction action = createValidatorPlaceCardAction(player1Id, new Position(1, 1));
 
@@ -380,10 +376,8 @@ class GameLogicIntegrationTest extends IntegrationTestBase {
         @Test
         @DisplayName("Invalid placement adjacent only to opponent")
         void testInvalidMove_AdjacentOnlyToOpponent() {
-            Player player2 = playerRepository.findById(player2Id).orElseThrow();
-            player2.getPlacedCards().put("0,1", new Card("opponent_card", 3, "Opponent Card"));
+            placedCardsFor(player2Id).put("0,1", new Card("opponent_card", 3, "Opponent Card"));
             gameModel.getBoard().placeCard(new Position(0, 1), "opponent_card");
-            playerRepository.save(player2);
 
             PlayerAction action = createValidatorPlaceCardAction(player1Id, new Position(0, 0));
 
@@ -402,10 +396,8 @@ class GameLogicIntegrationTest extends IntegrationTestBase {
         void testValidMove_BoardBoundaries() {
             gameModel.getBoard().getPieces().clear();
             gameModel.getBoard().placeCard(new Position(0, 0), "edge_card");
-            Player player1 = playerRepository.findById(player1Id).orElseThrow();
-            player1.getPlacedCards().clear();
-            player1.getPlacedCards().put("0,0", new Card("edge_card", 1, "Edge Card"));
-            playerRepository.save(player1);
+            placedCardsFor(player1Id).clear();
+            placedCardsFor(player1Id).put("0,0", new Card("edge_card", 1, "Edge Card"));
 
             PlayerAction eastAction = createValidatorPlaceCardAction(player1Id, new Position(1, 0));
             assertDoesNotThrow(() -> gameValidator.validateMove(gameModel, eastAction),
@@ -429,11 +421,9 @@ class GameLogicIntegrationTest extends IntegrationTestBase {
             gameModel.getBoard().placeCard(new Position(0, 0), "card1");
             gameModel.getBoard().placeCard(new Position(1, 1), "card2");
 
-            Player player1 = playerRepository.findById(player1Id).orElseThrow();
-            player1.getPlacedCards().clear();
-            player1.getPlacedCards().put("0,0", new Card("card1", 1, "Card 1"));
-            player1.getPlacedCards().put("1,1", new Card("card2", 2, "Card 2"));
-            playerRepository.save(player1);
+            placedCardsFor(player1Id).clear();
+            placedCardsFor(player1Id).put("0,0", new Card("card1", 1, "Card 1"));
+            placedCardsFor(player1Id).put("1,1", new Card("card2", 2, "Card 2"));
 
             PlayerAction action = createValidatorPlaceCardAction(player1Id, new Position(2, 2));
 
@@ -587,10 +577,8 @@ class GameLogicIntegrationTest extends IntegrationTestBase {
             gameModel.getBoard().getPieces().clear();
             gameModel.getBoard().placeCard(new Position(ownCardX, ownCardY), "test_own_card");
 
-            Player player1 = playerRepository.findById(player1Id).orElseThrow();
-            player1.getPlacedCards().clear();
-            player1.getPlacedCards().put(ownCardX + "," + ownCardY, new Card("test_own_card", 1, "Test Own Card"));
-            playerRepository.save(player1);
+            placedCardsFor(player1Id).clear();
+            placedCardsFor(player1Id).put(ownCardX + "," + ownCardY, new Card("test_own_card", 1, "Test Own Card"));
 
             PlayerAction action = createValidatorPlaceCardAction(player1Id, new Position(targetX, targetY));
 
@@ -621,10 +609,8 @@ class GameLogicIntegrationTest extends IntegrationTestBase {
             gameModel.getBoard().getPieces().clear();
             gameModel.getBoard().placeCard(new Position(sourceX, sourceY), "source_card");
 
-            Player player1 = playerRepository.findById(player1Id).orElseThrow();
-            player1.getPlacedCards().clear();
-            player1.getPlacedCards().put(sourceX + "," + sourceY, new Card("source_card", 1, "Source Card"));
-            playerRepository.save(player1);
+            placedCardsFor(player1Id).clear();
+            placedCardsFor(player1Id).put(sourceX + "," + sourceY, new Card("source_card", 1, "Source Card"));
 
             int[][] orthogonalOffsets = {{0,1}, {0,-1}, {1,0}, {-1,0}};
 
@@ -688,15 +674,13 @@ class GameLogicIntegrationTest extends IntegrationTestBase {
         @DisplayName("Test chain building with multiple cards")
         void testChainBuilding(int chainLength) {
             gameModel.getBoard().getPieces().clear();
-            Player player1 = playerRepository.findById(player1Id).orElseThrow();
-            player1.getPlacedCards().clear();
+            placedCardsFor(player1Id).clear();
 
             for (int i = 0; i < Math.min(chainLength, 3); i++) {
                 String cardId = "chain_card_" + i;
                 gameModel.getBoard().placeCard(new Position(i, 2), cardId);
-                player1.getPlacedCards().put(i + ",2", new Card(cardId, 1, "Chain Card " + i));
+                placedCardsFor(player1Id).put(i + ",2", new Card(cardId, 1, "Chain Card " + i));
             }
-            playerRepository.save(player1);
 
             if (chainLength <= 3) {
                 PlayerAction action = createValidatorPlaceCardAction(player1Id, new Position(0, 1));
@@ -720,10 +704,8 @@ class GameLogicIntegrationTest extends IntegrationTestBase {
         void testNearlyFullBoardComplexOwnership() {
             // Clear board and create a complex checkerboard-like pattern
             gameModel.getBoard().getPieces().clear();
-            Player player1 = playerRepository.findById(player1Id).orElseThrow();
-            Player player2 = playerRepository.findById(player2Id).orElseThrow();
-            player1.getPlacedCards().clear();
-            player2.getPlacedCards().clear();
+            placedCardsFor(player1Id).clear();
+            placedCardsFor(player2Id).clear();
 
             // Create checkerboard pattern (player1 on even sum coordinates, player2 on odd)
             int cardCounter = 0;
@@ -735,15 +717,13 @@ class GameLogicIntegrationTest extends IntegrationTestBase {
                     gameModel.getBoard().placeCard(new Position(x, y), cardId);
 
                     if ((x + y) % 2 == 0) {
-                        player1.getPlacedCards().put(x + "," + y, new Card(cardId, 1, "P1 Card " + cardCounter));
+                        placedCardsFor(player1Id).put(x + "," + y, new Card(cardId, 1, "P1 Card " + cardCounter));
                     } else {
-                        player2.getPlacedCards().put(x + "," + y, new Card(cardId, 1, "P2 Card " + cardCounter));
+                        placedCardsFor(player2Id).put(x + "," + y, new Card(cardId, 1, "P2 Card " + cardCounter));
                     }
                     cardCounter++;
                 }
             }
-            playerRepository.save(player1);
-            playerRepository.save(player2);
 
             // Find empty positions and test adjacency rules
             List<Position> emptyPositions = gameModel.getBoard().getEmptyPositions();
@@ -761,7 +741,7 @@ class GameLogicIntegrationTest extends IntegrationTestBase {
                     int adjY = emptyPos.getY() + offset[1];
                     String adjKey = adjX + "," + adjY;
 
-                    if (player1.getPlacedCards().containsKey(adjKey)) {
+                    if (placedCardsFor(player1Id).containsKey(adjKey)) {
                         hasAdjacentOwnCard = true;
                         break;
                     }
@@ -783,26 +763,24 @@ class GameLogicIntegrationTest extends IntegrationTestBase {
         void testMaximumChainLengthScenarios() {
             // Test maximum possible horizontal chain (3 cards)
             gameModel.getBoard().getPieces().clear();
-            Player player1 = playerRepository.findById(player1Id).orElseThrow();
-            player1.getPlacedCards().clear();
+            placedCardsFor(player1Id).clear();
 
             // Create maximum horizontal chain
             for (int x = 0; x < 3; x++) {
                 String cardId = "h_chain_" + x;
                 gameModel.getBoard().placeCard(new Position(x, 2), cardId);
-                player1.getPlacedCards().put(x + ",2", new Card(cardId, 1, "H Chain " + x));
+                placedCardsFor(player1Id).put(x + ",2", new Card(cardId, 1, "H Chain " + x));
             }
 
             // Test maximum vertical chain (5 cards)
             gameModel.getBoard().getPieces().clear();
-            player1.getPlacedCards().clear();
+            placedCardsFor(player1Id).clear();
 
             for (int y = 0; y < 5; y++) {
                 String cardId = "v_chain_" + y;
                 gameModel.getBoard().placeCard(new Position(1, y), cardId);
-                player1.getPlacedCards().put("1," + y, new Card(cardId, 1, "V Chain " + y));
+                placedCardsFor(player1Id).put("1," + y, new Card(cardId, 1, "V Chain " + y));
             }
-            playerRepository.save(player1);
 
             // The board is three wide, so a full column of your own cards touches every
             // remaining cell. This previously asserted the opposite and only passed
@@ -822,22 +800,20 @@ class GameLogicIntegrationTest extends IntegrationTestBase {
         void testIsolatedCardGroups() {
             // Create two separate groups of player1 cards with no connection
             gameModel.getBoard().getPieces().clear();
-            Player player1 = playerRepository.findById(player1Id).orElseThrow();
-            player1.getPlacedCards().clear();
+            placedCardsFor(player1Id).clear();
 
             // Group 1: Top-left corner
             gameModel.getBoard().placeCard(new Position(0, 0), "group1_card1");
             gameModel.getBoard().placeCard(new Position(0, 1), "group1_card2");
-            player1.getPlacedCards().put("0,0", new Card("group1_card1", 1, "Group 1 Card 1"));
-            player1.getPlacedCards().put("0,1", new Card("group1_card2", 1, "Group 1 Card 2"));
+            placedCardsFor(player1Id).put("0,0", new Card("group1_card1", 1, "Group 1 Card 1"));
+            placedCardsFor(player1Id).put("0,1", new Card("group1_card2", 1, "Group 1 Card 2"));
 
             // Group 2: Bottom-right corner (separated by gaps)
             gameModel.getBoard().placeCard(new Position(2, 3), "group2_card1");
             gameModel.getBoard().placeCard(new Position(2, 4), "group2_card2");
-            player1.getPlacedCards().put("2,3", new Card("group2_card1", 1, "Group 2 Card 1"));
-            player1.getPlacedCards().put("2,4", new Card("group2_card2", 1, "Group 2 Card 2"));
+            placedCardsFor(player1Id).put("2,3", new Card("group2_card1", 1, "Group 2 Card 1"));
+            placedCardsFor(player1Id).put("2,4", new Card("group2_card2", 1, "Group 2 Card 2"));
 
-            playerRepository.save(player1);
 
             // Should be able to place adjacent to either group
             // Adjacent to group 1
@@ -862,8 +838,7 @@ class GameLogicIntegrationTest extends IntegrationTestBase {
         void testPerformanceWithManyChecks() {
             // Create a scenario that requires checking many positions
             gameModel.getBoard().getPieces().clear();
-            Player player1 = playerRepository.findById(player1Id).orElseThrow();
-            player1.getPlacedCards().clear();
+            placedCardsFor(player1Id).clear();
 
             // Place cards in a specific pattern that maximizes adjacency calculations
             int[][] positions = {{0,0}, {0,2}, {0,4}, {2,0}, {2,2}, {2,4}};
@@ -871,9 +846,8 @@ class GameLogicIntegrationTest extends IntegrationTestBase {
                 String cardId = "perf_card_" + i;
                 Position pos = new Position(positions[i][0], positions[i][1]);
                 gameModel.getBoard().placeCard(pos, cardId);
-                player1.getPlacedCards().put(pos.toStorageString(), new Card(cardId, 1, "Perf Card " + i));
+                placedCardsFor(player1Id).put(pos.toStorageString(), new Card(cardId, 1, "Perf Card " + i));
             }
-            playerRepository.save(player1);
 
             // Test performance by validating moves at all remaining positions
             long startTime = System.currentTimeMillis();
@@ -921,13 +895,11 @@ class GameLogicIntegrationTest extends IntegrationTestBase {
             for (Position corner : corners) {
                 // Clear board and place card at corner
                 gameModel.getBoard().getPieces().clear();
-                Player player1 = playerRepository.findById(player1Id).orElseThrow();
-                player1.getPlacedCards().clear();
+                placedCardsFor(player1Id).clear();
 
                 String cardId = "corner_card_" + corner.toStorageString();
                 gameModel.getBoard().placeCard(corner, cardId);
-                player1.getPlacedCards().put(corner.toStorageString(), new Card(cardId, 1, "Corner Card"));
-                playerRepository.save(player1);
+                placedCardsFor(player1Id).put(corner.toStorageString(), new Card(cardId, 1, "Corner Card"));
 
                 // Test all orthogonal positions from corner
                 int[][] orthogonalOffsets = {{0,1}, {0,-1}, {1,0}, {-1,0}};
@@ -964,13 +936,11 @@ class GameLogicIntegrationTest extends IntegrationTestBase {
 
             for (Position edge : edges) {
                 gameModel.getBoard().getPieces().clear();
-                Player player1 = playerRepository.findById(player1Id).orElseThrow();
-                player1.getPlacedCards().clear();
+                placedCardsFor(player1Id).clear();
 
                 String cardId = "edge_card_" + edge.toStorageString();
                 gameModel.getBoard().placeCard(edge, cardId);
-                player1.getPlacedCards().put(edge.toStorageString(), new Card(cardId, 1, "Edge Card"));
-                playerRepository.save(player1);
+                placedCardsFor(player1Id).put(edge.toStorageString(), new Card(cardId, 1, "Edge Card"));
 
                 // Count valid orthogonal moves from edge
                 int validMoves = 0;

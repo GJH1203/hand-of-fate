@@ -37,7 +37,10 @@ import java.util.stream.Collectors;
 @Service
 public class GameService {
     private static final Logger logger = LoggerFactory.getLogger(GameService.class);
-    
+
+    /** Added to the winner's lifetime score when a game ends decisively. */
+    private static final int VICTORY_BONUS = 10;
+
     private final GameRepository gameRepository;
     private final PlayerService playerService;
     private final CardService cardService;
@@ -77,50 +80,25 @@ public class GameService {
     public GameDto convertToDto(GameModel gameModel) {
         return convertToDto(gameModel, gameModel.getCurrentPlayerId());
     }
-    
-    public GameDto convertToDto(GameModel gameModel, String forPlayerId) {
-        return convertToDto(gameModel, forPlayerId, loadPlayers(gameModel));
-    }
 
     /**
-     * Reads every player named by the game, once.
+     * Builds the view of a game for one player, from the game alone.
      *
-     * <p>A move is broadcast to each session in the match, and each of those needs a view
-     * of the game built for its own player. Converting per session re-read every player
-     * per conversion, so a two-player match cost six reads to send two messages. Loading
-     * them here and handing the same map to each conversion makes it two.
+     * <p>This used to read every player in the game, because the hands, the placed cards
+     * and the names were on them. It reads nothing now, which matters because a move is
+     * broadcast to every connected session and each session needs its own view: the cost
+     * of a broadcast no longer rises with the number of people watching.
      */
-    public Map<String, Player> loadPlayers(GameModel gameModel) {
-        Map<String, Player> players = new HashMap<>();
-        for (String playerId : gameModel.getPlayerIds()) {
-            players.put(playerId, playerService.getPlayer(playerId));
-        }
-        return players;
-    }
-
-    public GameDto convertToDto(GameModel gameModel, String forPlayerId, Map<String, Player> players) {
-        // forPlayerId is normally one of the game's players and already loaded; a
-        // spectator or an admin looking at somebody else's game is the exception.
-        Player currentPlayer = players.containsKey(forPlayerId)
-                ? players.get(forPlayerId)
-                : playerService.getPlayer(forPlayerId);
-
-        // Build card ownership map, collect all placed cards, and player names
+    public GameDto convertToDto(GameModel gameModel, String forPlayerId) {
+        // Build card ownership map and collect all placed cards
         Map<String, String> cardOwnership = new HashMap<>();
         Map<String, CardDto> placedCards = new HashMap<>();
-        Map<String, String> playerNames = new HashMap<>();
         for (String playerId : gameModel.getPlayerIds()) {
-            Player player = players.get(playerId);
-            // Add player name
-            playerNames.put(playerId, player.getName());
-            
-            if (player.getPlacedCards() != null) {
-                for (Map.Entry<String, Card> entry : player.getPlacedCards().entrySet()) {
-                    String position = entry.getKey();
-                    Card card = entry.getValue();
-                    cardOwnership.put(position, playerId);
-                    placedCards.put(card.getId(), convertCardToDto(card));
-                }
+            for (Map.Entry<String, Card> entry : gameModel.placedCardsOf(playerId).entrySet()) {
+                String position = entry.getKey();
+                Card card = entry.getValue();
+                cardOwnership.put(position, playerId);
+                placedCards.put(card.getId(), convertCardToDto(card));
             }
         }
 
@@ -134,13 +112,13 @@ public class GameService {
                         .pieces(gameModel.getBoard().getPieces())  // Use string keys directly
                         .build())
                 .currentPlayerId(gameModel.getCurrentPlayerId())
-                .currentPlayerHand(currentPlayer.getHand().stream()
+                .currentPlayerHand(gameModel.handOf(forPlayerId).stream()
                         .map(this::convertCardToDto)
                         .collect(Collectors.toList()))
                 .playerIds(gameModel.getPlayerIds())
                 .cardOwnership(cardOwnership)
                 .placedCards(placedCards)
-                .playerNames(playerNames)
+                .playerNames(gameModel.getPlayerNames())
                 .createdAt(gameModel.getCreatedAt())
                 .updatedAt(gameModel.getUpdatedAt());
 
@@ -168,7 +146,7 @@ public class GameService {
             }
         } else {
             // Game in progress - calculate current column scores
-            Map<Integer, ScoreCalculator.ColumnScore> columnScores = ScoreCalculator.calculateColumnScores(gameModel, playerService);
+            Map<Integer, ScoreCalculator.ColumnScore> columnScores = ScoreCalculator.calculateColumnScores(gameModel);
             for (Map.Entry<Integer, ScoreCalculator.ColumnScore> entry : columnScores.entrySet()) {
                 ScoreCalculator.ColumnScore colScore = entry.getValue();
                 ColumnScoreDto dto = ImmutableColumnScoreDto.builder()
@@ -257,9 +235,9 @@ public class GameService {
         gameModel.setPlayerIds(playerIds);
         gameModel.setCurrentPlayerId(player1Id); // player1 starts first
 
-        // set up players' game state with their chosen decks
-        setupPlayerGameState(player1Id, deck1Id);
-        setupPlayerGameState(player2Id, deck2Id);
+        // deal each player into the game itself, rather than onto their player document
+        dealIntoGame(gameModel, player1Id, deck1Id);
+        dealIntoGame(gameModel, player2Id, deck2Id);
 
         placeInitialCards(gameModel, player1Id, player2Id);
 
@@ -274,52 +252,33 @@ public class GameService {
         return convertToDto(gameModel);
     }
 
-    private void setupPlayerGameState(String playerId, String deckId) {
+    /**
+     * Deals a player their opening hand out of the deck they chose.
+     *
+     * <p>The deck is read and left alone. It used to be copied into a temporary deck that
+     * was never saved and then written over the player's {@code currentDeck}, which is
+     * why finishing a game had to put the real one back — and why a game that never
+     * finished left the player pointing at a deck document that does not exist. The whole
+     * arrangement bought nothing: a deck is five cards and a hand is five cards, so the
+     * copy was empty from the moment it was made.
+     */
+    private void dealIntoGame(GameModel gameModel, String playerId, String deckId) {
         Player player = playerService.getPlayer(playerId);
-        Deck originalDeck = deckService.getDeck(deckId);
+        Deck deck = deckService.getDeck(deckId);
 
-        // Store reference to original deck for restoration after game
-        player.setOriginalDeck(originalDeck);
-
-        // Create a temporary copy of the deck for this game (in memory only - don't save to DB)
-        Deck gameDeck = new Deck();
-        gameDeck.setId(UUID.randomUUID().toString());
-        gameDeck.setOwnerId(playerId);
-        gameDeck.setCards(new ArrayList<>(originalDeck.getCards())); // Copy cards from original deck
-        gameDeck.setRemainingCards(originalDeck.getCards().size());
-
-        // Note: NOT saving gameDeck to database - it's temporary for this game only
-
-        // Draw initial hand (5 cards)
-        List<Card> initialHand = new ArrayList<>(gameDeck.getCards().subList(0, 5));
-        gameDeck.getCards().subList(0, 5).clear();
-        gameDeck.setRemainingCards(gameDeck.getCards().size());
-
-        // Update player's game state with temporary deck
-        player.setCurrentDeck(gameDeck);
-        player.setHand(initialHand);
-        player.setScore(0);
-        player.setPlacedCards(new HashMap<>());
-
-        // Save updated player state (includes originalDeck reference)
-        playerService.savePlayer(player);
+        gameModel.seatPlayer(playerId, player.getName(), new ArrayList<>(deck.getCards()));
     }
 
     private void placeInitialCards(GameModel gameModel, String player1Id, String player2Id) {
-        Board board = gameModel.getBoard();
-
-        placeInitialCardForPlayer(player1Id, new Position(1, 3), board);
-        placeInitialCardForPlayer(player2Id, new Position(1, 1), board);
+        placeInitialCardForPlayer(gameModel, player1Id, new Position(1, 3));
+        placeInitialCardForPlayer(gameModel, player2Id, new Position(1, 1));
     }
 
-    private void placeInitialCardForPlayer(String playerId, Position position, Board board) {
-        Player player = playerService.getPlayer(playerId);
+    private void placeInitialCardForPlayer(GameModel gameModel, String playerId, Position position) {
         // Randomly select a card from the player's hand
-        int randomIndex = (int) (Math.random() * player.getHand().size());
-        Card card = player.getHand().remove(randomIndex);
-        boardManager.placeCard(board, position, card.getId());
-        player.getPlacedCards().put(position.toStorageString(), card);
-        playerService.savePlayer(player);
+        List<Card> hand = gameModel.handOf(playerId);
+        Card card = hand.get((int) (Math.random() * hand.size()));
+        gameModel.playCard(playerId, position, card);
     }
 
     /**
@@ -427,33 +386,33 @@ public class GameService {
 
     private boolean anyPlayerHasValidMoves(GameModel gameModel) {
         for (String playerId : gameModel.getPlayerIds()) {
-            Player player = playerService.getPlayer(playerId);
-            if (!player.getHand().isEmpty() && hasValidMoves(gameModel, player)) {
+            if (hasValidMoves(gameModel, playerId)) {
                 return true;
             }
         }
         return false;
     }
 
-    private boolean hasValidMoves(GameModel gameModel, Player player) {
-        List<Position> emptyPositions = gameModel.getBoard().getEmptyPositions();
+    private boolean hasValidMoves(GameModel gameModel, String playerId) {
+        List<Card> hand = gameModel.handOf(playerId);
+        if (hand.isEmpty()) {
+            return false;
+        }
 
-        for (Position pos : emptyPositions) {
-            if (!player.getHand().isEmpty()) {
-                PlayerAction testAction = ImmutablePlayerAction.builder()
-                        .type(PlayerAction.ActionType.PLACE_CARD)
-                        .playerId(player.getId())
-                        .targetPosition(pos)
-                        .card(player.getHand().get(0))
-                        .timestamp(System.currentTimeMillis())
-                        .build();
+        for (Position pos : gameModel.getBoard().getEmptyPositions()) {
+            PlayerAction testAction = ImmutablePlayerAction.builder()
+                    .type(PlayerAction.ActionType.PLACE_CARD)
+                    .playerId(playerId)
+                    .targetPosition(pos)
+                    .card(hand.get(0))
+                    .timestamp(System.currentTimeMillis())
+                    .build();
 
-                try {
-                    gameValidator.validateMove(gameModel, testAction);
-                    return true;
-                } catch (Exception e) {
-                    // Continue checking other positions
-                }
+            try {
+                gameValidator.validateMove(gameModel, testAction);
+                return true;
+            } catch (InvalidMoveException e) {
+                // Continue checking other positions
             }
         }
         return false;
@@ -473,114 +432,69 @@ public class GameService {
         metricsConfig.decrementActiveGames();
         logger.info("Game completed with ID: {}", gameModel.getId());
 
-        // IMPORTANT: Calculate column scores BEFORE restoring player state (which clears placedCards)
-        Map<Integer, ScoreCalculator.ColumnScore> columnScores = ScoreCalculator.calculateColumnScores(gameModel, playerService);
-        
+        Map<Integer, ScoreCalculator.ColumnScore> columnScores = ScoreCalculator.calculateColumnScores(gameModel);
+
         // Store column scores in the game model for final display
         Map<Integer, Map<String, Integer>> finalColumnScores = new HashMap<>();
         for (Map.Entry<Integer, ScoreCalculator.ColumnScore> entry : columnScores.entrySet()) {
             finalColumnScores.put(entry.getKey(), entry.getValue().playerScores);
         }
         gameModel.setFinalColumnScores(finalColumnScores);
-        
-        // Determine winner using column-based scoring
-        String winnerId = ScoreCalculator.determineWinner(gameModel, playerService);
+
+        // Determine winner using column-based scoring. This also records the columns each
+        // player won on the game, which is what playerScores is for — it used to be
+        // overwritten with zeroes immediately afterwards, by a loop reading a per-game
+        // score on Player that nothing ever set.
+        String winnerId = ScoreCalculator.determineWinner(gameModel);
         gameModel.setWinnerId(winnerId);
         gameModel.setTie(winnerId == null);
 
-        // Get all players for this game
-        Map<String, Player> players = new HashMap<>();
+        // A finished game touches its players once each, for the one thing that genuinely
+        // belongs to them and outlives the game.
+        settleLifetimeScores(gameModel, winnerId);
+    }
+
+    /**
+     * Adds the victory bonus to the winner, and puts every player on the leaderboard.
+     *
+     * <p>Only the winner's total changes. Every player used to be written as well, but
+     * the amount added was the per-game score on {@code Player}, which was always zero:
+     * the method meant to maintain it had been a no-op since scoring moved to columns.
+     * Every player is still <em>submitted</em>, so that somebody who has yet to win a
+     * game still appears on the leaderboard rather than being absent from it.
+     */
+    private void settleLifetimeScores(GameModel gameModel, String winnerId) {
+        boolean hasWinner = winnerId != null && !gameModel.isTie();
+
         for (String playerId : gameModel.getPlayerIds()) {
             Player player = playerService.getPlayer(playerId);
-            players.put(playerId, player);
 
-            // Calculate and update player scores for this game
-            ScoreCalculator.updatePlayerScore(player, gameModel);
-
-            // Add the current game score to lifetime score
-            int gameScore = player.getScore();
-            player.addLifetimeScore(gameScore);
-
-            // Store scores in the game model
-            gameModel.updatePlayerScore(playerId, gameScore);
-
-            // Restore player's original deck and clean up temporary game state
-            restorePlayerOriginalState(player);
-
-            // Save player with updated lifetime score and restored original deck
-            // Use updatePlayerSafely to prevent accidental data loss
-            playerService.updatePlayerSafely(player.getId(), p -> {
-                // Copy the updated state from the player object
-                p.setLifetimeScore(player.getLifetimeScore());
-                p.setCurrentDeck(player.getCurrentDeck());
-                p.setOriginalDeck(player.getOriginalDeck());
-                p.setHand(player.getHand());
-                p.setPlacedCards(player.getPlacedCards());
-                p.setScore(player.getScore());
-            });
-
-            // Submit lifetime score to leaderboard if player has a Nakama user ID
-            if (player.getNakamaUserId() != null && !player.getNakamaUserId().isEmpty()) {
-                nakamaLeaderBoardService.submitPlayerScore(player.getNakamaUserId(), player.getLifetimeScore(), 
-                    player.getName());
-            }
-        }
-
-        // Award bonus points to the winner's lifetime score
-        if (winnerId != null && !gameModel.isTie()) {
-            Player winner = players.get(winnerId);
-            if (winner != null) {
-                // Add a victory bonus to lifetime score (e.g., 10 points)
-                int victoryBonus = 10;
-                winner.addLifetimeScore(victoryBonus);
-                
+            if (hasWinner && playerId.equals(winnerId)) {
+                player.addLifetimeScore(VICTORY_BONUS);
                 // Use updatePlayerSafely to prevent accidental data loss
-                playerService.updatePlayerSafely(winner.getId(), p -> {
-                    p.setLifetimeScore(winner.getLifetimeScore());
-                });
+                playerService.updatePlayerSafely(playerId, p -> p.setLifetimeScore(player.getLifetimeScore()));
+            }
 
-                // Update leaderboard with the new lifetime score including victory bonus
-                if (winner.getNakamaUserId() != null && !winner.getNakamaUserId().isEmpty()) {
-                    nakamaLeaderBoardService.submitPlayerScore(winner.getNakamaUserId(), winner.getLifetimeScore(), 
-                        winner.getName());
-                }
+            if (player.getNakamaUserId() != null && !player.getNakamaUserId().isEmpty()) {
+                nakamaLeaderBoardService.submitPlayerScore(player.getNakamaUserId(), player.getLifetimeScore(),
+                    player.getName());
             }
         }
     }
 
     private void handleTurnSwitching(GameModel gameModel) {
         String currentPlayerId = gameModel.getCurrentPlayerId();
-        Player currentPlayer = playerService.getPlayer(currentPlayerId);
-        
+
         // Try to switch to next player first
         switchToNextPlayer(gameModel);
-        String nextPlayerId = gameModel.getCurrentPlayerId();
-        Player nextPlayer = playerService.getPlayer(nextPlayerId);
-        
+
         // If next player has no valid moves, check if current player can continue
-        if (nextPlayer.getHand().isEmpty() || !hasValidMoves(gameModel, nextPlayer)) {
-            // Switch back to current player if they still have valid moves
-            if (!currentPlayer.getHand().isEmpty() && hasValidMoves(gameModel, currentPlayer)) {
-                gameModel.setCurrentPlayerId(currentPlayerId);
-            }
-            // If both players have no valid moves, the game will end on next check
+        if (!hasValidMoves(gameModel, gameModel.getCurrentPlayerId())
+                && hasValidMoves(gameModel, currentPlayerId)) {
+            // Switch back to current player if they still have valid moves.
+            // If neither can move, the game will end on the next check.
+            gameModel.setCurrentPlayerId(currentPlayerId);
         }
-    }
-
-    /**
-     * Restore player's original deck and clean up temporary game state
-     */
-    private void restorePlayerOriginalState(Player player) {
-        // Restore original deck reference
-        if (player.getOriginalDeck() != null) {
-            player.setCurrentDeck(player.getOriginalDeck());
-            player.setOriginalDeck(null); // Clear temporary reference
-        }
-
-        // Clean up temporary game state
-        player.setHand(new ArrayList<>()); // Clear hand
-        player.setPlacedCards(new HashMap<>()); // Clear placed cards
-        player.setScore(0); // Reset game score (lifetime score already updated)
     }
 
     private void switchToNextPlayer(GameModel gameModel) {
