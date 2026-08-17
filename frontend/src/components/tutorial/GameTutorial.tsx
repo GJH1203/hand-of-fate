@@ -1,389 +1,413 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useEffect, useState } from 'react';
+import { ChevronLeft, ChevronRight, Crown, X } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, X, Trophy, Target, Layers, Sparkles } from 'lucide-react';
+import { Modal } from '@/components/ui/modal';
+import { cn } from '@/lib/utils';
+
+/*
+ * How to Play, in eight steps.
+ *
+ * The dialog is a fixed 680x600 with three bands — header, scrolling figure and
+ * points, footer — so Previous and Next never move between steps. They used to sit
+ * under content of wildly different heights, which meant a second click landed on
+ * whatever had slid under the cursor.
+ *
+ * The rules described here are the ones the server actually plays, read out of
+ * DeckInitializationService and GameService: a five-card deck of 1/1/3/3/5, one
+ * random card from each hand placed on the middle column before the first turn, and
+ * a winner decided by who holds more columns — not by holding two of the three,
+ * which is only the same thing when no column is tied.
+ */
 
 interface GameTutorialProps {
+  open: boolean;
   onClose: () => void;
+  /** "Start Playing" in game, "Got it" when nobody is signed in yet. */
+  finishLabel?: string;
 }
 
-interface TutorialSlide {
-  title: string;
-  content: React.ReactNode;
-  visual?: React.ReactNode;
+const YOU = 'you';
+const OPPONENT = 'opponent';
+type Side = typeof YOU | typeof OPPONENT;
+
+/** A card as it appears on the board, in miniature: gold for yours, crimson for theirs. */
+function MiniCard({ power, name, side }: { power: number; name?: string; side: Side }) {
+  const mine = side === YOU;
+  return (
+    <div
+      className={cn(
+        'relative flex h-full w-full flex-col items-center justify-center rounded-[5px] border bg-surface-0',
+        mine ? 'border-gold-400/70' : 'border-danger/70',
+      )}
+    >
+      <span
+        className={cn(
+          'absolute left-1 top-1 flex h-[18px] w-[18px] items-center justify-center rounded-full font-display text-[11px] font-bold leading-none',
+          mine ? 'bg-gold-400 text-[#1A1206]' : 'bg-danger text-[#2A0B0B]',
+        )}
+      >
+        {power}
+      </span>
+      {name && (
+        <span className="px-1 text-center font-display text-[8px] uppercase leading-tight tracking-wide text-ink-mid">
+          {name}
+        </span>
+      )}
+    </div>
+  );
 }
 
-export default function GameTutorial({ onClose }: GameTutorialProps) {
-  const [currentSlide, setCurrentSlide] = useState(0);
+type BoardCell = { power: number; side: Side } | null;
 
-  const nextSlide = () => {
-    if (currentSlide < 8) { // 8 is the last slide index
-      setCurrentSlide(currentSlide + 1);
-    }
-  };
-
-  const prevSlide = () => {
-    if (currentSlide > 0) {
-      setCurrentSlide(currentSlide - 1);
-    }
-  };
-
-  // Prevent body scroll when tutorial is open
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, []);
-
-  // Add keyboard navigation
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      } else if (e.key === 'ArrowLeft') {
-        prevSlide();
-      } else if (e.key === 'ArrowRight') {
-        nextSlide();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentSlide, onClose]);
-
-  const slides: TutorialSlide[] = [
-    {
-      title: "Welcome to Hand of Fate!",
-      content: (
-        <div className="space-y-4 text-gray-300">
-          <p>You are a mystic wielding powerful cards in strategic battles.</p>
-          <p>Your goal: <span className="text-yellow-400 font-semibold">Control 2 out of 3 columns</span> on the board to claim victory!</p>
-        </div>
-      ),
-      visual: (
-        <div className="flex justify-center my-6">
-          <div className="relative">
-            <Sparkles className="w-24 h-24 text-purple-400 animate-pulse" />
-            <div className="absolute inset-0 bg-purple-500/20 blur-2xl rounded-full" />
-          </div>
-        </div>
-      )
-    },
-    {
-      title: "Your Mystical Deck",
-      content: (
-        <div className="space-y-4 text-gray-300">
-          <p>Each player commands <span className="text-purple-400 font-semibold">5 mystical cards</span>:</p>
-          <ul className="list-disc list-inside space-y-1 ml-4">
-            <li><span className="text-blue-300">Two cards</span> with power <span className="font-bold">1</span> - Swift but weak</li>
-            <li><span className="text-green-300">Two cards</span> with power <span className="font-bold">3</span> - Balanced strength</li>
-            <li><span className="text-orange-300">One card</span> with power <span className="font-bold">5</span> - Your mightiest spell!</li>
-          </ul>
-          <p className="text-sm mt-3 text-yellow-300">Both players have identical decks - strategy is everything!</p>
-        </div>
-      ),
-      visual: (
-        <div className="my-6">
-          <div className="flex justify-center gap-2">
-            {[1, 1, 3, 3, 5].map((num, idx) => (
-              <div key={idx} className={`w-12 h-16 rounded-lg border-2 flex items-center justify-center transform hover:scale-110 transition-transform ${
-                num === 1 ? 'bg-blue-900/50 border-blue-400' :
-                num === 3 ? 'bg-green-900/50 border-green-400' :
-                'bg-orange-900/50 border-orange-400'
-              }`}>
-                <div className="text-xl font-bold text-white">{num}</div>
-              </div>
-            ))}
-          </div>
-          <p className="text-center text-xs text-gray-400 mt-3">Your complete deck of 5 cards</p>
-        </div>
-      )
-    },
-    {
-      title: "The Mystical Board",
-      content: (
-        <div className="space-y-4 text-gray-300">
-          <p>The board has <span className="text-blue-400 font-semibold">3 columns</span> and <span className="text-blue-400 font-semibold">5 rows</span>.</p>
-          <p>At game start, <span className="text-yellow-400 font-semibold">one random card</span> from each deck is automatically placed:</p>
-          <ul className="list-disc list-inside space-y-1 ml-4 text-sm">
-            <li>Player 1 (Blue): Drew their 5 → placed at Row 2, Column 2</li>
-            <li>Player 2 (Red): Drew a 3 → placed at Row 4, Column 2</li>
-          </ul>
-          <p className="text-sm text-orange-300 mt-2">⚡ Important: These cards are removed from your hand! You'll play with your remaining 4 cards.</p>
-        </div>
-      ),
-      visual: (
-        <div className="my-6 mx-auto max-w-sm">
-          <div className="grid grid-cols-3 gap-2">
-            {[...Array(15)].map((_, i) => {
-              const row = Math.floor(i / 3);
-              const col = i % 3;
-              const isPlayer1 = row === 1 && col === 1; // Row 2, Col 2 (0-indexed)
-              const isPlayer2 = row === 3 && col === 1; // Row 4, Col 2 (0-indexed)
-              
-              return (
-                <div 
-                  key={i} 
-                  className={`aspect-square rounded-lg border-2 flex items-center justify-center ${
-                    isPlayer1 ? 'border-blue-500 bg-blue-500/20' : 
-                    isPlayer2 ? 'border-red-500 bg-red-500/20' : 
-                    'border-gray-600 bg-gray-800/50'
-                  }`}
-                >
-                  {isPlayer1 && (
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-blue-400">5</div>
-                      <div className="text-xs text-blue-300">P1</div>
-                    </div>
-                  )}
-                  {isPlayer2 && (
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-red-400">3</div>
-                      <div className="text-xs text-red-300">P2</div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          <div className="grid grid-cols-3 gap-2 mt-4 text-center text-sm text-gray-400">
-            <div>Column 1</div>
-            <div>Column 2</div>
-            <div>Column 3</div>
-          </div>
-        </div>
-      )
-    },
-    {
-      title: "The Power of Random Fate",
-      content: (
-        <div className="space-y-4 text-gray-300">
-          <p className="font-semibold text-yellow-400">The random start creates unique strategies!</p>
-          <p>In this example:</p>
-          <ul className="list-disc list-inside space-y-2 ml-4 text-sm">
-            <li><span className="text-blue-400">Player 1</span> lost their only 5 (highest power)</li>
-            <li><span className="text-red-400">Player 2</span> lost one of their 3s (mid-power)</li>
-          </ul>
-          <p className="mt-3">This dramatically affects strategy:</p>
-          <ul className="list-disc list-inside space-y-1 ml-4 text-sm">
-            <li>Player 1 leads in Column 2 but has no more high-power cards!</li>
-            <li>Player 2 still has their powerful 5 card to play strategically</li>
-            <li>Player 1 must rely on positioning with their weaker cards</li>
-            <li>Player 2 can use their 5 to dominate a key column later</li>
-          </ul>
-        </div>
-      ),
-      visual: (
-        <div className="my-6 space-y-4">
-          <div className="text-center text-sm text-gray-400 mb-2">Remaining Cards in Hand</div>
-          <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
-            <div className="bg-blue-900/30 border border-blue-500/50 rounded-lg p-3">
-              <div className="text-blue-400 font-semibold text-sm mb-2">Player 1 (Blue)</div>
-              <div className="flex flex-wrap gap-1 justify-center">
-                {[1, 1, 3, 3].map((num, idx) => (
-                  <div key={idx} className="w-8 h-10 bg-blue-800/50 border border-blue-500 rounded flex items-center justify-center text-xs font-bold text-blue-300">
-                    {num}
-                  </div>
-                ))}
-              </div>
-              <div className="text-xs text-gray-400 mt-2 text-center">Lost their only 5!</div>
-            </div>
-            <div className="bg-red-900/30 border border-red-500/50 rounded-lg p-3">
-              <div className="text-red-400 font-semibold text-sm mb-2">Player 2 (Red)</div>
-              <div className="flex flex-wrap gap-1 justify-center">
-                {[1, 1, 3, 5].map((num, idx) => (
-                  <div key={idx} className="w-8 h-10 bg-red-800/50 border border-red-500 rounded flex items-center justify-center text-xs font-bold text-red-300">
-                    {num}
-                  </div>
-                ))}
-              </div>
-              <div className="text-xs text-gray-400 mt-2 text-center">Still has their 5!</div>
-            </div>
-          </div>
-        </div>
-      )
-    },
-    {
-      title: "Placing Your Cards",
-      content: (
-        <div className="space-y-4 text-gray-300">
-          <p className="font-semibold text-yellow-400">The Golden Rule:</p>
-          <p>You can only place cards <span className="text-green-400 font-semibold">adjacent</span> to your existing cards!</p>
-          <p className="text-sm">Adjacent means directly up, down, left, or right - not diagonal.</p>
-        </div>
-      ),
-      visual: (
-        <div className="my-6 mx-auto max-w-xs">
-          <div className="grid grid-cols-3 gap-2">
-            {[...Array(9)].map((_, i) => (
-              <div 
-                key={i} 
-                className={`aspect-square rounded-lg border-2 flex items-center justify-center ${
-                  i === 4 ? 'border-blue-500 bg-blue-500/20' : 
-                  [1, 3, 5, 7].includes(i) ? 'border-green-400 bg-green-400/10 animate-pulse' : 
-                  'border-gray-600 bg-gray-800/50'
-                }`}
+/** The 3x5 board at figure size. Rows top to bottom, columns left to right. */
+function MiniBoard({
+  cells,
+  highlight = [],
+  cellSize = 34,
+}: {
+  cells: BoardCell[][];
+  /** "row,col" keys drawn as legal placements. */
+  highlight?: string[];
+  cellSize?: number;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <div className="grid grid-cols-3 gap-1.5">
+        {cells.map((row, rowIndex) =>
+          row.map((cell, colIndex) => {
+            const key = `${rowIndex},${colIndex}`;
+            return (
+              <div
+                key={key}
+                style={{ width: cellSize, height: cellSize }}
+                className={cn(
+                  'rounded-[6px] border border-subtle bg-surface-1',
+                  highlight.includes(key) && !cell && 'cell-valid border-arcane-400/40',
+                )}
               >
-                {i === 4 && <div className="text-blue-400 font-bold">YOU</div>}
-                {[1, 3, 5, 7].includes(i) && <div className="text-green-400 text-2xl">✓</div>}
+                {cell && <MiniCard power={cell.power} side={cell.side} />}
               </div>
-            ))}
-          </div>
-          <p className="text-center text-sm text-gray-400 mt-3">Green squares show valid placement spots</p>
-        </div>
-      )
-    },
-    {
-      title: "Controlling Columns",
-      content: (
-        <div className="space-y-4 text-gray-300">
-          <p className="font-semibold text-yellow-400">How to win a column:</p>
-          <p>Add up <span className="text-orange-400 font-semibold">all your cards' power</span> in that column.</p>
-          <p>The player with the <span className="text-green-400 font-semibold">higher total</span> controls it!</p>
-          <p className="text-sm mt-3">Example: If a column has multiple cards from each player, sum them up!</p>
-        </div>
-      ),
-      visual: (
-        <div className="my-6 space-y-4">
-          <div className="text-center text-sm text-gray-400 mb-2">Example Column</div>
-          <div className="bg-gray-800/50 rounded-lg p-4 max-w-xs mx-auto">
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-blue-400">Blue cards: 5 + 1 =</span>
-                <span className="text-xl font-bold text-blue-400">6</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-red-400">Red cards: 3 + 3 =</span>
-                <span className="text-xl font-bold text-red-400">6</span>
-              </div>
-            </div>
-            <div className="mt-3 pt-3 border-t border-gray-600">
-              <div className="text-center text-yellow-400">It's a tie! No one controls this column.</div>
-            </div>
-          </div>
-        </div>
-      )
-    },
-    {
-      title: "Winning the Game",
-      content: (
-        <div className="space-y-4 text-gray-300">
-          <p className="text-lg font-semibold text-yellow-400">Victory Condition:</p>
-          <p>Control <span className="text-green-400 font-bold">2 out of 3 columns</span> when the game ends!</p>
-          <div className="mt-4 space-y-2 text-sm">
-            <p>The game ends when:</p>
-            <ul className="list-disc list-inside space-y-1 ml-4">
-              <li>All board positions are filled</li>
-              <li>No player can make valid moves</li>
-              <li>Players agree to calculate the winner early</li>
-            </ul>
-          </div>
-        </div>
-      ),
-      visual: (
-        <div className="my-6 flex justify-center items-center">
-          <Trophy className="w-24 h-24 text-yellow-400 animate-bounce" />
-        </div>
-      )
-    },
-    {
-      title: "Strategic Tips",
-      content: (
-        <div className="space-y-4 text-gray-300">
-          <div className="space-y-3">
-            <div className="flex items-start gap-2">
-              <Target className="w-5 h-5 text-purple-400 mt-0.5" />
-              <p className="text-sm">Focus on winning 2 columns - you don't need all 3!</p>
-            </div>
-            <div className="flex items-start gap-2">
-              <Layers className="w-5 h-5 text-blue-400 mt-0.5" />
-              <p className="text-sm">Block your opponent's expansion by placing cards strategically</p>
-            </div>
-            <div className="flex items-start gap-2">
-              <Sparkles className="w-5 h-5 text-yellow-400 mt-0.5" />
-              <p className="text-sm">Sometimes sacrificing a column to secure two others is the path to victory!</p>
-            </div>
-          </div>
-        </div>
-      )
-    }
-  ];
+            );
+          }),
+        )}
+      </div>
+      <div className="grid w-full grid-cols-3 gap-1.5">
+        {['Col 1', 'Col 2', 'Col 3'].map((label) => (
+          <span key={label} className="type-micro text-center text-ink-low">
+            {label}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
 
-  const current = slides[currentSlide];
-  const isFirstSlide = currentSlide === 0;
-  const isLastSlide = currentSlide === slides.length - 1;
+const emptyBoard = (): BoardCell[][] =>
+  Array.from({ length: 5 }, () => Array.from({ length: 3 }, () => null));
+
+const openingBoard = (): BoardCell[][] => {
+  const board = emptyBoard();
+  board[1][1] = { power: 3, side: OPPONENT }; // server places player 2 at (x1, y1)
+  board[3][1] = { power: 5, side: YOU }; // and player 1 at (x1, y3)
+  return board;
+};
+
+/** A hand card at figure size, echoing the real card frame. */
+function HandCard({ power, name, dimmed }: { power: number; name: string; dimmed?: boolean }) {
+  return (
+    <div
+      className={cn(
+        'flex h-[92px] w-[66px] flex-col items-center justify-center rounded-md border border-gold-400/60 bg-surface-0 shadow-card',
+        dimmed && 'opacity-35',
+      )}
+    >
+      <span className="font-display text-[9px] uppercase tracking-[0.12em] text-ink-mid">
+        {name}
+      </span>
+      <span className="mt-1 font-display text-2xl font-bold text-gold-300 tabular">{power}</span>
+    </div>
+  );
+}
+
+interface Step {
+  title: string;
+  figure: React.ReactNode;
+  points: string[];
+}
+
+const STEPS: Step[] = [
+  {
+    title: 'Welcome to Hand of Fate',
+    figure: (
+      <div className="flex items-end gap-3">
+        <HandCard power={1} name="Spark" />
+        <div className="scale-110">
+          <HandCard power={5} name="Thunder" />
+        </div>
+        <HandCard power={3} name="Lightning" />
+      </div>
+    ),
+    points: [
+      'Two mystics, one board, five cards each.',
+      'The board is three columns wide and five rows tall.',
+      'Win more columns than your opponent and the duel is yours.',
+    ],
+  },
+  {
+    title: 'Your Mystical Deck',
+    figure: (
+      <div className="flex items-center gap-2">
+        <HandCard power={1} name="Spark" />
+        <HandCard power={1} name="Spark" />
+        <HandCard power={3} name="Lightning" />
+        <HandCard power={3} name="Lightning" />
+        <HandCard power={5} name="Thunder" />
+      </div>
+    ),
+    points: [
+      'Five cards: two Sparks (1), two Lightnings (3), one Thunder (5).',
+      'Both players hold exactly the same deck.',
+      'Nothing is drawn mid-game — these five are everything you get.',
+    ],
+  },
+  {
+    title: 'The Ritual of Beginning',
+    figure: <MiniBoard cells={openingBoard()} />,
+    points: [
+      'Before the first turn, fate takes one random card from each hand.',
+      'Both land in the middle column — yours in gold, your opponent’s in crimson.',
+      'You start your first turn with the four cards that are left.',
+    ],
+  },
+  {
+    title: 'The Card Fate Took',
+    figure: (
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          <HandCard power={1} name="Spark" />
+          <HandCard power={1} name="Spark" />
+          <HandCard power={3} name="Lightning" />
+          <HandCard power={3} name="Lightning" />
+        </div>
+        <div className="relative">
+          <HandCard power={5} name="Thunder" dimmed />
+          <span className="type-micro absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-ink-low">
+            On the board
+          </span>
+        </div>
+      </div>
+    ),
+    points: [
+      'Which card fate takes is random, and it changes the whole plan.',
+      'Lose the Thunder and you must win columns by position, not power.',
+      'Keep it and you can seize a column late, in a single move.',
+    ],
+  },
+  {
+    title: 'Placing Your Cards',
+    figure: (
+      <MiniBoard
+        cells={openingBoard()}
+        highlight={['2,1', '4,1', '3,0', '3,2']}
+      />
+    ),
+    points: [
+      'A card may only go next to a card you already own.',
+      'Next to means up, down, left or right — never diagonally.',
+      'The legal squares light up the moment you pick a card.',
+    ],
+  },
+  {
+    title: 'Controlling a Column',
+    figure: (
+      <div className="flex flex-col items-center gap-3">
+        <MiniBoard
+          cells={(() => {
+            const board = emptyBoard();
+            board[1][1] = { power: 3, side: OPPONENT };
+            board[3][1] = { power: 5, side: YOU };
+            board[2][1] = { power: 3, side: YOU };
+            board[0][1] = { power: 3, side: OPPONENT };
+            return board;
+          })()}
+        />
+        <div className="flex items-center gap-6 text-sm">
+          <span className="text-gold-300">
+            You <span className="font-display text-lg font-bold tabular">8</span>
+          </span>
+          <span className="type-micro text-ink-low">Column 2</span>
+          <span className="text-danger">
+            Them <span className="font-display text-lg font-bold tabular">6</span>
+          </span>
+        </div>
+      </div>
+    ),
+    points: [
+      'Add up the power of your cards in a column.',
+      'The higher total controls it; an equal total controls it for nobody.',
+      'The column headers above the board keep the running score.',
+    ],
+  },
+  {
+    title: 'Winning the Duel',
+    figure: (
+      <div className="flex flex-col items-center gap-4">
+        <div className="flex items-end gap-3">
+          {[
+            { label: 'Col 1', owner: 'them' },
+            { label: 'Col 2', owner: 'you' },
+            { label: 'Col 3', owner: 'you' },
+          ].map((column) => (
+            <div key={column.label} className="flex flex-col items-center gap-2">
+              <div
+                className={cn(
+                  'flex h-16 w-16 items-center justify-center rounded-md border',
+                  column.owner === 'you'
+                    ? 'border-gold-400/45 bg-gold-400/10'
+                    : 'border-danger/45 bg-danger/10',
+                )}
+              >
+                {column.owner === 'you' ? (
+                  <Crown size={22} strokeWidth={1.75} className="text-gold-300" />
+                ) : (
+                  <X size={22} strokeWidth={1.75} className="text-danger" />
+                )}
+              </div>
+              <span className="type-micro text-ink-low">{column.label}</span>
+            </div>
+          ))}
+        </div>
+        <p className="type-micro text-gold-300">You take two columns to one</p>
+      </div>
+    ),
+    points: [
+      'Whoever controls more columns at the end wins.',
+      'The duel ends when the board fills, or when nobody can move.',
+      'Either player may propose ending early; both must agree.',
+    ],
+  },
+  {
+    title: 'Strategic Tips',
+    figure: (
+      <MiniBoard
+        cells={(() => {
+          const board = emptyBoard();
+          board[1][1] = { power: 3, side: OPPONENT };
+          board[3][1] = { power: 5, side: YOU };
+          board[2][1] = { power: 3, side: YOU };
+          board[3][2] = { power: 5, side: YOU };
+          board[0][1] = { power: 3, side: OPPONENT };
+          board[0][0] = { power: 1, side: OPPONENT };
+          return board;
+        })()}
+        highlight={['4,2', '2,2']}
+      />
+    ),
+    points: [
+      'Two columns is enough — the third can be conceded on purpose.',
+      'Placing next to your own card is also how you deny them room.',
+      'Hold the Thunder until a column is close, then take it outright.',
+    ],
+  },
+];
+
+export default function GameTutorial({
+  open,
+  onClose,
+  finishLabel = 'Start Playing',
+}: GameTutorialProps) {
+  const [index, setIndex] = useState(0);
+
+  // Reopening starts at the beginning rather than wherever it was left.
+  useEffect(() => {
+    if (open) setIndex(0);
+  }, [open]);
+
+  const step = STEPS[index];
+  const isFirst = index === 0;
+  const isLast = index === STEPS.length - 1;
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto" onClick={onClose}>
-      <Card className="w-full max-w-2xl my-auto bg-gradient-to-br from-purple-900/90 via-blue-900/90 to-indigo-900/90 backdrop-blur-md border-purple-500/50 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <CardHeader className="relative">
-          <button
-            onClick={onClose}
-            className="absolute right-4 top-4 text-gray-400 hover:text-white transition-colors"
-            aria-label="Close tutorial"
-          >
-            <X className="w-6 h-6" />
-          </button>
-          <CardTitle className="text-2xl text-center bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
-            {current.title}
-          </CardTitle>
-          <div className="flex justify-center mt-2 gap-1">
-            {slides.map((_, index) => (
-              <div
-                key={index}
-                className={`h-2 rounded-full transition-all ${
-                  index === currentSlide 
-                    ? 'w-8 bg-purple-400' 
-                    : 'w-2 bg-gray-600'
-                }`}
-              />
-            ))}
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6 max-h-[60vh] overflow-y-auto">
-          <div className="space-y-6">
-            {current.visual}
-            {current.content}
-          </div>
-        </CardContent>
-        <div className="p-6 border-t border-purple-500/30">
-          <div className="flex justify-between items-center">
-            <Button
-              variant="outline"
-              onClick={prevSlide}
-              disabled={isFirstSlide}
-              className="bg-gray-800/50 hover:bg-gray-700/50 border-gray-600 text-white disabled:opacity-30"
-            >
-              <ChevronLeft className="w-4 h-4 mr-1" />
-              Previous
-            </Button>
-            
-            <span className="text-sm text-gray-400">
-              {currentSlide + 1} / {slides.length}
-            </span>
-            
-            {isLastSlide ? (
-              <Button
-                onClick={onClose}
-                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
-              >
-                Start Playing!
-              </Button>
-            ) : (
-              <Button
-                onClick={nextSlide}
-                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
-              >
-                Next
-                <ChevronRight className="w-4 h-4 ml-1" />
-              </Button>
-            )}
+    <Modal
+      open={open}
+      onClose={onClose}
+      closeOnOverlayClick={false}
+      showCloseButton={false}
+      widthClassName="w-[680px] max-w-full"
+      className="flex h-[600px] max-h-[90dvh] flex-col overflow-hidden"
+      contentClassName="contents"
+    >
+      {/* Header — 88px, and it does not move */}
+      <div className="relative flex h-[88px] shrink-0 flex-col justify-center border-b border-subtle px-6">
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close tutorial"
+          className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-md text-ink-low transition-colors duration-150 hover:bg-surface-3 hover:text-ink-hi focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcane-400"
+        >
+          <X size={18} strokeWidth={1.75} />
+        </button>
+
+        <h2 className="text-gold-gradient font-display text-2xl font-bold leading-tight">
+          {step.title}
+        </h2>
+        <div className="mt-2 flex items-center gap-3">
+          <span className="type-micro text-ink-low">
+            Step {index + 1} of {STEPS.length}
+          </span>
+          <div className="h-[3px] w-40 overflow-hidden rounded-full bg-surface-3">
+            <div
+              className="h-full rounded-full bg-gold-400 transition-[width] duration-200 ease-arcane"
+              style={{ width: `${((index + 1) / STEPS.length) * 100}%` }}
+            />
           </div>
         </div>
-      </Card>
-    </div>
+      </div>
+
+      {/* Content — the only part that scrolls */}
+      <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+        <div className="flex h-[260px] items-center justify-center">{step.figure}</div>
+        <ul className="mt-5 space-y-2.5">
+          {step.points.map((point) => (
+            <li key={point} className="flex items-start gap-2.5 text-sm text-ink-mid">
+              <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rotate-45 bg-gold-400" />
+              {point}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Footer — 72px, fixed */}
+      <div className="flex h-[72px] shrink-0 items-center justify-between border-t border-subtle px-6">
+        <div className="w-32">
+          {!isFirst && (
+            <Button variant="ghost" onClick={() => setIndex(index - 1)}>
+              <ChevronLeft size={16} strokeWidth={1.75} />
+              Previous
+            </Button>
+          )}
+        </div>
+
+        <span className="type-micro text-ink-low">
+          Step {index + 1} of {STEPS.length}
+        </span>
+
+        <div className="flex w-32 justify-end">
+          {isLast ? (
+            <Button variant="primary" onClick={onClose}>
+              {finishLabel}
+            </Button>
+          ) : (
+            <Button variant="primary" onClick={() => setIndex(index + 1)}>
+              Next
+              <ChevronRight size={16} strokeWidth={1.75} />
+            </Button>
+          )}
+        </div>
+      </div>
+    </Modal>
   );
 }
