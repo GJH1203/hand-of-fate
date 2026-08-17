@@ -271,22 +271,31 @@ class GameWebSocketService {
     this.ws.send(JSON.stringify(message));
   }
 
-  requestGameState(): void {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+  /**
+   * Asks the server to describe the game. Answers whether it managed to ask.
+   *
+   * It used to return silently when the socket was not open, which is exactly what
+   * happens for a moment after a reconnect — so the one request a rejoining client
+   * makes could vanish without a trace on either side, and the player waited on a
+   * board that nobody had been asked for.
+   */
+  requestGameState(): boolean {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      console.warn('Cannot request game state: socket is not open');
+      return false;
+    }
     if (!this.currentMatchId || !this.currentPlayerId) {
-      console.error('Cannot request game state without match/player ID');
-      return;
+      console.warn('Cannot request game state without match/player ID');
+      return false;
     }
 
-    const message: WebSocketMessage = {
-      type: MessageType.GAME_STATE_REQUEST,
-      data: {
-        matchId: this.currentMatchId,
-        playerId: this.currentPlayerId
-      }
-    };
-
-    this.ws.send(JSON.stringify(message));
+    this.ws.send(
+      JSON.stringify({
+        type: MessageType.GAME_STATE_REQUEST,
+        data: { matchId: this.currentMatchId, playerId: this.currentPlayerId },
+      } satisfies WebSocketMessage),
+    );
+    return true;
   }
 
   disconnect(): void {

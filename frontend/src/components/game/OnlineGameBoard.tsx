@@ -101,23 +101,36 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
      * the player would sit on a spinner for ever, so this says so instead.
      */
     const firstStateTimer = useRef<number | null>(null);
+    const firstStateRetry = useRef<number | null>(null);
+
+    const settleFirstState = useCallback(() => {
+        window.clearTimeout(firstStateTimer.current ?? undefined);
+        window.clearInterval(firstStateRetry.current ?? undefined);
+        firstStateTimer.current = null;
+        firstStateRetry.current = null;
+    }, []);
 
     const awaitFirstState = useCallback(() => {
-        window.clearTimeout(firstStateTimer.current ?? undefined);
+        settleFirstState();
+        // Asking once is not enough. The socket is briefly not open right after a
+        // rejoin, and a request made in that window is dropped before it is sent —
+        // which is how reconnecting into a live duel ended up waiting for a board
+        // nobody had asked the server for. Keep asking until it answers.
+        firstStateRetry.current = window.setInterval(() => {
+            gameWebSocketService.requestGameState();
+        }, 800);
         firstStateTimer.current = window.setTimeout(() => {
             setGameState((current) => {
                 if (!current) {
+                    settleFirstState();
                     setFatalError('The game server did not send the board. Please try again.');
                 }
                 return current;
             });
         }, 10000);
-    }, []);
+    }, [settleFirstState]);
 
-    const settleFirstState = useCallback(() => {
-        window.clearTimeout(firstStateTimer.current ?? undefined);
-        firstStateTimer.current = null;
-    }, []);
+    useEffect(() => settleFirstState, [settleFirstState]);
 
     const settlePendingMove = useCallback(() => {
         if (pendingMove.current) {
@@ -361,9 +374,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                         // had no cards left, with no sign that anything was still coming.
                         setIsInLobby(false);
                         awaitFirstState();
-                        setTimeout(() => {
-                            gameWebSocketService.requestGameState();
-                        }, 100);
+                        gameWebSocketService.requestGameState();
                     }
                 } else {
                     // Create new match
