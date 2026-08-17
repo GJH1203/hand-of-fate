@@ -10,6 +10,21 @@ import { getAccessToken } from '@/lib/apiClient';
  */
 const BEARER_SUBPROTOCOL = 'bearer';
 
+/**
+ * The subject of a Supabase access token — who the socket is authenticated as.
+ *
+ * Read locally rather than trusted: it is only ever compared against another token
+ * this client just fetched, to notice that the signed-in user changed.
+ */
+function subjectOf(token: string): string | null {
+  try {
+    const payload = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(atob(payload)).sub ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export enum MessageType {
   // Connection
   CONNECTION_SUCCESS = 'CONNECTION_SUCCESS',
@@ -62,6 +77,8 @@ class GameWebSocketService {
   private isReconnecting = false;
   private currentMatchId: string | null = null;
   private currentPlayerId: string | null = null;
+  /** Whose token opened this socket. A handshake authenticates once and never again. */
+  private authenticatedSub: string | null = null;
 
   async connect(callbacks: GameWebSocketCallbacks): Promise<void> {
     // Read before opening the socket: the backend rejects a handshake it cannot attribute
@@ -70,6 +87,7 @@ class GameWebSocketService {
     if (!token) {
       throw new Error('Not signed in — cannot open a game connection');
     }
+    this.authenticatedSub = subjectOf(token);
 
     return new Promise((resolve, reject) => {
       try {
@@ -291,6 +309,7 @@ class GameWebSocketService {
     // Clear state
     this.currentMatchId = null;
     this.currentPlayerId = null;
+    this.authenticatedSub = null;
   }
 
   isConnected(): boolean {
@@ -299,8 +318,19 @@ class GameWebSocketService {
 
   async ensureConnected(callbacks: GameWebSocketCallbacks): Promise<void> {
     if (this.isConnected()) {
-      console.log('WebSocket already connected');
-      return;
+      // A socket authenticates once, at the handshake, and carries that identity for
+      // its whole life. Signing out and back in as somebody else leaves the page
+      // acting as the new player over a socket that is still the old one — the server
+      // refuses every action with "asked to join as X but the token says Y", and
+      // nothing on the client notices. Compare and re-open.
+      const token = await getAccessToken();
+      const sub = token ? subjectOf(token) : null;
+      if (sub && this.authenticatedSub && sub === this.authenticatedSub) {
+        console.log('WebSocket already connected');
+        return;
+      }
+      console.log('WebSocket belongs to a previous session, reconnecting');
+      this.disconnect();
     }
     
     console.log('WebSocket not connected, establishing connection...');

@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { unifiedAuthService, UnifiedAuthResponse } from '@/services/unifiedAuthService';
 import { SESSION_EXPIRED_EVENT, resetSessionExpiry } from '@/lib/apiClient';
+import { gameWebSocketService } from '@/services/gameWebSocketService';
 import { useRouter } from 'next/navigation';
 import { User } from '@supabase/supabase-js';
 
@@ -126,6 +127,11 @@ export function UnifiedAuthProvider({ children }: { children: ReactNode }) {
     };
 
     const logout = async () => {
+        // The game socket authenticated as this user at its handshake and cannot be
+        // re-authenticated. Leaving it open means the next person to sign in on this
+        // tab acts as themselves over somebody else's connection, and every match
+        // action is refused by the server.
+        gameWebSocketService.disconnect();
         await unifiedAuthService.signOut();
         setIsAuthenticated(false);
         setUser(null);
