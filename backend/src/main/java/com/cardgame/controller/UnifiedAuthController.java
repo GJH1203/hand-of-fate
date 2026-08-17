@@ -167,13 +167,29 @@ public class UnifiedAuthController {
             
             // Player has Nakama account, create a new session
             Session nakamaSession = authenticateWithNakama(player);
+
             if (nakamaSession == null) {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ImmutableAuthDto.builder()
-                        .isSuccess(false)
-                        .message("Failed to create game session")
-                        .build());
+                // A stored id can outlive the account it names. Nakama's Postgres was
+                // replaced when it moved onto a volume of its own, so every player kept
+                // a nakamaUserId pointing at an account that no longer exists — and the
+                // branch above only creates one when the id is null, which theirs is
+                // not. Without this they can never sign in again.
+                logger.warn("Nakama has no account for player {}; the stored id {} is stale. Recreating.",
+                        player.getId(), player.getNakamaUserId());
+                nakamaSession = createNakamaAccount(player, email);
+
+                if (nakamaSession == null) {
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ImmutableAuthDto.builder()
+                            .isSuccess(false)
+                            .message("Failed to create game session")
+                            .build());
+                }
+
+                player.setNakamaUserId(nakamaSession.getUserId());
+                playerService.savePlayer(player);
+                logger.info("Relinked player {} to Nakama account {}", player.getId(), nakamaSession.getUserId());
             }
-            
+
             playerLoginCounter.increment();
             return ResponseEntity.ok(buildAuthResponse(player, nakamaSession));
             
