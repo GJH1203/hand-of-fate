@@ -107,12 +107,23 @@ into a second run at 100 concurrent players. The heap was never the problem — 
 full GC showed ~30 MiB live. It now sustains 100 concurrent sockets: 6,110 moves
 over two minutes, no errors, RSS flat at ~630 MiB.
 
-**The tail grows with the size of the games collection.** In that same run p50 was
-15 ms and p99 was 755 ms, and re-running against a database already holding a few
-hundred games pushes p99 past two seconds while memory stays flat. That is
-`getMatchState` scanning the whole collection and `findActiveGameForPlayer` doing
-the same, not anything the machine ran out of — it is the item above, and it is
-what goal 3 and 4 are for.
+**~~The tail grows with the size of the games collection.~~** Was p99 755 ms rising
+past two seconds once a few hundred games had accumulated. The collections carried
+no indexes at all — `spring.data.mongodb.auto-index-creation` defaults to false, so
+the `@Indexed` annotations built nothing — and `getMatchState` read every game into
+the JVM to find one. `MongoIndexes` now creates what the hot queries need, that
+lookup is an equality query, and a move no longer re-reads players once per
+connected socket. p95 205 ms → 52 ms, p99 755 ms → 91 ms, max 1.8 s → 196 ms, and a
+second run against 850 accumulated games only reaches p95 60 ms.
+
+**Player's unique indexes do not exist.** `Player` declares `@Indexed(unique = true)`
+on name, email, `nakamaUserId` and `supabaseUserId`, and none of them is built,
+because auto-index-creation is off. Nothing at the database level stops a second
+account on an existing email — which is exactly what the `@Disabled` test in
+`SupabaseEmailVerificationIntegrationTest` says. Turning auto-index-creation on is
+*not* the fix on its own: the indexes are not sparse and those last two fields are
+nullable, so a second document with a null would fail the build and stop the
+application starting. It needs a duplicate audit against production first.
 
 Numbers come from an Apple Silicon laptop with two CPUs allocated, against a local
 MongoDB. Production is a `t4g.small` sharing two vCPU with postgres, Nakama and
@@ -223,13 +234,12 @@ session is a judgement call that changes with what the project needs next.
    possible.
 4. **Make matches survive a restart.** Either commit to Nakama's match API or
    persist match state properly. Add optimistic locking while here.
-5. **Hold 100 concurrent players.** It does, as of the JVM sizing fix — two
-   minutes of sustained 100-socket play with no errors. What it does not do is
-   hold them *well*: p99 is 755 ms against a p50 of 15 ms, and it degrades as the
-   games collection grows, which is 3 and 4 above rather than anything here. What
-   is left for this item is re-running `loadtest/` after those land and deciding
-   whether one `t4g.small` is still the right size. Prometheus and Grafana are
-   still not worth the money: the question "which resource gives out first" got
+5. **Hold 100 concurrent players.** It does, and now holds them well: p50 11 ms,
+   p95 52 ms, p99 91 ms over two minutes of sustained 100-socket play, no errors,
+   memory flat. What is left is a decision rather than work — a move still costs
+   about ten database round trips, and the floor while the database is on the hot
+   path is one Atlas round trip times that. Taking it off the hot path is item 4.
+   Prometheus and Grafana are still not worth the money: every question so far got
    answered by `docker stats`, a class histogram and a container exit code.
 6. **Frontend.** Break up the 900-line components, fix reconnection, delete the
    dead services. (The home page's Power Score is real data, not a placeholder —
