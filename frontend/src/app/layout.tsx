@@ -11,7 +11,7 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-    title: "Queen's Blood",
+    title: 'Hand of Fate',
     description: 'A strategic card placement game',
 }
 
