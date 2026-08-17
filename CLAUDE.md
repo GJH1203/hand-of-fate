@@ -185,9 +185,8 @@ should name is `https://api.handoffate.org`.
 security tests are plain unit tests, but everything else is still
 `@SpringBootTest` against a live MongoDB — there is no Testcontainers. Each
 class uses a database of its own; they used to share one and delete each other's
-data. Two tests are `@Disabled`, each with the reason on it: adjacency
-validation wrongly permits some moves, and player creation does not reject a
-second account on an existing email.
+data. One test is `@Disabled`, with the reason on it: player creation does not
+reject a second account on an existing email.
 
 **Frontend reconnect is dead code.** `connect()` sets `isReconnecting = true`
 on entry and `handleReconnect()` returns early when it is true, so a dropped

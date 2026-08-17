@@ -11,7 +11,6 @@ import com.cardgame.service.GameService;
 import com.cardgame.support.IntegrationTestBase;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Disabled;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
 
@@ -155,34 +154,30 @@ class GameFlowIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
-    @Disabled("Adjacency validation needs investigation - move being allowed when it shouldn't be")
     void testInvalidCardPlacement_NotAdjacent() {
         GameDto game = gameService.initializeGame(player1.getId(), player2.getId(), deck1.getId(), deck2.getId());
 
-        // Player 1 tries to place card in non-adjacent position
+        // Player 1's only card on the board is the one placed at (1,3) during
+        // initialization. (0,0) is orthogonally adjacent to (0,1) and (1,0), and neither
+        // holds a card of theirs.
         CardDto cardToPlace = game.getCurrentPlayerHand().get(0);
         Card card = new Card(cardToPlace.getId(), cardToPlace.getPower(), cardToPlace.getName());
         PlayerAction action = ImmutablePlayerAction.builder()
                 .type(PlayerAction.ActionType.PLACE_CARD)
                 .playerId(player1.getId())
                 .card(card)
-                .targetPosition(new Position(0, 0)) // Not adjacent to (2,4)
+                .targetPosition(new Position(0, 0))
                 .timestamp(System.currentTimeMillis())
                 .build();
 
-        // Should throw exception (could be InvalidMoveException or IllegalArgumentException)
-        try {
-            GameDto result = gameService.processMove(game.getId(), action);
-            // If we get here, the move was allowed when it shouldn't be
-            System.out.println("DEBUG: Move was allowed! Board state:");
-            System.out.println("Board pieces: " + result.getBoard().getPieces());
-            System.out.println("Current player: " + result.getCurrentPlayerId());
-            fail("Expected exception to be thrown for non-adjacent card placement, but move was allowed");
-        } catch (Exception e) {
-            // This is expected - the move should fail
-            System.out.println("DEBUG: Exception correctly thrown: " + e.getClass().getSimpleName() + " - " + e.getMessage());
-            assertTrue(true, "Exception correctly thrown: " + e.getMessage());
-        }
+        // Name the reason as well as the refusal. Every other way this move could fail —
+        // an unknown card, an occupied position, the wrong turn — also throws
+        // InvalidMoveException, so a test that only asserts "something was thrown" would
+        // keep passing after adjacency had stopped being checked at all.
+        InvalidMoveException thrown = assertThrows(InvalidMoveException.class,
+                () -> gameService.processMove(game.getId(), action));
+        assertTrue(thrown.getMessage().contains("adjacent"),
+                "Expected the move to be refused for adjacency, but got: " + thrown.getMessage());
     }
 
     @Test
