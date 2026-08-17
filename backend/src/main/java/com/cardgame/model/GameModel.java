@@ -1,6 +1,7 @@
 package com.cardgame.model;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Version;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
@@ -15,6 +16,14 @@ public class GameModel {
 
     @Id // Marks the primary key for this document's ID
     private String id;
+
+    /**
+     * Guards the read-modify-write race: two moves load the same game, both apply to
+     * their own copy, and whichever saves second silently discards the first. Writing
+     * one document is atomic on its own, so this is all that is left to protect.
+     */
+    @Version
+    private Long version;
 
     private GameState gameState;
 
@@ -158,6 +167,14 @@ public class GameModel {
 
     public void setPlayerIds(List<String> playerIds) {
         this.playerIds = playerIds;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
     }
 
     public Map<String, List<Card>> getHands() {
