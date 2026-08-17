@@ -267,17 +267,22 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
     }, [user]);
 
 
-    // Track if match has been initialized
-    const [matchInitialized, setMatchInitialized] = useState(false);
-    const [isJoining, setIsJoining] = useState(false);
+    // Track if match has been initialized.
+    //
+    // The guard is a ref, not state. Creating a match is not idempotent — the server
+    // clears every waiting room you already own before making a new one — so a second
+    // run does not just waste a request, it deletes the room whose code is on screen
+    // and leaves the player reading a code nobody can join. State would not have
+    // stopped that: two effect runs before React flushes both see `false`.
+    const initStarted = useRef(false);
 
     // Initialize or join match
     useEffect(() => {
-        if (!user || !isConnected || matchInitialized || isJoining) return;
+        if (!user || !isConnected || initStarted.current) return;
+        initStarted.current = true;
 
         const initializeMatch = async () => {
             try {
-                setIsJoining(true);
                 setIsLoading(true);
                 setError(null);
 
@@ -292,7 +297,6 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                 if (!gameWebSocketService.isConnected()) {
                     setFatalError('The connection to the game server dropped. Reload the page to try again.');
                     setIsLoading(false);
-                    setIsJoining(false);
                     return;
                 }
 
@@ -308,8 +312,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                         console.error('Failed to join WebSocket room:', err);
                         setFatalError('Could not enter the battle room. Please try again.');
                         setIsLoading(false);
-                        setIsJoining(false);
-                        return;
+                            return;
                     }
 
                     const mockMatch: OnlineMatchInfo = {
@@ -373,8 +376,6 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                     }
                 }
 
-                // Mark as initialized to prevent duplicate attempts
-                setMatchInitialized(true);
             } catch (err) {
                 console.error(err);
                 setFatalError(
@@ -384,12 +385,11 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                 );
             } finally {
                 setIsLoading(false);
-                setIsJoining(false);
             }
         };
 
         initializeMatch();
-    }, [user, matchId, isConnected, matchInitialized, isJoining]);
+    }, [user, matchId, isConnected]);
 
     // Handle lobby events
     const handleGameStart = useCallback(() => {

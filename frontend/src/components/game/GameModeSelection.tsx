@@ -25,6 +25,10 @@ export default function GameModeSelection({ onModeSelect }: GameModeSelectionPro
   const [code, setCode] = useState('');
   const [activeGame, setActiveGame] = useState<ActiveGame | null>(null);
   const [pendingAction, setPendingAction] = useState<'create' | 'join' | null>(null);
+  // Creating a match is not idempotent on the server — it clears any waiting room you
+  // already own — so the second of two quick clicks would delete the room the first
+  // one made. One dispatch per visit to this screen.
+  const [dispatched, setDispatched] = useState(false);
 
   const checkForActiveGame = useCallback(async () => {
     if (!user?.playerId) return;
@@ -41,9 +45,11 @@ export default function GameModeSelection({ onModeSelect }: GameModeSelectionPro
   }, [checkForActiveGame]);
 
   const startCreate = () => {
+    if (dispatched) return;
     if (activeGame) {
       setPendingAction('create');
     } else {
+      setDispatched(true);
       onModeSelect(GameMode.ONLINE);
     }
   };
@@ -70,6 +76,7 @@ export default function GameModeSelection({ onModeSelect }: GameModeSelectionPro
     setActiveGame(null);
 
     if (action === 'create') {
+      setDispatched(true);
       onModeSelect(GameMode.ONLINE);
     } else if (action === 'join') {
       setShowJoin(true);
@@ -77,7 +84,9 @@ export default function GameModeSelection({ onModeSelect }: GameModeSelectionPro
   };
 
   const handleReconnect = () => {
+    if (dispatched) return;
     if (activeGame?.matchId) {
+      setDispatched(true);
       onModeSelect(GameMode.ONLINE, activeGame.matchId.replace('nakama_', ''));
     }
   };
@@ -91,7 +100,8 @@ export default function GameModeSelection({ onModeSelect }: GameModeSelectionPro
    * arena screen instead, which is where the join actually happens.
    */
   const submitJoin = () => {
-    if (code.length !== 6) return;
+    if (code.length !== 6 || dispatched) return;
+    setDispatched(true);
     setShowJoin(false);
     onModeSelect(GameMode.ONLINE, code);
   };
@@ -156,11 +166,23 @@ export default function GameModeSelection({ onModeSelect }: GameModeSelectionPro
                   </>
                 )}
 
-                <Button variant="primary" size="lg" className="w-full" onClick={startCreate}>
+                <Button
+                  variant="primary"
+                  size="lg"
+                  className="w-full"
+                  onClick={startCreate}
+                  disabled={dispatched}
+                >
                   <Zap size={18} strokeWidth={1.75} />
                   Create Game
                 </Button>
-                <Button variant="secondary" size="lg" className="w-full" onClick={startJoin}>
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  className="w-full"
+                  onClick={startJoin}
+                  disabled={dispatched}
+                >
                   <KeyRound size={18} strokeWidth={1.75} />
                   Join with Code
                 </Button>
@@ -191,7 +213,7 @@ export default function GameModeSelection({ onModeSelect }: GameModeSelectionPro
           <Button variant="ghost" onClick={() => setShowJoin(false)}>
             Back
           </Button>
-          <Button variant="primary" onClick={submitJoin} disabled={code.length !== 6}>
+          <Button variant="primary" onClick={submitJoin} disabled={code.length !== 6 || dispatched}>
             Join Battle
           </Button>
         </div>
