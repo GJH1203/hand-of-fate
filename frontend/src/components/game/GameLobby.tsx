@@ -1,9 +1,14 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import React, { useEffect, useRef, useState } from 'react';
+import { Check, CheckCircle2, Copy, Share2, Shield } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
-import { Copy, CheckCircle, Users, Loader2, Sparkles, Shield } from 'lucide-react';
+import { Modal } from '@/components/ui/modal';
+import { Panel, PanelBody } from '@/components/ui/panel';
+import { Spinner } from '@/components/ui/spinner';
+import { useToast } from '@/components/ui/toast';
+import { onlineGameService } from '@/services/onlineGameService';
 import { OnlineMatchInfo } from '@/types/gameMode';
 
 interface GameLobbyProps {
@@ -13,190 +18,188 @@ interface GameLobbyProps {
   onCancel: () => void;
 }
 
-export default function GameLobby({ 
-  matchInfo, 
-  currentPlayerId, 
-  onGameStart, 
-  onCancel 
+/** How often the host asks the server whether anyone has turned up. */
+const POLL_INTERVAL_MS = 5000;
+
+export default function GameLobby({
+  matchInfo,
+  currentPlayerId,
+  onGameStart,
+  onCancel,
 }: GameLobbyProps) {
-  const [copied, setCopied] = useState(false);
+  const toast = useToast();
+  const [copiedCode, setCopiedCode] = useState(false);
+  const [confirmAbandon, setConfirmAbandon] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
 
   const isHost = matchInfo.player1Id === currentPlayerId;
   const hasOpponent = !!matchInfo.player2Id;
-  const gameCode = matchInfo.matchId.slice(-6).toUpperCase(); // Last 6 chars as game code
+  const gameCode = matchInfo.matchId.slice(-6).toUpperCase();
+
+  const onGameStartRef = useRef(onGameStart);
+  onGameStartRef.current = onGameStart;
 
   useEffect(() => {
-    if (hasOpponent && countdown === null) {
-      setCountdown(3);
-    }
+    if (hasOpponent && countdown === null) setCountdown(3);
   }, [hasOpponent, countdown]);
 
   useEffect(() => {
-    if (countdown !== null && countdown > 0) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-      return () => clearTimeout(timer);
-    } else if (countdown === 0) {
-      onGameStart();
+    if (countdown === null) return;
+    if (countdown === 0) {
+      onGameStartRef.current();
+      return;
     }
-  }, [countdown, onGameStart]);
+    const timer = window.setTimeout(() => setCountdown(countdown - 1), 1000);
+    return () => window.clearTimeout(timer);
+  }, [countdown]);
 
-  const copyGameCode = () => {
-    navigator.clipboard.writeText(gameCode);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  /*
+   * The socket event that says "your opponent arrived" does not always reach the host,
+   * which left them watching this screen while the game they created was already under
+   * way. Asking the server directly every few seconds costs one request and closes it.
+   * `/match/{id}/state` only answers once the game exists — which is exactly the moment
+   * the second player joined — so a successful reply is the signal.
+   */
+  useEffect(() => {
+    if (!isHost || hasOpponent) return;
+
+    let cancelled = false;
+    const poll = window.setInterval(async () => {
+      try {
+        await onlineGameService.getMatchState(matchInfo.matchId);
+        if (!cancelled) onGameStartRef.current();
+      } catch {
+        // Still nobody there. Nothing to report.
+      }
+    }, POLL_INTERVAL_MS);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(poll);
+    };
+  }, [isHost, hasOpponent, matchInfo.matchId]);
+
+  const copyCode = async () => {
+    await navigator.clipboard.writeText(gameCode);
+    setCopiedCode(true);
+    toast('Code copied', 'success');
+    window.setTimeout(() => setCopiedCode(false), 2000);
   };
 
-  const shareLink = () => {
-    const url = `${window.location.origin}/game?join=${gameCode}`;
-    navigator.clipboard.writeText(url);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const copyLink = async () => {
+    await navigator.clipboard.writeText(`${window.location.origin}/game?join=${gameCode}`);
+    toast('Link copied', 'success');
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 relative overflow-hidden">
-      {/* Animated background particles */}
-      <div className="absolute inset-0">
-        {[...Array(40)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute animate-float"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 10}s`,
-              animationDuration: `${10 + Math.random() * 20}s`
-            }}
-          >
-            <div className="w-1 h-1 bg-purple-400 rounded-full opacity-60 blur-sm" />
-          </div>
-        ))}
-      </div>
-
-      {/* Mystical orb effects */}
-      <div className="absolute top-40 left-40 w-64 h-64 bg-purple-600/20 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute bottom-40 right-40 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
-
-      <Card className="w-full max-w-md relative z-10 bg-gradient-to-br from-purple-800/60 to-blue-800/60 backdrop-blur-md border-purple-500/50 shadow-2xl">
-        <CardHeader className="border-b border-purple-500/30">
-          <CardTitle className="text-3xl font-bold text-center bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
+    <main className="flex min-h-dvh items-center justify-center px-6 py-10">
+      <Panel className="w-full max-w-[460px]">
+        <PanelBody className="p-7">
+          <h1 className="type-h2 text-center text-ink-hi">
             {isHost ? 'Summoning Opponent' : 'Entering Arena'}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6 p-6">
-          {/* Game Code Display */}
-          <div className="text-center">
-            <p className="text-sm text-purple-200 mb-3 flex items-center justify-center gap-2">
-              <Sparkles className="w-4 h-4" />
-              Sacred Battle Code
-              <Sparkles className="w-4 h-4" />
-            </p>
-            <div className="relative inline-block">
-              <div className="absolute inset-0 bg-yellow-500/20 rounded-lg blur-xl" />
-              <div className="relative flex items-center gap-2 bg-black/50 px-6 py-3 rounded-lg border-2 border-yellow-500/50">
-                <code className="text-4xl font-mono font-bold tracking-widest text-yellow-400 drop-shadow-lg">
-                  {gameCode}
-                </code>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={copyGameCode}
-                  className="ml-2 hover:bg-yellow-500/20 text-yellow-400 hover:text-yellow-300"
-                >
-                  {copied ? (
-                    <CheckCircle className="w-5 h-5" />
-                  ) : (
-                    <Copy className="w-5 h-5" />
-                  )}
-                </Button>
-              </div>
-            </div>
+          </h1>
+          <p className="type-small mt-1 text-center text-ink-low">Sacred Battle Code</p>
+
+          <div
+            className="mt-4 flex items-center justify-between gap-3 rounded-lg bg-surface-0 px-5 py-4"
+            style={{ border: '2px solid rgba(217,174,78,0.45)' }}
+          >
+            <code className="flex-1 text-center font-display text-[40px] font-bold leading-none tracking-[0.25em] text-gold-300 tabular">
+              {gameCode}
+            </code>
+            <button
+              type="button"
+              onClick={copyCode}
+              aria-label="Copy the battle code"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-gold-400 transition-colors duration-150 hover:bg-gold-400/10 hover:text-gold-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcane-400"
+            >
+              {copiedCode ? (
+                <Check size={18} strokeWidth={1.75} />
+              ) : (
+                <Copy size={18} strokeWidth={1.75} />
+              )}
+            </button>
           </div>
 
-          {/* Players Status */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-900/30 to-emerald-900/30 rounded-lg border border-green-700/50">
-              <div className="flex items-center gap-3">
-                <Shield className="w-5 h-5 text-green-400" />
-                <span className="font-medium text-green-200">Champion (Host)</span>
-              </div>
-              <CheckCircle className="w-6 h-6 text-green-400 drop-shadow-lg" />
+          <div className="mt-6 space-y-2.5">
+            <div
+              className="flex items-center justify-between rounded-md px-4 py-3"
+              style={{
+                backgroundColor: 'rgba(61,214,140,0.06)',
+                border: '1px solid rgba(61,214,140,0.22)',
+              }}
+            >
+              <span className="flex items-center gap-2.5 text-sm text-ink-hi">
+                <Shield size={16} strokeWidth={1.75} className="text-success" />
+                Champion (Host)
+              </span>
+              <CheckCircle2 size={18} strokeWidth={1.75} className="text-success" />
             </div>
-            
-            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-900/30 to-pink-900/30 rounded-lg border border-purple-700/50">
-              <div className="flex items-center gap-3">
-                <Shield className="w-5 h-5 text-purple-400" />
-                <span className="font-medium text-purple-200">Challenger</span>
-              </div>
+
+            <div className="flex items-center justify-between rounded-md border border-subtle bg-surface-2 px-4 py-3">
+              <span className="flex items-center gap-2.5 text-sm text-ink-mid">
+                <Shield size={16} strokeWidth={1.75} className="text-ink-low" />
+                {hasOpponent ? 'Challenger' : 'Waiting for challenger…'}
+              </span>
               {hasOpponent ? (
-                <CheckCircle className="w-6 h-6 text-green-400 drop-shadow-lg" />
+                <CheckCircle2 size={18} strokeWidth={1.75} className="text-success" />
               ) : (
-                <div className="relative">
-                  <Loader2 className="w-6 h-6 animate-spin text-purple-400" />
-                  <div className="absolute inset-0 w-6 h-6 animate-ping text-purple-400 opacity-75">
-                    <Loader2 className="w-6 h-6" />
-                  </div>
-                </div>
+                <Spinner size={16} className="text-arcane-300" />
               )}
             </div>
           </div>
 
-          {/* Status Message */}
-          {!hasOpponent ? (
-            <div className="text-center space-y-2">
-              <p className="text-purple-200">
-                Share the sacred code with your opponent
-              </p>
-              <p className="text-sm text-purple-300/70">
-                The mystical arena awaits both warriors...
-              </p>
-            </div>
+          {hasOpponent ? (
+            <p className="mt-6 text-center text-sm text-ink-mid">
+              Battle commencing in{' '}
+              <span className="font-display text-lg font-bold text-gold-300 tabular">
+                {countdown}
+              </span>
+            </p>
           ) : (
-            <div className="text-center">
-              <p className="text-xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent animate-pulse">
-                Battle commencing in {countdown}...
-              </p>
-              <p className="text-sm text-purple-200 mt-2">
-                Prepare your mystical cards!
-              </p>
-            </div>
+            <p className="type-small mt-6 text-center text-ink-low">
+              Share the code above. The arena opens the moment they arrive.
+            </p>
           )}
 
-          {/* Action Buttons */}
-          <div className="space-y-3">
+          <div className="mt-7 space-y-2.5">
             {isHost && !hasOpponent && (
-              <Button
-                variant="outline"
-                className="w-full bg-purple-800/30 hover:bg-purple-700/40 border-purple-500/50 text-purple-200 hover:text-purple-100 transition-all duration-300"
-                onClick={shareLink}
-              >
-                <Sparkles className="w-4 h-4 mr-2" />
+              <Button variant="secondary" size="lg" className="w-full" onClick={copyLink}>
+                <Share2 size={18} strokeWidth={1.75} />
                 Share Portal Link
               </Button>
             )}
-            
             <Button
-              variant={hasOpponent ? "outline" : "destructive"}
-              className={hasOpponent 
-                ? "w-full bg-gray-800/30 border-gray-600/50 text-gray-400 cursor-not-allowed" 
-                : "w-full bg-red-900/40 hover:bg-red-800/50 border-red-500/50 text-red-300 hover:text-red-200 transition-all duration-300"
-              }
-              onClick={onCancel}
+              variant="danger"
+              size="lg"
+              className="w-full"
+              onClick={() => setConfirmAbandon(true)}
               disabled={hasOpponent}
             >
-              {hasOpponent ? 'Portal Opening...' : 'Abandon Match'}
+              {hasOpponent ? 'Portal Opening…' : 'Abandon Match'}
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </PanelBody>
+      </Panel>
 
-      <style jsx>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.6; }
-          50% { transform: translateY(-20px) rotate(180deg); opacity: 0.3; }
-        }
-      `}</style>
-    </div>
+      <Modal
+        open={confirmAbandon}
+        onClose={() => setConfirmAbandon(false)}
+        title="Abandon this battle?"
+        widthClassName="max-w-sm"
+      >
+        <p className="text-sm text-ink-mid">
+          The room will be closed and the sacred code will expire.
+        </p>
+        <div className="mt-6 flex justify-end gap-3">
+          <Button variant="ghost" onClick={() => setConfirmAbandon(false)}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={onCancel}>
+            Abandon
+          </Button>
+        </div>
+      </Modal>
+    </main>
   );
 }
