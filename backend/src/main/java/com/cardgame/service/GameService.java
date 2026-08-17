@@ -79,14 +79,38 @@ public class GameService {
     }
     
     public GameDto convertToDto(GameModel gameModel, String forPlayerId) {
-        Player currentPlayer = playerService.getPlayer(forPlayerId);
+        return convertToDto(gameModel, forPlayerId, loadPlayers(gameModel));
+    }
+
+    /**
+     * Reads every player named by the game, once.
+     *
+     * <p>A move is broadcast to each session in the match, and each of those needs a view
+     * of the game built for its own player. Converting per session re-read every player
+     * per conversion, so a two-player match cost six reads to send two messages. Loading
+     * them here and handing the same map to each conversion makes it two.
+     */
+    public Map<String, Player> loadPlayers(GameModel gameModel) {
+        Map<String, Player> players = new HashMap<>();
+        for (String playerId : gameModel.getPlayerIds()) {
+            players.put(playerId, playerService.getPlayer(playerId));
+        }
+        return players;
+    }
+
+    public GameDto convertToDto(GameModel gameModel, String forPlayerId, Map<String, Player> players) {
+        // forPlayerId is normally one of the game's players and already loaded; a
+        // spectator or an admin looking at somebody else's game is the exception.
+        Player currentPlayer = players.containsKey(forPlayerId)
+                ? players.get(forPlayerId)
+                : playerService.getPlayer(forPlayerId);
 
         // Build card ownership map, collect all placed cards, and player names
         Map<String, String> cardOwnership = new HashMap<>();
         Map<String, CardDto> placedCards = new HashMap<>();
         Map<String, String> playerNames = new HashMap<>();
         for (String playerId : gameModel.getPlayerIds()) {
-            Player player = playerService.getPlayer(playerId);
+            Player player = players.get(playerId);
             // Add player name
             playerNames.put(playerId, player.getName());
             
@@ -302,6 +326,19 @@ public class GameService {
      * Process a player's move
      */
     public GameDto processMove(String gameId, PlayerAction action) {
+        return convertToDto(applyMove(gameId, action));
+    }
+
+    /**
+     * Applies a move and returns the saved game, without converting it.
+     *
+     * <p>Split out of {@link #processMove} for the WebSocket handler, which broadcasts a
+     * separate view of the result to each session and so has no use for the one
+     * conversion processMove would do — it used to throw that away and then re-read the
+     * game it had just saved. Between them those were four database round trips per move
+     * that nothing looked at.
+     */
+    public GameModel applyMove(String gameId, PlayerAction action) {
         GameModel gameModel = gameRepository.findById(gameId)
                 .orElseThrow(() -> new GameNotFoundException("Game not found: " + gameId));
 
@@ -327,8 +364,7 @@ public class GameService {
             // For win requests, we switch to the next player and return
             switchToNextPlayer(gameModel);
             gameModel.setUpdatedAt(Instant.now());
-            gameModel = gameRepository.save(gameModel);
-            return convertToDto(gameModel);
+            return gameRepository.save(gameModel);
         }
 
         // Check if game is over (for regular moves)
@@ -342,12 +378,10 @@ public class GameService {
         gameModel.setUpdatedAt(Instant.now());
 
         // Save and return updated game state
-        gameModel = gameRepository.save(gameModel);
-
-        return convertToDto(gameModel);
+        return gameRepository.save(gameModel);
     }
 
-    private GameDto handleWinRequestResponse(GameModel gameModel, PlayerAction action) {
+    private GameModel handleWinRequestResponse(GameModel gameModel, PlayerAction action) {
         String respondingPlayerId = action.getPlayerId();
 
         // Validate that there's a pending win request
@@ -379,9 +413,7 @@ public class GameService {
         gameModel.setUpdatedAt(Instant.now());
 
         // Save and return updated game state
-        gameModel = gameRepository.save(gameModel);
-
-        return convertToDto(gameModel);
+        return gameRepository.save(gameModel);
     }
 
     private boolean isGameOver(GameModel gameModel) {

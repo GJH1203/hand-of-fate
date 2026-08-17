@@ -294,20 +294,24 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                 return;
             }
             
-            // Process the move
-            gameService.processMove(metadata.gameId, playerAction);
-            
-            // Get the updated game model for checking end state
-            var updatedGame = gameService.getGameModel(metadata.gameId);
-            
+            // Process the move. applyMove rather than processMove because each session
+            // below needs a view built for its own player, so the one conversion
+            // processMove does would be thrown away — along with the re-read of the game
+            // it had just saved.
+            var updatedGame = gameService.applyMove(metadata.gameId, playerAction);
+
             // Broadcast updated game state to all players in the match
             Set<WebSocketSession> sessions = matchSessions.get(info.matchId);
             if (sessions != null) {
+                // Read each player once for the whole broadcast instead of once per
+                // conversion. This is the hot path: it runs on every move, for every
+                // connected socket.
+                var players = gameService.loadPlayers(updatedGame);
                 for (WebSocketSession s : sessions) {
                     SessionInfo sInfo = sessionInfoMap.get(s.getId());
                     if (sInfo != null) {
                         // Get game DTO specific to each player
-                        var playerGameDto = gameService.convertToDto(updatedGame, sInfo.playerId);
+                        var playerGameDto = gameService.convertToDto(updatedGame, sInfo.playerId, players);
                         sendMessage(s, new WebSocketMessage(
                             MessageType.GAME_STATE_UPDATE,
                             playerGameDto
