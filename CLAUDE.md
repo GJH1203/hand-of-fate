@@ -205,8 +205,15 @@ Ordering is deliberate: 3 and 4 rewrite the core, so 2 comes first.
 
 ## Conventions
 
-- Commit messages: explain *why*, in prose. No session links, no bullet-point
-  changelogs of what the diff already shows.
+- One commit per logical change, and keep each one small enough to review in a
+  sitting. A branch of five focused commits is right; one commit touching a
+  dozen unrelated files is not, and being the only person on the project is not
+  a reason to skip this. Documentation about a change belongs in the commit
+  that makes it.
+- Commit messages: explain *why*, in prose. A subject line on its own is enough
+  for a change that speaks for itself; a short paragraph under it when the
+  reasoning is not obvious from the diff. Never longer than that. No session
+  links, no bullet-point changelogs of what the diff already shows.
 - Never commit `.env` files. `backend/.env.example` is the template.
 - Working notes, task lists, and scratch files stay out of the repository —
   keep them outside the working tree.
