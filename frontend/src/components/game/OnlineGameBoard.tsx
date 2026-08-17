@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -12,7 +12,6 @@ import { Card, Position, GameState } from '@/types/game';
 import { OnlineMatchInfo } from '@/types/gameMode';
 import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
 import { useRouter } from 'next/navigation';
-import { gameService } from '@/services/gameService';
 import { WifiOff, Wifi, Users, AlertCircle } from 'lucide-react';
 import { onlineGameService } from '@/services/onlineGameService';
 import { gameWebSocketService } from '@/services/gameWebSocketService';
@@ -53,6 +52,34 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
     // Loading states
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // A move the player has made that the server has not confirmed yet. The board shows
+    // it immediately — waiting for the round trip is a third of a second of a card not
+    // appearing where it was dropped — so this holds what to put back if the server
+    // refuses it, or never answers.
+    const pendingMove = useRef<{ revertTo: GameState; ownershipBefore: Record<string, string>; timer: number } | null>(null);
+
+    // updateBoardCards is declared further down; the revert path needs it from up here.
+    const updateBoardCardsRef = useRef<((state: GameState) => void) | null>(null);
+
+    const settlePendingMove = useCallback(() => {
+        if (pendingMove.current) {
+            window.clearTimeout(pendingMove.current.timer);
+            pendingMove.current = null;
+        }
+    }, []);
+
+    const revertPendingMove = useCallback((reason: string) => {
+        const pending = pendingMove.current;
+        if (!pending) return;
+        window.clearTimeout(pending.timer);
+        pendingMove.current = null;
+        setGameState(pending.revertTo);
+        setCardOwnership(pending.ownershipBefore);
+        updateBoardCardsRef.current?.(pending.revertTo);
+        setIsMyTurn(pending.revertTo.currentPlayerId === user?.playerId);
+        setError(reason);
+    }, [user?.playerId]);
 
     // Redirect if not authenticated
     useEffect(() => {
@@ -125,6 +152,9 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                             playerNames: state.playerNames || {}
                         };
                         
+                        // The server's word replaces whatever was drawn optimistically.
+                        settlePendingMove();
+
                         setGameState(mappedState);
                         setIsMyTurn(state.currentPlayerId === user.playerId);
                         updateBoardCards(mappedState);
@@ -194,7 +224,14 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                         setOpponentConnected(true);
                     },
                     onError: (error) => {
-                        setError(error);
+                        // If a move is waiting on the server, this is the server refusing
+                        // it — take it back off the board rather than leaving the player
+                        // looking at a position that does not exist.
+                        if (pendingMove.current) {
+                            revertPendingMove(error);
+                        } else {
+                            setError(error);
+                        }
                     },
                     onConnectionClosed: () => {
                         setConnectionStatus('disconnected');
@@ -375,6 +412,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
         
         setBoardCards(cardMap);
     };
+    updateBoardCardsRef.current = updateBoardCards;
 
     // Calculate valid moves - must be adjacent to current player's own cards
     useEffect(() => {
@@ -438,39 +476,64 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
         setValidMoves(moves);
     }, [selectedCard, gameState, isMyTurn, user, cardOwnership]);
 
-    // Handle card placement
-    const handleCellClick = async (x: number, y: number) => {
+    /**
+     * Places a card: on the board at once, and over the socket that is already open.
+     *
+     * <p>The move used to go out as its own HTTP request and the card did not appear
+     * until the server's broadcast came back — a full round trip of a card not being
+     * where it was dropped. It goes over the existing WebSocket now, and the board is
+     * drawn from the move immediately; the server's broadcast replaces it a moment later
+     * and is the authority. If the server refuses, or says nothing at all, the position
+     * is put back.
+     */
+    const handleCellClick = (x: number, y: number) => {
         if (!selectedCard || !isMyTurn || !gameState || !matchInfo) return;
-        
+        if (pendingMove.current) return; // one move at a time until the server answers
+
         const isValid = validMoves.some(move => move.x === x && move.y === y);
         if (!isValid) return;
 
-        try {
-            // Send move through REST API (WebSocket will broadcast the update)
-            const response = await gameService.makeMove(gameState.id, {
-                type: 'PLACE_CARD' as const,
-                playerId: user!.playerId,
-                card: selectedCard,
-                targetPosition: { x, y },
-                timestamp: Date.now()
-            });
-            
-            // Clear selection
-            setSelectedCard(null);
-            setValidMoves([]);
-            
-            // Don't update game state from REST response - wait for WebSocket update
-            // The WebSocket will broadcast the proper player-specific view with column scores
-            if (DEBUG) console.log('Move successful, waiting for WebSocket update');
-            
-            // Only update turn status immediately for better UX
-            if (response) {
-                setIsMyTurn(response.currentPlayerId === user!.playerId);
-            }
-        } catch (err) {
-            setError('Failed to make move');
-            console.error(err);
-        }
+        const card = selectedCard;
+        const positionKey = `${x},${y}`;
+        const revertTo = gameState;
+        const ownershipBefore = cardOwnership;
+
+        const optimistic: GameState = {
+            ...gameState,
+            board: { ...gameState.board, pieces: { ...gameState.board.pieces, [positionKey]: card.id } },
+            placedCards: { ...gameState.placedCards, [card.id]: card },
+            cardOwnership: { ...gameState.cardOwnership, [positionKey]: user!.playerId },
+            currentPlayerHand: gameState.currentPlayerHand.filter(c => c.id !== card.id),
+        };
+
+        setGameState(optimistic);
+        setCardOwnership({ ...ownershipBefore, [positionKey]: user!.playerId });
+        updateBoardCards(optimistic);
+        setSelectedCard(null);
+        setValidMoves([]);
+        // The turn is left alone on purpose: whether it passes depends on whether the
+        // opponent has a legal move, which is the server's to decide. Input is held by
+        // pendingMove until it says.
+        setError(null);
+
+        pendingMove.current = {
+            revertTo,
+            ownershipBefore,
+            // A socket that has gone quiet must not leave a card sitting on the board for
+            // ever. Reconnection does not work yet, so this is the only thing that notices.
+            timer: window.setTimeout(
+                () => revertPendingMove('The server did not confirm your move. Please try again.'),
+                5000,
+            ),
+        };
+
+        gameWebSocketService.sendGameAction({
+            type: 'PLACE_CARD',
+            playerId: user!.playerId,
+            card,
+            targetPosition: { x, y },
+            timestamp: Date.now(),
+        });
     };
 
     // Handle pass action
