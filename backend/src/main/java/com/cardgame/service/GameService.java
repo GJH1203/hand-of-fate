@@ -1,6 +1,7 @@
 package com.cardgame.service;
 
 import com.cardgame.dto.*;
+import com.cardgame.exception.game.ConcurrentMoveException;
 import com.cardgame.exception.game.GameNotFoundException;
 import com.cardgame.exception.game.InvalidMoveException;
 import com.cardgame.model.Board;
@@ -23,6 +24,7 @@ import io.micrometer.core.instrument.Counter;
 import org.checkerframework.checker.units.qual.C;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -298,6 +300,26 @@ public class GameService {
      * that nothing looked at.
      */
     public GameModel applyMove(String gameId, PlayerAction action) {
+        try {
+            return attemptMove(gameId, action);
+        } catch (OptimisticLockingFailureException firstFailure) {
+            // Somebody else changed the game between the read and the write. The move was
+            // applied to a copy that is now stale, so it was not applied at all — read the
+            // game again and replay it against what is actually there.
+            logger.info("Move on game {} lost the version check, retrying once", gameId);
+        }
+
+        try {
+            return attemptMove(gameId, action);
+        } catch (OptimisticLockingFailureException secondFailure) {
+            // Twice is no longer a coincidence worth retrying through. Say so, rather than
+            // returning a game state that does not contain the move the player made.
+            throw new ConcurrentMoveException(
+                    "The game changed while your move was being applied. Reload the game state.");
+        }
+    }
+
+    private GameModel attemptMove(String gameId, PlayerAction action) {
         GameModel gameModel = gameRepository.findById(gameId)
                 .orElseThrow(() -> new GameNotFoundException("Game not found: " + gameId));
 
@@ -431,7 +453,9 @@ public class GameService {
      * Finalizes a game when it's over, calculating scores and determining the winner.
      *
      * <p>Changes the game and nothing else. Everything with an effect outside this
-     * document waits for {@link #recordGameCompleted}, once the save has gone through.
+     * document — the victory bonus, the leaderboard, the counters — waits for
+     * {@link #recordGameCompleted} once the save has actually gone through, because a
+     * save can fail on the version check and be retried.
      *
      * @param gameModel The game model to finalize
      */
@@ -459,8 +483,11 @@ public class GameService {
 
     /**
      * Everything a completed game owes the world outside its own document, run once the
-     * game has been saved. A finished game touches its players once each, for the one
-     * thing that genuinely belongs to them and outlives the game.
+     * game has been saved.
+     *
+     * <p>Kept apart from {@link #finalizeGame} because a move can be applied, lose the
+     * version check and be applied again. Awarding the victory bonus before the save
+     * would award it twice.
      */
     private void recordGameCompleted(GameModel gameModel) {
         gameCompletedCounter.increment();
