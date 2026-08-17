@@ -86,6 +86,15 @@ function connect(token) {
         const socket = new WebSocket(WS_URL, { headers: { authorization: `Bearer ${token}` } });
         const waiters = new Map();
 
+        // A saturated backend does not refuse a handshake, it stops answering one:
+        // Tomcat's pool is exhausted and the connection waits in the accept queue
+        // indefinitely. Without this the driver hangs at exactly the moment it has
+        // something to report.
+        const handshake = setTimeout(() => {
+            socket.close();
+            reject(new Error('handshake timed out'));
+        }, REPLY_TIMEOUT_MS);
+
         socket.addEventListener('message', (event) => {
             const message = JSON.parse(event.data);
             const waiter = waiters.get(message.type);
@@ -96,12 +105,12 @@ function connect(token) {
             if (message.type === 'ERROR') counters.rejected++;
         });
 
-        socket.addEventListener('error', () => reject(new Error('socket error')));
+        socket.addEventListener('error', () => { clearTimeout(handshake); reject(new Error('socket error')); });
         socket.addEventListener('close', () => {
             for (const [type, waiter] of waiters) waiter.fail(new Error(`socket closed waiting for ${type}`));
             waiters.clear();
         });
-        socket.addEventListener('open', () => resolve({
+        socket.addEventListener('open', () => { clearTimeout(handshake); resolve({
             send: (type, data) => socket.send(JSON.stringify({ type, data })),
             next: (type) => new Promise((resolveNext, rejectNext) => {
                 const timer = setTimeout(() => {
@@ -115,7 +124,7 @@ function connect(token) {
                 });
             }),
             close: () => socket.close(),
-        }));
+        }); });
     });
 }
 
@@ -235,6 +244,22 @@ function report(label, values) {
     );
 }
 
+function finish() {
+    console.log(`\n${''.padEnd(18)}${'count'.padStart(7)}${'mean'.padStart(8)}${'p50'.padStart(8)}${'p95'.padStart(8)}${'p99'.padStart(8)}${'max'.padStart(8)}  (ms)`);
+    report('action', samples.action);
+    report('action→broadcast', samples.broadcast);
+    console.log(
+        `\n${counters.moves} moves, ${counters.games} games, ${counters.rejected} rejected, ` +
+        `${counters.timeouts} timed out, ${counters.errors} errors`,
+    );
+    // A run that lost replies did not measure latency, it measured a failure. Say so
+    // rather than leaving a healthy-looking percentile table to speak for itself.
+    if (counters.timeouts > 0 || counters.errors > 0) {
+        console.log('\nThe server stopped answering during this run. The percentiles above');
+        console.log('describe only the moves that came back, and understate what happened.');
+    }
+}
+
 const deadline = Date.now() + WARMUP_MS + DURATION_MS;
 
 console.log(`${GAMES} games / ${GAMES * 2} sockets against ${BASE_URL}`);
@@ -245,6 +270,17 @@ setTimeout(() => {
     console.log('warmup over, recording\n');
 }, WARMUP_MS);
 
+// Every wait in here is bounded, and pairs still occasionally fail to unwind once the
+// backend has started struggling. Rather than debug that on every run, print what was
+// collected and stop: a report that arrives is worth more than one that is correct
+// about the last two seconds.
+const giveUpAt = setTimeout(() => {
+    console.log('\n(pairs did not all finish; reporting what was collected)');
+    finish();
+    process.exit(0);
+}, WARMUP_MS + DURATION_MS + 30_000);
+giveUpAt.unref();
+
 const pairs = [];
 for (let i = 0; i < GAMES; i++) {
     pairs.push(runPair(players[i * 2], players[i * 2 + 1]));
@@ -253,17 +289,4 @@ for (let i = 0; i < GAMES; i++) {
 }
 
 await Promise.all(pairs);
-
-console.log(`\n${''.padEnd(18)}${'count'.padStart(7)}${'mean'.padStart(8)}${'p50'.padStart(8)}${'p95'.padStart(8)}${'p99'.padStart(8)}${'max'.padStart(8)}  (ms)`);
-report('action', samples.action);
-report('action→broadcast', samples.broadcast);
-console.log(
-    `\n${counters.moves} moves, ${counters.games} games, ${counters.rejected} rejected, ` +
-    `${counters.timeouts} timed out, ${counters.errors} errors`,
-);
-// A run that lost replies did not measure latency, it measured a failure. Say so rather
-// than leaving a healthy-looking percentile table to speak for itself.
-if (counters.timeouts > 0 || counters.errors > 0) {
-    console.log('\nThe server stopped answering during this run. The percentiles above');
-    console.log('describe only the moves that came back, and understate what happened.');
-}
+finish();

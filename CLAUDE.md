@@ -99,18 +99,25 @@ second instance. `getMatchState` scans the entire games collection on every call
 leaves its entries behind for the life of the process; `handleGameAction` logs the
 completion and returns. This is measured, not suspected — see below.
 
-**The backend runs out of memory at 100 concurrent players.** `loadtest/` drives
-50 concurrent games over 100 WebSocket sessions. On a clean database it holds up:
-3,294 moves, no errors, p50 16 ms and p99 510 ms for a move to reach the opponent.
-The memory does not come back afterwards — the process finished that run sitting at
-636 MiB — and a second identical run against the same process is OOM-killed at the
-768 MiB the production task allocates, roughly forty seconds in. `OOMKilled=true`,
-exit 137, reproduced twice.
+**~~The backend runs out of memory at 100 concurrent players.~~** Fixed in the
+Dockerfile, which now sizes the JVM against the 768 MiB the task actually has.
+`MaxRAMPercentage=70` capped the heap at 537 MiB and left too little for metaspace,
+the code cache and a stack per Tomcat thread; the kernel killed it forty seconds
+into a second run at 100 concurrent players. The heap was never the problem — a
+full GC showed ~30 MiB live. It now sustains 100 concurrent sockets: 6,110 moves
+over two minutes, no errors, RSS flat at ~630 MiB.
 
-The p99 is 32× the p50 even in the run that succeeded, which is the read
-amplification above rather than anything the machine ran out of. Both numbers come
-from an Apple Silicon laptop against a local MongoDB, so they are not production
-latencies; they are a baseline to compare the next change against.
+**The tail grows with the size of the games collection.** In that same run p50 was
+15 ms and p99 was 755 ms, and re-running against a database already holding a few
+hundred games pushes p99 past two seconds while memory stays flat. That is
+`getMatchState` scanning the whole collection and `findActiveGameForPlayer` doing
+the same, not anything the machine ran out of — it is the item above, and it is
+what goal 3 and 4 are for.
+
+Numbers come from an Apple Silicon laptop with two CPUs allocated, against a local
+MongoDB. Production is a `t4g.small` sharing two vCPU with postgres, Nakama and
+cloudflared, so it has *less* CPU than this. The memory conclusion transfers,
+because the 768 MiB budget is the same; the latencies do not.
 
 **No concurrency control.** No `@Version` on documents, no transactions.
 Simultaneous writes overwrite each other.
@@ -216,15 +223,14 @@ session is a judgement call that changes with what the project needs next.
    possible.
 4. **Make matches survive a restart.** Either commit to Nakama's match API or
    persist match state properly. Add optimistic locking while here.
-5. **Hold 100 concurrent players.** The load test exists now (`loadtest/`) and it
-   already answers what gives out first: memory, at the 768 MiB the production
-   task allocates, because finished matches are never released. That is item 4,
-   so the order above still holds — but 4 now has a number attached and a way to
-   tell whether fixing it worked. What is left here afterwards is re-running it,
-   deciding whether one `t4g.small` is still the right size, and only then asking
-   whether Prometheus and Grafana are worth the money. They are not yet: the
-   question "which resource gives out first" got answered by `docker stats` and a
-   container exit code.
+5. **Hold 100 concurrent players.** It does, as of the JVM sizing fix — two
+   minutes of sustained 100-socket play with no errors. What it does not do is
+   hold them *well*: p99 is 755 ms against a p50 of 15 ms, and it degrades as the
+   games collection grows, which is 3 and 4 above rather than anything here. What
+   is left for this item is re-running `loadtest/` after those land and deciding
+   whether one `t4g.small` is still the right size. Prometheus and Grafana are
+   still not worth the money: the question "which resource gives out first" got
+   answered by `docker stats`, a class histogram and a container exit code.
 6. **Frontend.** Break up the 900-line components, fix reconnection, delete the
    dead services. (The home page's Power Score is real data, not a placeholder —
    that item was stale.)

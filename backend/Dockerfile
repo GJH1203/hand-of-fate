@@ -27,8 +27,26 @@ USER appuser
 
 EXPOSE 8080
 
-# MaxRAMPercentage makes the JVM read the container's cgroup limit instead of
-# the host's 2 GiB, which is what keeps this from OOM-killing the box.
-ENV JAVA_OPTS="-XX:MaxRAMPercentage=70 -XX:+UseSerialGC -XX:MaxMetaspaceSize=128m"
+# These are sized against the 768 MiB the ECS task definition gives this container,
+# and were arrived at by running loadtest/ at 100 concurrent players until it stopped
+# being OOM-killed. Changing the task's memory means revisiting them.
+#
+# MaxRAMPercentage caps the *heap* as a share of the cgroup limit, and the rest of
+# the process has to fit in what is left. At the 70 it used to be, 537 MiB of heap
+# plus 128 of metaspace plus the code cache plus a thread stack for each of the ~200
+# Tomcat threads came to more than the container had, and the kernel killed it —
+# reproducibly, about forty seconds into a second run at 100 concurrent players. The
+# heap was never the problem: a full GC at that point showed roughly 30 MiB live.
+#
+# G1 rather than Serial because Serial is a single-threaded stop-the-world collector
+# and its pauses were the latency tail — 460 ms at worst, against a p50 of 13 ms.
+#
+# Xss512k halves the stack of every one of those threads.
+#
+# MALLOC_ARENA_MAX bounds glibc's per-thread arenas, which otherwise hold on to a few
+# hundred MiB of freed memory that the JVM does not account for and the container
+# still has to pay for.
+ENV JAVA_OPTS="-XX:MaxRAMPercentage=45 -XX:+UseG1GC -XX:MaxMetaspaceSize=128m -Xss512k"
+ENV MALLOC_ARENA_MAX=2
 
 ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar app.jar"]
