@@ -242,6 +242,19 @@ public class GameModel {
      * occupied or off the edge; whether the player is allowed to place <em>there</em> is
      * the validator's business, and has already been settled by the time this runs.
      */
+    /**
+     * Moves a card from a player's hand onto the board.
+     *
+     * <p>The card kept is the one out of the hand, not the one passed in. They are
+     * equal — {@link Card#equals} compares id, power and name — but they are not
+     * identical: a move arriving over the WebSocket is rebuilt from JSON field by
+     * field and never carries {@code imageUrl}, so the copy that used to be stored
+     * was a card with no artwork. Every card either player played came out of the
+     * database without a picture while the two dealt at setup kept theirs.
+     *
+     * <p>Taking the hand's copy also means nothing a client sends about a card
+     * survives beyond the equality check the validator already makes.
+     */
     public void playCard(String playerId, Position position, Card card) {
         if (hands == null) {
             hands = new HashMap<>();
@@ -249,10 +262,14 @@ public class GameModel {
         if (placedCards == null) {
             placedCards = new HashMap<>();
         }
-        board.placeCard(position, card.getId());
-        hands.computeIfAbsent(playerId, id -> new ArrayList<>()).remove(card);
+
+        List<Card> hand = hands.computeIfAbsent(playerId, id -> new ArrayList<>());
+        int held = hand.indexOf(card);
+        Card played = held >= 0 ? hand.remove(held) : card;
+
+        board.placeCard(position, played.getId());
         placedCards.computeIfAbsent(playerId, id -> new HashMap<>())
-                .put(position.toStorageString(), card);
+                .put(position.toStorageString(), played);
     }
 
     public String getWinnerId() {
