@@ -314,12 +314,15 @@ Resources:
 
             # A brand new volume has no filesystem. An existing one must never be
             # reformatted, so only make one when blkid finds nothing at all.
+            # ext4 labels are capped at 16 characters and mkfs truncates past that
+            # without failing, so a longer name here would not match the fstab entry
+            # below and the mount would fail on a filesystem that looked fine.
             if ! blkid "$DEV" >/dev/null 2>&1; then
-              mkfs.ext4 -L hand-of-fate-data "$DEV"
+              mkfs.ext4 -L hand-of-fate "$DEV"
             fi
 
             mkdir -p /var/lib/hand-of-fate
-            echo "LABEL=hand-of-fate-data /var/lib/hand-of-fate ext4 defaults,nofail 0 2" >> /etc/fstab
+            echo "LABEL=hand-of-fate /var/lib/hand-of-fate ext4 defaults,nofail 0 2" >> /etc/fstab
             mount /var/lib/hand-of-fate
 
             # An instance that runs tasks without the volume would quietly start a
