@@ -46,8 +46,9 @@ public class PlayerController {
      * seat and the only reason this endpoint exists.
      *
      * <p>It still answers with the full PlayerDto, so a signed-in user can see more of a
-     * stranger than they need to. Narrowing it means giving hot-seat a shape of its own,
-     * which belongs with the wider work of moving game state off the Player document.
+     * stranger than they need to — less than it used to, now that a hand is not on the
+     * player, but still their deck and their lifetime score. Narrowing it means giving
+     * hot-seat a shape of its own.
      */
     @GetMapping("/by-name/{name}")
     public ResponseEntity<PlayerDto> getPlayerByName(@PathVariable String name) {
