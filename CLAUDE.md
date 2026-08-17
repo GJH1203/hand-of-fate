@@ -97,6 +97,25 @@ instance. `getMatchState` scans the entire games collection on every call.
 **No concurrency control.** No `@Version` on documents, no transactions.
 Simultaneous writes overwrite each other.
 
+**Nothing notices a wedged application.** The auto scaling group's health check is
+`EC2`, which sees a dead instance and nothing else. A backend that is running but
+answering nothing is invisible to it, and there is no alarm anywhere else either —
+the way you find out the site is down is by looking at it.
+
+**A stale address in `frontend/.env.production`.** `NEXT_PUBLIC_API_URL` still
+names `funnygames.duckdns.org`, a host that has not existed for months. Vercel's
+own environment variables override it in the deployed build, so production is
+unaffected — but a local `npm run build` bakes the dead address in.
+
+**Debris in the working tree.** `frontend/test-cors.html`,
+`test-frontend-automated.js`, `test-online-quick.sh`, `deploy-setup.sh` and
+`backend/cleanup_script.sh` are one-off scripts from earlier debugging. They hold
+no credentials and hurt nothing; they are just noise pointing at `localhost:8080`.
+
+**Orphaned games.** `DELETE /players/{playerId}` removes the player and leaves
+their games behind, holding ids that no longer resolve. `AdminController` has a
+delete that cleans up properly; the self-service one does not.
+
 **A dangling DNS record.** `monitoring.handoffate.org` has its origin set to
 `134.199.238.66`, a DigitalOcean address that looks like the retired Prometheus
 droplet in `infra/monitoring`. The record is proxied, so a public lookup returns a
