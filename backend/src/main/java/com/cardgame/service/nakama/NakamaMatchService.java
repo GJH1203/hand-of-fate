@@ -120,10 +120,19 @@ public class NakamaMatchService {
                 if (!"WAITING".equals(metadata.status)) {
                     throw new IllegalArgumentException("Match already started or completed");
                 }
-                
+
+                // A game is between two players, and everything about it is keyed by player
+                // id — the hands, the cards each has on the board, whose turn it is. One
+                // person on both sides collapses to a single set of those, which is not a
+                // game so much as a way to corrupt one. This has to be refused before the
+                // line below, which would otherwise clear the creator out of their own match.
+                if (playerId.equals(metadata.creatorId)) {
+                    throw new IllegalArgumentException("Cannot join your own match");
+                }
+
                 // Clear any existing matches for this player first
                 clearPlayerFromActiveMatches(playerId);
-                
+
                 // Get the creator's ID from metadata
                 String creatorId = metadata.creatorId;
                 
