@@ -2,7 +2,8 @@
 
 > **Not deployed.** Nothing in this directory is running. The Prometheus and
 > Grafana setup described here lived on a DigitalOcean droplet that has been shut
-> down, and `monitoring.handoffate.org` still points at its old address. Metrics
+> down, and the `monitoring.handoffate.org` record that pointed at it has been
+> deleted — bringing this back means a new hostname. Metrics
 > are exposed at `/actuator/prometheus`, but that endpoint now requires an admin
 > credential, so any scraper brought back will need one.
 

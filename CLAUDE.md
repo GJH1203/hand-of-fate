@@ -134,15 +134,6 @@ no credentials and hurt nothing; they are just noise pointing at `localhost:8080
 their games behind, holding ids that no longer resolve. `AdminController` has a
 delete that cleans up properly; the self-service one does not.
 
-**A dangling DNS record.** `monitoring.handoffate.org` has its origin set to
-`134.199.238.66`, a DigitalOcean address that looks like the retired Prometheus
-droplet in `infra/monitoring`. The record is proxied, so a public lookup returns a
-Cloudflare address and the origin does not show — but Cloudflare still forwards to
-it. If that machine is gone and somebody else is given the address, they receive
-traffic for a handoffate.org subdomain with Cloudflare's certificate in front of
-it, which looks more legitimate than a plain takeover, not less. Delete the record
-unless the droplet is coming back.
-
 **Most tests still need infrastructure.** The suite runs in CI now, and the
 security tests are plain unit tests, but everything else is still
 `@SpringBootTest` against a live MongoDB — there is no Testcontainers. Each
