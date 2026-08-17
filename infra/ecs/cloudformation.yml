@@ -121,9 +121,19 @@ Parameters:
     MinValue: 1
     Description: How long to keep an archive before S3 deletes it.
 
+  AlertEmail:
+    Type: String
+    Default: ""
+    Description: >
+      Where to send an alert when the service stops running. SNS sends a
+      confirmation link to this address first, and delivers nothing until it is
+      clicked. Leave empty to create the alarm without anywhere to send it.
+
 Conditions:
   # Everything to do with backups is skipped until an image exists to run.
   BackupsEnabled: !Not [!Equals [!Ref BackupImage, ""]]
+
+  AlertEmailProvided: !Not [!Equals [!Ref AlertEmail, ""]]
 
 Resources:
 
@@ -679,6 +689,63 @@ Resources:
         MinimumHealthyPercent: 0
         MaximumPercent: 100
 
+  # ------------------------------------------------------------- alerting
+
+  AlertTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub ${ProjectName}-alerts
+      DisplayName: Hand of Fate
+
+  AlertEmailSubscription:
+    Type: AWS::SNS::Subscription
+    Condition: AlertEmailProvided
+    Properties:
+      TopicArn: !Ref AlertTopic
+      Protocol: email
+      Endpoint: !Ref AlertEmail
+
+  # Until this existed, the way anyone found out the service was gone was by
+  # opening the site. The auto scaling group's health check is EC2, which sees a
+  # dead instance and nothing else.
+  #
+  # LiveTaskCount is published into AWS/ECS every minute without Container
+  # Insights, which is what makes this free — Container Insights is billed per
+  # metric and is deliberately disabled on the cluster above.
+  #
+  # A stopped service publishes nothing at all rather than publishing a zero, so
+  # missing data has to count as breaching or the alarm would sit at
+  # INSUFFICIENT_DATA through the entire outage.
+  #
+  # Five minutes is chosen to ride out an ordinary deploy: the task starts
+  # postgres, then nakama, then the backend, each waiting on the previous one's
+  # health check, and MinimumHealthyPercent is 0, so the count legitimately sits
+  # at zero for two to four minutes every time. A deploy slower than five
+  # minutes has gone wrong and is worth hearing about.
+  ServiceStoppedAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${ProjectName}-service-stopped
+      AlarmDescription: >-
+        No task has been running for the ECS service for five minutes. The site
+        is down.
+      Namespace: AWS/ECS
+      MetricName: LiveTaskCount
+      Dimensions:
+        - Name: ClusterName
+          Value: !Ref Cluster
+        - Name: ServiceName
+          Value: !GetAtt Service.Name
+      Statistic: Maximum
+      Period: 60
+      EvaluationPeriods: 5
+      DatapointsToAlarm: 5
+      Threshold: 1
+      ComparisonOperator: LessThanThreshold
+      TreatMissingData: breaching
+      AlarmActions: [!Ref AlertTopic]
+      OKActions: [!Ref AlertTopic]
+
 Outputs:
   EgressIp:
     Description: Add this to the Atlas IP access list. It survives instance replacement.
@@ -691,3 +758,6 @@ Outputs:
     Value: !Ref LogGroup
   SecurityGroupId:
     Value: !GetAtt SecurityGroup.GroupId
+  AlertTopicArn:
+    Description: Point further alarms at this rather than creating a second topic.
+    Value: !Ref AlertTopic
