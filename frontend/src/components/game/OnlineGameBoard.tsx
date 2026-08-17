@@ -1,25 +1,34 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Button } from '@/components/ui/button';
+import { useRouter } from 'next/navigation';
+import { Activity, ArrowLeft, ScrollText, Users, Wifi, WifiOff } from 'lucide-react';
+
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { InlineAlert } from '@/components/ui/inline-alert';
+import { Modal } from '@/components/ui/modal';
+import { Panel, PanelBody, PanelHeader } from '@/components/ui/panel';
+import { Spinner } from '@/components/ui/spinner';
+import { useToast } from '@/components/ui/toast';
 import GameCell from './GameCell';
 import PlayerHand from './PlayerHand';
 import GameLobby from './GameLobby';
 import ColumnIndicator from './ColumnIndicator';
+import GameResultModal from './GameResultModal';
 import { Card, Position, GameState } from '@/types/game';
 import { OnlineMatchInfo } from '@/types/gameMode';
 import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
-import { useRouter } from 'next/navigation';
-import { WifiOff, Wifi, Users, AlertCircle } from 'lucide-react';
 import { onlineGameService } from '@/services/onlineGameService';
 import { gameWebSocketService } from '@/services/gameWebSocketService';
-import { gamePollingService } from '@/services/gamePollingService';
 import { apiFetch } from '@/lib/apiClient';
+import { cn } from '@/lib/utils';
 
 const DEFAULT_BOARD_WIDTH = 3;
 const DEFAULT_BOARD_HEIGHT = 5;
+
+/** How many moves the battle log keeps. */
+const LOG_LENGTH = 6;
 
 interface OnlineGameBoardProps {
   matchId?: string;
@@ -29,17 +38,30 @@ interface OnlineGameBoardProps {
 // Debug flag - only enable in development
 const DEBUG = process.env.NODE_ENV === 'development';
 
+/** IN_PROGRESS is a database value. This is what a person should read. */
+function readableState(state: GameState['state']): { label: string; tone: 'info' | 'neutral' | 'success' } {
+  switch (state) {
+    case 'IN_PROGRESS':
+      return { label: 'In Progress', tone: 'info' };
+    case 'COMPLETED':
+      return { label: 'Finished', tone: 'success' };
+    default:
+      return { label: 'Waiting', tone: 'neutral' };
+  }
+}
+
 export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProps) {
     const { isAuthenticated, user } = useUnifiedAuth();
     const router = useRouter();
-    
+    const toast = useToast();
+
     // Game state
     const [gameState, setGameState] = useState<GameState | null>(null);
     const [matchInfo, setMatchInfo] = useState<OnlineMatchInfo | null>(null);
     const [isInLobby, setIsInLobby] = useState(true);
     const [isConnected, setIsConnected] = useState(false);
     const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
-    
+
     // UI state
     const [selectedCard, setSelectedCard] = useState<Card | null>(null);
     const [validMoves, setValidMoves] = useState<Position[]>([]);
@@ -48,10 +70,15 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
     const [players, setPlayers] = useState<{[key: string]: string}>({});
     const [isMyTurn, setIsMyTurn] = useState(false);
     const [opponentConnected, setOpponentConnected] = useState(true);
-    
+    const [battleLog, setBattleLog] = useState<string[]>([]);
+    const [confirmLeave, setConfirmLeave] = useState(false);
+    const [resultDismissed, setResultDismissed] = useState(false);
+
     // Loading states
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    /** A failure that ends the screen — a bad code, a match that would not open. */
+    const [fatalError, setFatalError] = useState<string | null>(null);
 
     // A move the player has made that the server has not confirmed yet. The board shows
     // it immediately — waiting for the round trip is a third of a second of a card not
@@ -61,6 +88,9 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
 
     // updateBoardCards is declared further down; the revert path needs it from up here.
     const updateBoardCardsRef = useRef<((state: GameState) => void) | null>(null);
+
+    // The board as the server last described it, so a new state can be diffed into a log.
+    const previousPieces = useRef<Record<string, string> | null>(null);
 
     const settlePendingMove = useCallback(() => {
         if (pendingMove.current) {
@@ -88,6 +118,15 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
         }
     }, [isAuthenticated, router]);
 
+    // The tab says what you are looking at.
+    useEffect(() => {
+        const previous = document.title;
+        document.title = 'Battle | Hand of Fate';
+        return () => {
+            document.title = previous;
+        };
+    }, []);
+
     // Initialize WebSocket connection
     useEffect(() => {
         if (!user) return;
@@ -101,7 +140,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                     if (DEBUG) console.log('Component unmounted, skipping WebSocket setup');
                     return;
                 }
-                
+
                 // If already connected, just update state
                 if (gameWebSocketService.isConnected()) {
                     if (DEBUG) console.log('WebSocket already connected');
@@ -109,7 +148,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                     setConnectionStatus('connected');
                     return;
                 }
-                
+
                 if (DEBUG) console.log('Ensuring WebSocket connection...');
                 await gameWebSocketService.ensureConnected({
                     onConnectionSuccess: () => {
@@ -122,13 +161,13 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                     },
                     onGameStateUpdate: (state) => {
                         if (DEBUG) console.log('Game state update:', state);
-                        
+
                         // Skip if no game state yet
                         if (!state.id || !state.state) {
                             if (DEBUG) console.log('No game state available yet');
                             return;
                         }
-                        
+
                         // Map backend game state to frontend format
                         const mappedState: GameState = {
                             id: state.id,
@@ -151,41 +190,20 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                             columnScores: state.columnScores || {},
                             playerNames: state.playerNames || {}
                         };
-                        
+
                         // The server's word replaces whatever was drawn optimistically.
                         settlePendingMove();
 
+                        recordMoves(mappedState);
                         setGameState(mappedState);
                         setIsMyTurn(state.currentPlayerId === user.playerId);
                         updateBoardCards(mappedState);
-                        
-                        // Log if game is completed
-                        if (mappedState.state === 'COMPLETED' && DEBUG) {
-                            console.log('Game completed! Board pieces:', mappedState.board.pieces);
-                            console.log('Placed cards:', mappedState.placedCards);
-                            console.log('Column scores:', mappedState.columnScores);
-                        }
-                        
+
                         // Use card ownership from backend
                         if (state.cardOwnership) {
                             setCardOwnership(state.cardOwnership);
-                            if (DEBUG) {
-                                console.log('Updated card ownership from backend:', state.cardOwnership);
-                            }
                         }
-                        
-                        // Debug logging
-                        if (DEBUG) {
-                            console.log('Current player ID:', state.currentPlayerId);
-                            console.log('My player ID:', user.playerId);
-                            console.log('Is my turn:', state.currentPlayerId === user.playerId);
-                            console.log('Current player hand:', state.currentPlayerHand);
-                            console.log('Card ownership:', state.cardOwnership);
-                            console.log('Column scores:', state.columnScores);
-                            console.log('Player names:', state.playerNames);
-                            console.log('Full game state:', state);
-                        }
-                        
+
                         // Update player names from backend
                         if (state.playerNames && Object.keys(state.playerNames).length > 0) {
                             setPlayers(state.playerNames);
@@ -196,8 +214,8 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                                 playerMap[id] = `Player ${index + 1}`;
                             });
                             setPlayers(playerMap);
-                        } else {
-                            if (DEBUG) console.warn('No playerIds in game state - backend needs to be restarted');
+                        } else if (DEBUG) {
+                            console.warn('No playerIds in game state - backend needs to be restarted');
                         }
                     },
                     onPlayerJoined: (playerId) => {
@@ -215,14 +233,8 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                             return prev;
                         });
                     },
-                    onPlayerDisconnected: (playerId) => {
-                        if (DEBUG) console.log('Player disconnected:', playerId);
-                        setOpponentConnected(false);
-                    },
-                    onPlayerReconnected: (playerId) => {
-                        if (DEBUG) console.log('Player reconnected:', playerId);
-                        setOpponentConnected(true);
-                    },
+                    onPlayerDisconnected: () => setOpponentConnected(false),
+                    onPlayerReconnected: () => setOpponentConnected(true),
                     onError: (error) => {
                         // If a move is waiting on the server, this is the server refusing
                         // it — take it back off the board rather than leaving the player
@@ -240,7 +252,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                 });
             } catch (err) {
                 console.error('Failed to connect WebSocket:', err);
-                setError('Failed to connect to game server');
+                setFatalError('Could not reach the game server. Please try again in a moment.');
             }
         };
 
@@ -257,7 +269,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
     // Track if match has been initialized
     const [matchInitialized, setMatchInitialized] = useState(false);
     const [isJoining, setIsJoining] = useState(false);
-    
+
     // Initialize or join match
     useEffect(() => {
         if (!user || !isConnected || matchInitialized || isJoining) return;
@@ -275,9 +287,9 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                     await new Promise(resolve => setTimeout(resolve, 200));
                     connectionAttempts++;
                 }
-                
+
                 if (!gameWebSocketService.isConnected()) {
-                    setError('WebSocket connection failed. Please refresh the page.');
+                    setFatalError('The connection to the game server dropped. Reload the page to try again.');
                     setIsLoading(false);
                     setIsJoining(false);
                     return;
@@ -286,19 +298,19 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                 if (matchId) {
                     // Join existing match
                     const joinResponse = await onlineGameService.joinMatch(matchId, user.playerId);
-                    
+
                     // Join WebSocket room
                     if (DEBUG) console.log('Player joining WebSocket room:', matchId);
                     try {
                         await gameWebSocketService.joinMatch(matchId, user.playerId);
-                        if (DEBUG) console.log('Player successfully joined WebSocket room');
                     } catch (err) {
                         console.error('Failed to join WebSocket room:', err);
-                        setError('Failed to join match room');
+                        setFatalError('Could not enter the battle room. Please try again.');
                         setIsLoading(false);
                         setIsJoining(false);
+                        return;
                     }
-                    
+
                     const mockMatch: OnlineMatchInfo = {
                         matchId: matchId,
                         player1Id: 'host', // Will be updated from server
@@ -307,11 +319,11 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                         createdAt: new Date().toISOString()
                     };
                     setMatchInfo(mockMatch);
-                    
+
                     if (joinResponse.status === 'IN_PROGRESS') {
                         // Game already started, skip lobby
                         setIsInLobby(false);
-                        
+
                         // Store the game ID from join response
                         if (joinResponse.gameId) {
                             setGameState({
@@ -328,7 +340,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                                 pendingWinRequestPlayerId: null
                             });
                         }
-                        
+
                         // Request current game state
                         setTimeout(() => {
                             gameWebSocketService.requestGameState();
@@ -337,7 +349,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                 } else {
                     // Create new match
                     const createResponse = await onlineGameService.createMatch(user.playerId);
-                    
+
                     // Store match info first
                     const mockMatch: OnlineMatchInfo = {
                         matchId: createResponse.matchId,
@@ -346,26 +358,29 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                         createdAt: new Date().toISOString()
                     };
                     setMatchInfo(mockMatch);
-                    
+
                     // Small delay to ensure WebSocket is ready
                     await new Promise(resolve => setTimeout(resolve, 100));
-                    
+
                     // Join WebSocket room
                     if (DEBUG) console.log('Host joining WebSocket room:', createResponse.matchId);
                     try {
                         await gameWebSocketService.joinMatch(createResponse.matchId, user.playerId);
-                        if (DEBUG) console.log('Host successfully joined WebSocket room');
                     } catch (err) {
                         console.error('Failed to join WebSocket room:', err);
-                        setError('Failed to join match room');
+                        setFatalError('Could not open the battle room. Please try again.');
                     }
                 }
-                
+
                 // Mark as initialized to prevent duplicate attempts
                 setMatchInitialized(true);
             } catch (err) {
-                setError('Failed to initialize match');
                 console.error(err);
+                setFatalError(
+                    matchId
+                        ? 'No battle found with this code.'
+                        : 'Could not create the battle. Please try again.',
+                );
             } finally {
                 setIsLoading(false);
                 setIsJoining(false);
@@ -393,10 +408,40 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
         onBack();
     }, [onBack, matchInfo, user]);
 
+    /**
+     * Turns the difference between two server states into readable lines.
+     *
+     * There is no event stream on the server, so this is the only history there is —
+     * and it is real: every line is a piece that appeared on the board while this
+     * client was watching, not a guess about what might have happened.
+     */
+    const recordMoves = (state: GameState) => {
+        const before = previousPieces.current;
+        const after = state.board?.pieces ?? {};
+        previousPieces.current = after;
+        if (!before) return;
+
+        const entries = Object.entries(after)
+            .filter(([positionKey]) => !(positionKey in before))
+            .map(([positionKey, cardId]) => {
+                const [x] = positionKey.split(',').map(Number);
+                const card = state.placedCards?.[cardId];
+                const ownerId = state.cardOwnership?.[positionKey];
+                const owner = ownerId === user?.playerId ? 'You' : (ownerId && state.playerNames?.[ownerId]) || 'Opponent';
+                const name = card?.name ?? 'a card';
+                const power = card ? ` (${card.power})` : '';
+                return `${owner} placed ${name}${power} → Col ${x + 1}`;
+            });
+
+        if (entries.length) {
+            setBattleLog((log) => [...entries.reverse(), ...log].slice(0, LOG_LENGTH));
+        }
+    };
+
     // Update board cards display
     const updateBoardCards = (state: GameState) => {
         const cardMap: Record<string, Card> = {};
-        
+
         if (state.board?.pieces) {
             Object.entries(state.board.pieces).forEach(([posKey, cardId]) => {
                 // For now, create a placeholder card if we don't have the full card data
@@ -409,7 +454,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                 cardMap[posKey] = card;
             });
         }
-        
+
         setBoardCards(cardMap);
     };
     updateBoardCardsRef.current = updateBoardCards;
@@ -423,14 +468,9 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
 
         const moves: Position[] = [];
         const boardPieces = gameState.board.pieces || {};
-        
-        if (DEBUG) console.log('Calculating valid moves, card ownership:', cardOwnership);
-        
+
         // Check if board is empty (first move)
-        const boardIsEmpty = Object.keys(boardPieces).length === 0;
-        
-        if (boardIsEmpty) {
-            // If board is empty, all positions are valid
+        if (Object.keys(boardPieces).length === 0) {
             for (let y = 0; y < DEFAULT_BOARD_HEIGHT; y++) {
                 for (let x = 0; x < DEFAULT_BOARD_WIDTH; x++) {
                     moves.push({ x, y });
@@ -438,41 +478,30 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
             }
         } else {
             // Find positions adjacent to current player's own cards
-            Object.entries(boardPieces).forEach(([posKey, cardId]) => {
+            Object.entries(boardPieces).forEach(([posKey]) => {
                 const [x, y] = posKey.split(',').map(Number);
-                
-                // Check if this card belongs to the current player
-                const cardOwner = cardOwnership[posKey];
-                if (cardOwner !== user.playerId) {
-                    if (DEBUG) console.log(`Skipping card at ${posKey} - owned by ${cardOwner}, not ${user.playerId}`);
-                    return;
-                }
-                
-                if (DEBUG) console.log(`Found own card at ${posKey}`);
-                
+
+                if (cardOwnership[posKey] !== user.playerId) return;
+
                 // Check orthogonal adjacent positions (no diagonals)
                 const adjacentPositions = [
-                    { x: x-1, y: y }, // left
-                    { x: x+1, y: y }, // right
-                    { x: x, y: y-1 }, // top
-                    { x: x, y: y+1 }  // bottom
+                    { x: x - 1, y },
+                    { x: x + 1, y },
+                    { x, y: y - 1 },
+                    { x, y: y + 1 },
                 ];
-                
+
                 adjacentPositions.forEach(pos => {
-                    // Check if position is valid (within bounds and empty)
                     if (pos.x >= 0 && pos.x < DEFAULT_BOARD_WIDTH &&
                         pos.y >= 0 && pos.y < DEFAULT_BOARD_HEIGHT &&
-                        !boardPieces[`${pos.x},${pos.y}`]) {
-                        // Add to moves if not already included
-                        if (!moves.some(m => m.x === pos.x && m.y === pos.y)) {
-                            moves.push(pos);
-                            if (DEBUG) console.log(`Added valid position: ${pos.x},${pos.y}`);
-                        }
+                        !boardPieces[`${pos.x},${pos.y}`] &&
+                        !moves.some(m => m.x === pos.x && m.y === pos.y)) {
+                        moves.push(pos);
                     }
                 });
             });
         }
-        
+
         setValidMoves(moves);
     }, [selectedCard, gameState, isMyTurn, user, cardOwnership]);
 
@@ -539,24 +568,16 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
     // Handle pass action
     const handlePass = async () => {
         if (!isMyTurn || !gameState) return;
-        
+
         try {
-            // Send pass action through REST API
             const response = await apiFetch(`/game/${gameState.id}/pass`, {
                 method: 'POST',
-                body: JSON.stringify({
-                    playerId: user!.playerId
-                }),
+                body: JSON.stringify({ playerId: user!.playerId }),
             });
-
-            if (!response.ok) {
-                throw new Error('Failed to pass');
-            }
-            
+            if (!response.ok) throw new Error('Failed to pass');
             // Backend will broadcast the update via WebSocket
-            // No need to send duplicate WebSocket action
         } catch (err) {
-            setError('Failed to pass turn');
+            setError('Your turn could not be passed. Please try again.');
             console.error(err);
         }
     };
@@ -564,49 +585,51 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
     // Handle win request
     const handleWinRequest = async () => {
         if (!isMyTurn || !gameState) return;
-        
+
         try {
             const response = await apiFetch(`/game/${gameState.id}/request-win`, {
                 method: 'POST',
-                body: JSON.stringify({
-                    playerId: user!.playerId
-                }),
+                body: JSON.stringify({ playerId: user!.playerId }),
             });
-
-            if (!response.ok) {
-                throw new Error('Failed to request win');
-            }
-            
-            // Backend will broadcast the update via WebSocket
+            if (!response.ok) throw new Error('Failed to request win');
+            toast('Early end requested — waiting for your opponent to agree.');
         } catch (err) {
-            setError('Failed to request win');
+            setError('The request could not be sent. Please try again.');
             console.error(err);
         }
     };
 
-    // Handle win response
+    // Handle win response. The server does not require it to be your turn.
     const handleWinResponse = async (accept: boolean) => {
-        if (!isMyTurn || !gameState) return;
-        
+        if (!gameState) return;
+
         try {
             const response = await apiFetch(`/game/${gameState.id}/respond-win-request`, {
                 method: 'POST',
-                body: JSON.stringify({
-                    playerId: user!.playerId,
-                    accepted: accept
-                }),
+                body: JSON.stringify({ playerId: user!.playerId, accepted: accept }),
             });
-
-            if (!response.ok) {
-                throw new Error('Failed to respond to win request');
-            }
-            
-            // Backend will broadcast the update via WebSocket
+            if (!response.ok) throw new Error('Failed to respond to win request');
         } catch (err) {
-            setError('Failed to respond to win request');
+            setError('Your answer could not be sent. Please try again.');
             console.error(err);
         }
     };
+
+    if (fatalError) {
+        return (
+            <main className="flex min-h-dvh items-center justify-center px-6">
+                <Panel className="w-full max-w-md">
+                    <PanelBody>
+                        <InlineAlert tone="danger">{fatalError}</InlineAlert>
+                        <Button variant="secondary" className="mt-5 w-full" onClick={onBack}>
+                            <ArrowLeft size={16} strokeWidth={1.75} />
+                            Back to Menu
+                        </Button>
+                    </PanelBody>
+                </Panel>
+            </main>
+        );
+    }
 
     // Render lobby if still waiting
     if (isInLobby && matchInfo) {
@@ -623,303 +646,312 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
     // Loading state
     if (isLoading || !gameState) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-400 mx-auto mb-4"></div>
-                    <p className="text-gray-300">Loading game...</p>
-                </div>
-            </div>
+            <main className="flex min-h-dvh flex-col items-center justify-center gap-3">
+                <Spinner size={28} className="text-arcane-300" />
+                <p className="type-small text-ink-low">Opening the arena…</p>
+            </main>
         );
     }
 
+    const opponentId = Object.keys(players).find((id) => id !== user!.playerId);
+    const isFinished = gameState.state === 'COMPLETED';
+    const stateLabel = readableState(gameState.state);
+    const roomCode = matchInfo ? matchInfo.matchId.slice(-6).toUpperCase() : null;
+
+    const iRequestedEarlyEnd =
+        !!gameState.hasPendingWinRequest && gameState.pendingWinRequestPlayerId === user!.playerId;
+    const theyRequestedEarlyEnd =
+        !!gameState.hasPendingWinRequest && gameState.pendingWinRequestPlayerId !== user!.playerId;
+
+    const outcome = gameState.isTie
+        ? ('tie' as const)
+        : gameState.winnerId === user!.playerId
+          ? ('win' as const)
+          : ('loss' as const);
+
     return (
-        <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-4 relative">
-            <div className="max-w-6xl mx-auto relative z-10">
-                {/* Header */}
-                <div className="bg-black/40 backdrop-blur-sm rounded-lg shadow-xl p-4 mb-4 border border-purple-500/30">
-                    <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-4">
-                            <Button 
-                                variant="outline" 
-                                onClick={handleCancelMatch}
-                                className="bg-purple-800/30 hover:bg-purple-700/40 border-purple-500/50 text-purple-200 hover:text-purple-100 transition-all duration-300"
-                            >
-                                ← Back to Menu
-                            </Button>
+        <div className="grid h-dvh grid-rows-[56px_1fr] overflow-hidden">
+            {/* Top bar */}
+            <header className="flex items-center justify-between gap-4 border-b border-subtle bg-surface-1/70 px-4 backdrop-blur-md">
+                <Button
+                    variant="ghost"
+                    size="md"
+                    onClick={() => (isFinished ? handleCancelMatch() : setConfirmLeave(true))}
+                >
+                    <ArrowLeft size={16} strokeWidth={1.75} />
+                    Back to Menu
+                </Button>
+
+                <div className="flex items-center gap-2 text-[13px] text-ink-mid">
+                    {connectionStatus === 'connected' ? (
+                        <>
+                            <span className="h-2 w-2 rounded-full bg-success" />
+                            <Wifi size={16} strokeWidth={1.75} className="text-success" />
+                            Connected
+                        </>
+                    ) : (
+                        <>
+                            <span className="h-2 w-2 rounded-full bg-danger" />
+                            <WifiOff size={16} strokeWidth={1.75} className="text-danger" />
+                            Reconnecting…
+                            <Spinner size={14} className="text-danger" />
+                        </>
+                    )}
+                </div>
+
+                <div className="flex items-center gap-2">
+                    {gameState.hasPendingWinRequest && (
+                        <Badge tone="warning">Early End Requested</Badge>
+                    )}
+                    <Badge tone={isMyTurn ? 'success' : 'danger'} dot>
+                        {isMyTurn
+                            ? 'Your Turn'
+                            : `${(opponentId && players[opponentId]) || 'Opponent'}'s Turn`}
+                    </Badge>
+                    {roomCode && (
+                        <Badge tone="gold" className="font-mono tracking-[0.12em]">
+                            Room {roomCode}
+                        </Badge>
+                    )}
+                </div>
+            </header>
+
+            <div className="grid min-h-0 grid-cols-[1fr_300px] gap-4 p-4">
+                {/* Battlefield */}
+                <div
+                    className="grid min-h-0 grid-rows-[auto_1fr_auto] gap-3"
+                    style={{ ['--cell' as string]: 'clamp(60px, 10.5vh, 96px)' }}
+                >
+                    <div className="mx-auto grid grid-cols-3 gap-2"
+                         style={{ width: 'calc(var(--cell) * 3 + 1rem)' }}>
+                        {[0, 1, 2].map(colIndex => (
+                            <ColumnIndicator
+                                key={`col-${colIndex}`}
+                                columnIndex={colIndex}
+                                columnScore={gameState.columnScores?.[colIndex]}
+                                players={players}
+                                currentPlayerId={user?.playerId || ''}
+                            />
+                        ))}
+                    </div>
+
+                    <div className="flex min-h-0 justify-center">
+                        <div className="grid grid-cols-3 gap-2 self-start"
+                             style={{ width: 'calc(var(--cell) * 3 + 1rem)' }}>
+                            {Array.from({ length: DEFAULT_BOARD_HEIGHT }, (_, y) =>
+                                Array.from({ length: DEFAULT_BOARD_WIDTH }, (_, x) => {
+                                    const posKey = `${x},${y}`;
+                                    return (
+                                        <GameCell
+                                            key={posKey}
+                                            position={{ x, y }}
+                                            card={boardCards[posKey] ?? null}
+                                            isValidMove={
+                                                isMyTurn && validMoves.some(move => move.x === x && move.y === y)
+                                            }
+                                            onCellClick={() => handleCellClick(x, y)}
+                                            selectedCard={selectedCard}
+                                            cardOwner={boardCards[posKey] ? cardOwnership[posKey] : null}
+                                            currentPlayerId={user?.playerId}
+                                            playerNames={players}
+                                        />
+                                    );
+                                }),
+                            ).flat()}
+                        </div>
+                    </div>
+
+                    {/* Hand — always on screen, never scrolled to */}
+                    <div className="rounded-lg border border-subtle bg-surface-1 px-4 py-3">
+                        <div className="mb-2 flex items-center justify-between gap-4">
+                            <span className="type-micro text-ink-low">Your Mystical Hand</span>
                             <div className="flex items-center gap-2">
-                                {connectionStatus === 'connected' ? (
-                                    <Wifi className="w-5 h-5 text-green-400 drop-shadow-lg" />
+                                <Button
+                                    variant="secondary"
+                                    size="md"
+                                    onClick={handlePass}
+                                    disabled={!isMyTurn || isFinished}
+                                >
+                                    Pass Turn
+                                </Button>
+                                {iRequestedEarlyEnd ? (
+                                    <Button variant="ghost" size="md" disabled>
+                                        <Spinner size={16} />
+                                        Awaiting opponent…
+                                    </Button>
                                 ) : (
-                                    <WifiOff className="w-5 h-5 text-red-400 drop-shadow-lg" />
+                                    <Button
+                                        variant="ghost"
+                                        size="md"
+                                        onClick={handleWinRequest}
+                                        disabled={!isMyTurn || isFinished || theyRequestedEarlyEnd}
+                                    >
+                                        Request Early End
+                                    </Button>
                                 )}
-                                <span className="text-sm text-gray-300">
-                                    {connectionStatus === 'connected' ? 'Connected' : 'Disconnected'}
-                                </span>
                             </div>
                         </div>
-                        
-                        <div className="flex items-center gap-4">
-                            <Badge 
-                                className={isMyTurn 
-                                    ? "bg-gradient-to-r from-green-600 to-emerald-600 text-white border-0 shadow-lg shadow-green-500/20" 
-                                    : "bg-gray-800/50 text-gray-300 border-gray-600/50"}
-                            >
-                                {isMyTurn ? "⚔️ Your Turn" : `${players[gameState.currentPlayerId] || 'Opponent'}'s Turn`}
-                            </Badge>
-                            {gameState.hasPendingWinRequest && (
-                                <Badge className="bg-red-900/50 text-red-300 border-red-500/50">
-                                    ⚠️ Early End Requested
-                                </Badge>
-                            )}
-                            {matchInfo && (
-                                <Badge className="bg-purple-900/50 text-purple-300 border-purple-500/50">
-                                    📍 Room: {matchInfo.matchId.slice(-6).toUpperCase()}
-                                </Badge>
-                            )}
-                        </div>
+
+                        <PlayerHand
+                            cards={gameState.currentPlayerHand}
+                            isCurrentTurn={isMyTurn && !isFinished}
+                            selectedCard={selectedCard}
+                            onCardSelect={setSelectedCard}
+                        />
                     </div>
                 </div>
 
-                {/* Error Alert */}
-                {error && (
-                    <Alert variant="destructive" className="mb-4">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertDescription>{error}</AlertDescription>
-                    </Alert>
-                )}
+                {/* Sidebar — the only thing on this screen allowed to scroll */}
+                <aside className="min-h-0 space-y-4 overflow-y-auto pr-1">
+                    {error && (
+                        <InlineAlert tone="danger">{error}</InlineAlert>
+                    )}
 
-                {/* Game Content */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                    {/* Main Game Board */}
-                    <div className="lg:col-span-2">
-                        <div className="relative bg-black/40 backdrop-blur-sm rounded-2xl shadow-2xl p-6 border border-purple-500/30 overflow-hidden">
-                            {/* Arena Background */}
-                            <div 
-                                className="absolute inset-0 bg-cover bg-center opacity-30"
-                                style={{
-                                    backgroundImage: "url('/backgrounds/battle-arena.png')",
-                                    filter: "blur(1px)"
-                                }}
-                            />
-                            <div className="relative z-10 flex flex-col items-center">
-                                <h2 className="text-2xl font-bold mb-4 text-center text-purple-300 drop-shadow-lg">Battle Arena</h2>
-                            
-                            {/* Game Completion Banner */}
-                            {gameState.state === 'COMPLETED' && (
-                                <div className="mb-4 p-4 bg-gradient-to-r from-yellow-600 to-orange-600 rounded-lg shadow-2xl text-white">
-                                    <h3 className="text-xl font-bold text-center mb-2">Game Complete!</h3>
-                                    <p className="text-center text-lg">
-                                        {gameState.isTie ? (
-                                            "It's a Tie!"
-                                        ) : gameState.winnerId === user?.playerId ? (
-                                            "🎉 You Won! 🎉"
-                                        ) : (
-                                            `${players[gameState.winnerId || ''] || 'Opponent'} Won`
+                    <Panel>
+                        <PanelHeader icon={Users} title="Players" className="px-4 py-3" />
+                        <PanelBody className="space-y-2 p-3">
+                            {Object.entries(players).map(([playerId, playerName]) => {
+                                const isMe = playerId === user!.playerId;
+                                const isActive = gameState.currentPlayerId === playerId;
+                                const columns = gameState.scores?.[playerId] ?? 0;
+                                return (
+                                    <div
+                                        key={playerId}
+                                        className={cn(
+                                            'flex items-center gap-2.5 rounded-md border border-subtle bg-surface-2 px-3 py-2',
+                                            isActive && 'border-l-[3px] border-l-success',
                                         )}
-                                    </p>
-                                    <div className="mt-2 text-center text-sm">
-                                        Final Score: {Object.entries(gameState.scores || {}).map(([pid, score]) => 
-                                            `${players[pid] || 'Player'}: ${score} columns`
-                                        ).join(' | ')}
-                                    </div>
-                                </div>
-                            )}
-                            
-                            {/* Column Indicators */}
-                            <div className="grid grid-cols-3 gap-2 mb-4 w-fit mx-auto">
-                                {[0, 1, 2].map(colIndex => (
-                                    <div key={`col-indicator-${colIndex}`} className="w-28">
-                                        <ColumnIndicator
-                                            columnIndex={colIndex}
-                                            columnScore={gameState.columnScores?.[colIndex]}
-                                            players={players}
-                                            currentPlayerId={user?.playerId || ''}
-                                        />
-                                    </div>
-                                ))}
-                            </div>
-                            
-                            {/* Board Grid */}
-                            <div className="grid grid-cols-3 gap-2 mb-6 w-fit mx-auto">
-                                {Array.from({ length: DEFAULT_BOARD_HEIGHT }, (_, y) => 
-                                    Array.from({ length: DEFAULT_BOARD_WIDTH }, (_, x) => {
-                                        const posKey = `${x},${y}`;
-                                        const card = boardCards[posKey];
-                                        const isValidMove = validMoves.some(
-                                            move => move.x === x && move.y === y
-                                        );
-                                        
-                                        return (
-                                            <GameCell
-                                                key={posKey}
-                                                position={{ x, y }}
-                                                card={card}
-                                                isValidMove={isValidMove && isMyTurn}
-                                                onCellClick={() => handleCellClick(x, y)}
-                                                selectedCard={selectedCard}
-                                                cardOwner={card ? cardOwnership[posKey] : null}
-                                                currentPlayerId={user?.playerId}
-                                                playerNames={players}
-                                            />
-                                        );
-                                    })
-                                ).flat()}
-                            </div>
-
-                            {/* Your Hand (only visible when game is in progress) */}
-                            {gameState.state === 'IN_PROGRESS' && (
-                            <div className="relative bg-gradient-to-br from-purple-900/40 via-blue-900/40 to-indigo-900/40 backdrop-blur-sm rounded-xl p-4 mt-4 overflow-hidden border border-purple-500/30">
-                                {/* Mystical energy background effect */}
-                                <div className="absolute inset-0">
-                                    <div className="absolute inset-0 bg-gradient-to-t from-purple-600/10 via-transparent to-blue-600/10 animate-pulse" />
-                                    <div className="absolute top-0 left-1/4 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl" />
-                                    <div className="absolute bottom-0 right-1/4 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl" />
-                                </div>
-                                
-                                {/* Title */}
-                                <h3 className="text-center text-sm font-bold text-purple-300 mb-3 relative z-10">
-                                    Your Mystical Hand
-                                </h3>
-                                
-                                <div className="relative z-10">
-                                    <PlayerHand
-                                        cards={gameState.currentPlayerHand}
-                                        isCurrentTurn={isMyTurn}
-                                        selectedCard={selectedCard}
-                                        onCardSelect={setSelectedCard}
-                                    />
-                                </div>
-                            </div>
-                            )}
-
-                            {/* Action Buttons */}
-                            {gameState.state === 'IN_PROGRESS' && (
-                            <div className="flex gap-2 mt-4">
-                                <button
-                                    type="button"
-                                    onClick={handlePass}
-                                    disabled={!isMyTurn}
-                                    className="px-6 py-3 rounded-lg font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group bg-gradient-to-br from-purple-800/80 via-purple-700/80 to-purple-900/80 hover:from-purple-700/90 hover:via-purple-600/90 hover:to-purple-800/90 text-purple-100 border border-purple-500/50 shadow-lg shadow-purple-900/50"
-                                >
-                                    <span className="relative z-10">Pass Turn</span>
-                                    <div className="absolute inset-0 bg-gradient-to-t from-transparent via-purple-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                                </button>
-                                
-                                {isMyTurn && !gameState.hasPendingWinRequest && (
-                                    <button
-                                        type="button"
-                                        onClick={handleWinRequest}
-                                        disabled={!isMyTurn}
-                                        className="px-6 py-3 rounded-lg font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group bg-gradient-to-br from-amber-700/80 via-amber-600/80 to-orange-700/80 hover:from-amber-600/90 hover:via-amber-500/90 hover:to-orange-600/90 text-amber-100 border border-amber-500/50 shadow-lg shadow-amber-900/50"
                                     >
-                                        <span className="relative z-10">Request Early End</span>
-                                        <div className="absolute inset-0 bg-gradient-to-t from-transparent via-amber-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                                    </button>
-                                )}
-                                
-                                {gameState.hasPendingWinRequest && 
-                                 gameState.pendingWinRequestPlayerId !== user!.playerId && 
-                                 isMyTurn && (
-                                    <div className="space-y-2">
-                                        <Alert className="bg-yellow-900/30 border-yellow-500/50">
-                                            <AlertCircle className="h-4 w-4 text-yellow-500" />
-                                            <AlertDescription className="text-yellow-200">
-                                                Your opponent has requested to end the game early. 
-                                                Do you accept?
-                                            </AlertDescription>
-                                        </Alert>
-                                        <div className="flex gap-2">
-                                            <button
-                                                type="button"
-                                                onClick={() => handleWinResponse(true)}
-                                                className="px-6 py-3 rounded-lg font-semibold transition-all duration-300 relative overflow-hidden group bg-gradient-to-br from-emerald-700/80 via-emerald-600/80 to-green-700/80 hover:from-emerald-600/90 hover:via-emerald-500/90 hover:to-green-600/90 text-emerald-100 border border-emerald-500/50 shadow-lg shadow-emerald-900/50"
-                                            >
-                                                <span className="relative z-10">Accept & Calculate Winner</span>
-                                                <div className="absolute inset-0 bg-gradient-to-t from-transparent via-emerald-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => handleWinResponse(false)}
-                                                className="px-6 py-3 rounded-lg font-semibold transition-all duration-300 relative overflow-hidden group bg-gradient-to-br from-gray-700/80 via-gray-600/80 to-gray-800/80 hover:from-gray-600/90 hover:via-gray-500/90 hover:to-gray-700/90 text-gray-100 border border-gray-500/50 shadow-lg shadow-gray-900/50"
-                                            >
-                                                <span className="relative z-10">Continue Playing</span>
-                                                <div className="absolute inset-0 bg-gradient-to-t from-transparent via-gray-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                            )}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Side Panel */}
-                    <div className="space-y-4">
-                        {/* Players Info */}
-                        <div className="bg-black/40 backdrop-blur-sm rounded-2xl shadow-xl p-4 border border-purple-500/30">
-                            <h3 className="font-bold mb-3 flex items-center gap-2 text-yellow-400">
-                                <Users className="w-5 h-5" />
-                                Players
-                            </h3>
-                            <div className="space-y-2">
-                                {Object.entries(players).map(([playerId, playerName]) => (
-                                    <div key={playerId} className="flex justify-between items-center">
-                                        <span className="flex items-center gap-2 text-gray-200">
-                                            {playerName} {playerId === user!.playerId && <span className="text-purple-400">(You)</span>}
-                                            {playerId !== user!.playerId && !opponentConnected && (
-                                                <Badge className="text-xs bg-red-900/50 text-red-300 border-red-500/50">
-                                                    Disconnected
-                                                </Badge>
+                                        <span
+                                            className={cn(
+                                                'flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-3 font-display text-sm font-bold ring-2',
+                                                isMe ? 'text-gold-300 ring-gold-400/60' : 'text-danger ring-danger/60',
+                                            )}
+                                        >
+                                            {playerName.charAt(0).toUpperCase()}
+                                        </span>
+                                        <span className="flex min-w-0 flex-1 items-center gap-1.5">
+                                            <span className="truncate text-sm text-ink-hi">{playerName}</span>
+                                            {isMe && <span className="type-micro text-ink-low">You</span>}
+                                            {isActive && (
+                                                <span
+                                                    className="h-2 w-2 shrink-0 rounded-full bg-success"
+                                                    style={{ animation: 'breathe 1.6s ease-in-out infinite' }}
+                                                />
                                             )}
                                         </span>
-                                        <Badge className="bg-blue-900/50 text-blue-300 border-blue-500/50">
-                                            {gameState.scores?.[playerId] || 0} column{(gameState.scores?.[playerId] || 0) !== 1 ? 's' : ''}
-                                        </Badge>
+                                        {!isMe && !opponentConnected ? (
+                                            <Badge tone="danger">Offline</Badge>
+                                        ) : (
+                                            <Badge tone={isMe ? 'gold' : 'neutral'} className="tabular">
+                                                {columns} col{columns === 1 ? '' : 's'}
+                                            </Badge>
+                                        )}
                                     </div>
-                                ))}
-                            </div>
-                        </div>
+                                );
+                            })}
+                        </PanelBody>
+                    </Panel>
 
-                        {/* Game Status */}
-                        <div className="bg-black/40 backdrop-blur-sm rounded-2xl shadow-xl p-4 border border-purple-500/30">
-                            <h3 className="font-bold mb-3 text-yellow-400">Game Status</h3>
-                            <div className="space-y-2 text-sm">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-gray-300">State:</span>
-                                    <Badge className="bg-purple-900/50 text-purple-300 border-purple-500/50">
-                                        {gameState.state}
-                                    </Badge>
-                                </div>
-                                <div className="flex justify-between items-center">
-                                    <span className="text-gray-300">Cards in hand:</span>
-                                    <span className="text-purple-200 font-bold">{gameState.currentPlayerHand.length}</span>
-                                </div>
-                                {gameState.state === 'COMPLETED' && (
-                                    <div className="mt-4 p-3 bg-gradient-to-br from-yellow-900/30 to-orange-900/30 rounded-lg border border-yellow-700/50">
-                                        <p className="font-bold text-center text-yellow-300">
-                                            {gameState.isTie ? (
-                                                "⚔️ Game ended in a tie! ⚔️"
-                                            ) : gameState.winnerId === user!.playerId ? (
-                                                "🎉 You won! 🎉"
-                                            ) : (
-                                                "💔 You lost. Better luck next time!"
-                                            )}
-                                        </p>
-                                        <Button 
-                                            variant="outline" 
-                                            className="w-full mt-2 bg-purple-800/30 hover:bg-purple-700/40 border-purple-500/50 text-purple-200 hover:text-purple-100 transition-all duration-300"
-                                            onClick={handleCancelMatch}
-                                        >
-                                            Back to Menu
-                                        </Button>
-                                    </div>
-                                )}
+                    <Panel>
+                        <PanelHeader icon={Activity} title="Game Status" className="px-4 py-3" />
+                        <PanelBody className="space-y-2.5 p-4 text-sm">
+                            <div className="flex items-center justify-between">
+                                <span className="text-ink-mid">State</span>
+                                <Badge tone={stateLabel.tone}>{stateLabel.label}</Badge>
                             </div>
-                        </div>
-                    </div>
-                </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-ink-mid">Cards in hand</span>
+                                <span className="tabular text-ink-hi">
+                                    {gameState.currentPlayerHand.length}
+                                </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-ink-mid">Cards on board</span>
+                                <span className="tabular text-ink-hi">
+                                    {Object.keys(gameState.board.pieces ?? {}).length}
+                                </span>
+                            </div>
+                        </PanelBody>
+                    </Panel>
+
+                    <Panel>
+                        <PanelHeader icon={ScrollText} title="Battle Log" className="px-4 py-3" />
+                        <PanelBody className="p-4">
+                            {battleLog.length === 0 ? (
+                                <p className="type-small text-ink-low">No moves yet.</p>
+                            ) : (
+                                <ul className="space-y-1.5">
+                                    {battleLog.map((entry, index) => (
+                                        <li
+                                            key={`${entry}-${index}`}
+                                            className={cn(
+                                                'type-small',
+                                                index === 0 ? 'text-ink-mid' : 'text-ink-low',
+                                            )}
+                                        >
+                                            {entry}
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </PanelBody>
+                    </Panel>
+                </aside>
             </div>
+
+            <Modal
+                open={theyRequestedEarlyEnd && !isFinished}
+                onClose={() => handleWinResponse(false)}
+                title="End the duel now?"
+                showCloseButton={false}
+                closeOnOverlayClick={false}
+                widthClassName="max-w-sm"
+            >
+                <p className="text-sm text-ink-mid">
+                    Your opponent proposes to end early and count the columns as they stand.
+                </p>
+                <div className="mt-6 flex justify-end gap-3">
+                    <Button variant="ghost" onClick={() => handleWinResponse(false)}>
+                        Decline
+                    </Button>
+                    <Button variant="primary" onClick={() => handleWinResponse(true)}>
+                        Agree &amp; End
+                    </Button>
+                </div>
+            </Modal>
+
+            <Modal
+                open={confirmLeave}
+                onClose={() => setConfirmLeave(false)}
+                title="Leave the battle?"
+                widthClassName="max-w-sm"
+            >
+                <p className="text-sm text-ink-mid">
+                    The duel is still in progress. Leaving now counts as abandoning it.
+                </p>
+                <div className="mt-6 flex justify-end gap-3">
+                    <Button variant="ghost" onClick={() => setConfirmLeave(false)}>
+                        Cancel
+                    </Button>
+                    <Button variant="danger" onClick={handleCancelMatch}>
+                        Leave
+                    </Button>
+                </div>
+            </Modal>
+
+            <GameResultModal
+                open={isFinished && !resultDismissed}
+                outcome={outcome}
+                columnScores={gameState.columnScores ?? {}}
+                players={players}
+                currentPlayerId={user!.playerId}
+                columnsWon={gameState.scores ?? {}}
+                onReturn={() => {
+                    setResultDismissed(true);
+                    handleCancelMatch();
+                }}
+            />
         </div>
     );
 }

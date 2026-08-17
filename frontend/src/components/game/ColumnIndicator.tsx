@@ -1,77 +1,85 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+
+import { cn } from '@/lib/utils';
 import { ColumnScore } from '@/types/game';
 
 interface ColumnIndicatorProps {
     columnIndex: number;
     columnScore?: ColumnScore;
-    players: Record<string, string>; // playerid to name mapping
+    players: Record<string, string>;
     currentPlayerId: string;
 }
 
-export default function ColumnIndicator({ columnIndex, columnScore, players, currentPlayerId }: ColumnIndicatorProps) {
-    // Always show column header, even if no scores yet
-    if (!columnScore || Object.keys(columnScore.playerScores || {}).length === 0) {
-        return (
-            <div className="h-20 flex flex-col items-center justify-center bg-black/60 rounded-lg p-2 border border-purple-500/50">
-                <div className="text-sm font-bold text-gray-200">Column {columnIndex + 1}</div>
-                <div className="text-xs text-gray-400 mt-1">No cards</div>
-            </div>
-        );
-    }
+/**
+ * The strip above a column: whose it is, and by how much.
+ *
+ * It is one row tall and the same width as the column, because the board and the
+ * hand have to share the viewport with it. The leader is the strip's colour — gold
+ * for you, crimson for them — which is the same language the cards on the board use.
+ */
+export default function ColumnIndicator({
+    columnIndex,
+    columnScore,
+    players,
+    currentPlayerId,
+}: ColumnIndicatorProps) {
+    const scores = columnScore?.playerScores ?? {};
+    const mine = scores[currentPlayerId] ?? 0;
+    const theirId = Object.keys(players).find((id) => id !== currentPlayerId);
+    const theirs = theirId ? (scores[theirId] ?? 0) : 0;
 
-    // Get the winning color for the column
-    const getColumnColor = () => {
-        if (columnScore.isTie) return 'from-gray-400 to-gray-600';
-        if (!columnScore.winnerId) return 'from-gray-400 to-gray-600';
-        if (columnScore.winnerId === currentPlayerId) return 'from-blue-400 to-blue-600';
-        return 'from-red-400 to-red-600';
-    };
+    const leader: 'me' | 'them' | 'none' =
+        columnScore?.isTie || !columnScore?.winnerId
+            ? 'none'
+            : columnScore.winnerId === currentPlayerId
+              ? 'me'
+              : 'them';
 
-    // Get scores for display
-    const playerScores = Object.entries(columnScore.playerScores || {});
+    // A score that changes gets a beat of attention; a score that has not, does not.
+    const [bumping, setBumping] = useState(false);
+    const previous = useRef(`${mine}:${theirs}`);
+    useEffect(() => {
+        const key = `${mine}:${theirs}`;
+        if (previous.current !== key) {
+            previous.current = key;
+            setBumping(true);
+            const timer = window.setTimeout(() => setBumping(false), 300);
+            return () => window.clearTimeout(timer);
+        }
+    }, [mine, theirs]);
+
+    const leaderName =
+        leader === 'me'
+            ? 'You'
+            : leader === 'them' && theirId
+              ? players[theirId]
+              : undefined;
 
     return (
-        <div className="h-20 flex flex-col items-center justify-between bg-black/60 rounded-lg p-2 border border-purple-500/50">
-            {/* Column header */}
-            <div className="text-sm font-bold text-purple-300">Column {columnIndex + 1}</div>
-            
-            {/* Winner indicator */}
-            <div className={`
-                px-3 py-1 rounded-lg text-xs font-bold text-white
-                bg-gradient-to-r ${getColumnColor()}
-                shadow-lg transform transition-all duration-300
-                ${columnScore.winnerId && !columnScore.isTie ? 'animate-pulse' : ''}
-            `}>
-                {columnScore.isTie ? (
-                    'TIE'
-                ) : columnScore.winnerId ? (
-                    players[columnScore.winnerId] || 'Player'
-                ) : (
-                    'Empty'
-                )}
-            </div>
-
-            {/* Column scores */}
-            <div className="flex gap-2 text-xs mt-1">
-                {playerScores.map(([playerId, score]) => {
-                    const isWinner = playerId === columnScore.winnerId && !columnScore.isTie;
-                    const isCurrentPlayer = playerId === currentPlayerId;
-                    return (
-                        <div 
-                            key={playerId} 
-                            className={`
-                                px-2 py-0.5 rounded
-                                ${isWinner ? 'bg-yellow-500/30 text-yellow-300 font-bold shadow-glow-yellow' : 'bg-purple-900/40 text-gray-300'}
-                                ${isCurrentPlayer ? 'border border-blue-400' : 'border border-transparent'}
-                            `}
-                        >
-                            {score}
-                        </div>
-                    );
-                })}
-            </div>
+        <div
+            title={
+                leaderName
+                    ? `Column ${columnIndex + 1} — ${leaderName} leads ${Math.max(mine, theirs)} to ${Math.min(mine, theirs)}`
+                    : `Column ${columnIndex + 1} — level at ${mine}`
+            }
+            className={cn(
+                'flex h-11 flex-col items-center justify-center rounded-md border bg-surface-1',
+                leader === 'me' && 'border-gold-400/45',
+                leader === 'them' && 'border-danger/45',
+                leader === 'none' && 'border-subtle',
+            )}
+        >
+            <span className="type-micro leading-none text-ink-low">Col {columnIndex + 1}</span>
+            <span
+                className="mt-1 flex items-baseline gap-1 font-display text-base font-bold leading-none tabular"
+                style={bumping ? { animation: 'score-pop 300ms ease-out' } : undefined}
+            >
+                <span className={leader === 'me' ? 'text-gold-300' : 'text-ink-mid'}>{mine}</span>
+                <span className="text-[11px] font-normal text-ink-low">:</span>
+                <span className={leader === 'them' ? 'text-danger' : 'text-ink-mid'}>{theirs}</span>
+            </span>
         </div>
     );
 }
