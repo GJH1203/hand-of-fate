@@ -7,6 +7,7 @@ import com.cardgame.repository.CardRepository;
 import com.cardgame.repository.GameResultRepository;
 import com.cardgame.repository.GameScoreRepository;
 import com.cardgame.service.nakama.NakamaMatchService;
+import com.cardgame.service.player.PlayerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +27,7 @@ public class AdminController {
     private final GameResultRepository gameResultRepository;
     private final GameScoreRepository gameScoreRepository;
     private final NakamaMatchService nakamaMatchService;
+    private final PlayerService playerService;
 
     @Autowired
     public AdminController(
@@ -35,7 +37,8 @@ public class AdminController {
             CardRepository cardRepository,
             GameResultRepository gameResultRepository,
             GameScoreRepository gameScoreRepository,
-            NakamaMatchService nakamaMatchService) {
+            NakamaMatchService nakamaMatchService,
+            PlayerService playerService) {
         this.playerRepository = playerRepository;
         this.deckRepository = deckRepository;
         this.gameRepository = gameRepository;
@@ -43,6 +46,7 @@ public class AdminController {
         this.gameResultRepository = gameResultRepository;
         this.gameScoreRepository = gameScoreRepository;
         this.nakamaMatchService = nakamaMatchService;
+        this.playerService = playerService;
     }
 
     /**
@@ -158,7 +162,11 @@ public class AdminController {
     }
 
     /**
-     * Delete a specific player and all their related data
+     * Delete a specific player and all their related data.
+     *
+     * <p>The deletion itself lives in {@link PlayerService}, so this and the player's own
+     * {@code DELETE /players/{playerId}} cannot drift apart again — they already had, and
+     * the self-service one was the half that left games behind.
      */
     @DeleteMapping("/cleanup/player/{playerId}")
     public ResponseEntity<Map<String, Object>> deleteSpecificPlayer(
@@ -182,18 +190,8 @@ public class AdminController {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(result);
             }
             
-            // Delete player's games (where they are a participant)
-            gameRepository.findAll().stream()
-                .filter(game -> game.getPlayerIds().contains(playerId))
-                .forEach(game -> gameRepository.delete(game));
-            
-            // Delete player's decks
-            deckRepository.findByOwnerId(playerId)
-                .forEach(deck -> deckRepository.delete(deck));
-            
-            // Delete player
-            playerRepository.deleteById(playerId);
-            
+            playerService.deletePlayer(playerId);
+
             result.put("success", true);
             result.put("message", "Player and related data deleted successfully");
             result.put("playerId", playerId);

@@ -10,4 +10,7 @@ import java.util.Optional;
 public interface DeckRepository extends MongoRepository<Deck, String> {
     List<Deck> findByOwnerId(String ownerId);
     Optional<Deck> findByIdAndOwnerId(String id, String ownerId);
+
+    /** Deletes every deck this player owns, and returns how many there were. */
+    long deleteByOwnerId(String ownerId);
 }

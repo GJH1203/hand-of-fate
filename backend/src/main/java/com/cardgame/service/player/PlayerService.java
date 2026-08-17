@@ -5,6 +5,8 @@ import com.cardgame.exception.player.PlayerNotFoundException;
 import com.cardgame.model.Card;
 import com.cardgame.model.Deck;
 import com.cardgame.model.Player;
+import com.cardgame.repository.DeckRepository;
+import com.cardgame.repository.GameRepository;
 import com.cardgame.repository.PlayerRepository;
 import com.cardgame.service.DeckInitializationService;
 import org.slf4j.Logger;
@@ -23,13 +25,19 @@ public class PlayerService {
     
     private final PlayerActionService playerActionService;
     private final PlayerRepository playerRepository;
+    private final GameRepository gameRepository;
+    private final DeckRepository deckRepository;
     private final DeckInitializationService deckInitializationService;
 
-    public PlayerService(PlayerActionService playerActionService, 
-                        PlayerRepository playerRepository, 
+    public PlayerService(PlayerActionService playerActionService,
+                        PlayerRepository playerRepository,
+                        GameRepository gameRepository,
+                        DeckRepository deckRepository,
                         DeckInitializationService deckInitializationService) {
         this.playerActionService = playerActionService;
         this.playerRepository = playerRepository;
+        this.gameRepository = gameRepository;
+        this.deckRepository = deckRepository;
         this.deckInitializationService = deckInitializationService;
     }
 
@@ -390,8 +398,22 @@ public class PlayerService {
         return playerRepository.findAll();
     }
     
+    /**
+     * Delete a player and everything that belongs only to them.
+     *
+     * <p>The games go first, then the decks, then the player. Deleting the player alone
+     * leaves both behind holding an id that no longer resolves, and nothing else ever
+     * collects them.
+     *
+     * <p>There is no transaction here, so a failure part way through leaves the player in
+     * place with some of their data already gone. That is the recoverable direction: the
+     * caller can delete again. Doing it the other way round would not be.
+     */
     public void deletePlayer(String playerId) {
+        long games = gameRepository.deleteByPlayerIdsContaining(playerId);
+        long decks = deckRepository.deleteByOwnerId(playerId);
         playerRepository.deleteById(playerId);
+        logger.info("Deleted player {} along with {} game(s) and {} deck(s)", playerId, games, decks);
     }
     
     public void deleteAllPlayers() {

@@ -120,19 +120,14 @@ given. It becomes worth the money and the memory at goal 5 below, where the
 question is which resource gives out first under load — and that question cannot be
 answered by guessing.
 
-**A stale address in `frontend/.env.production`.** `NEXT_PUBLIC_API_URL` still
-names `funnygames.duckdns.org`, a host that has not existed for months. Vercel's
-own environment variables override it in the deployed build, so production is
-unaffected — but a local `npm run build` bakes the dead address in.
-
-**Debris in the working tree.** `frontend/test-cors.html`,
-`test-frontend-automated.js`, `test-online-quick.sh`, `deploy-setup.sh` and
-`backend/cleanup_script.sh` are one-off scripts from earlier debugging. They hold
-no credentials and hurt nothing; they are just noise pointing at `localhost:8080`.
-
-**Orphaned games.** `DELETE /players/{playerId}` removes the player and leaves
-their games behind, holding ids that no longer resolve. `AdminController` has a
-delete that cleans up properly; the self-service one does not.
+**`frontend/.env.production` is not in the repository.** It is covered by the
+`.env*` rule in `.gitignore` and was untracked in `f48c6ce`, so a fresh clone does
+not have one and a local `npm run build` falls back to `localhost:8080`. This
+machine's copy still names `funnygames.duckdns.org`, a host that has not existed
+for months; the deployed build is unaffected either way, because Vercel's own
+environment variables are what production reads. Nothing here can be fixed by a
+commit — the file to correct is the one on your own disk, and the address it
+should name is `https://api.handoffate.org`.
 
 **Most tests still need infrastructure.** The suite runs in CI now, and the
 security tests are plain unit tests, but everything else is still
@@ -210,8 +205,15 @@ Ordering is deliberate: 3 and 4 rewrite the core, so 2 comes first.
 
 ## Conventions
 
-- Commit messages: explain *why*, in prose. No session links, no bullet-point
-  changelogs of what the diff already shows.
+- One commit per logical change, and keep each one small enough to review in a
+  sitting. A branch of five focused commits is right; one commit touching a
+  dozen unrelated files is not, and being the only person on the project is not
+  a reason to skip this. Documentation about a change belongs in the commit
+  that makes it.
+- Commit messages: explain *why*, in prose. A subject line on its own is enough
+  for a change that speaks for itself; a short paragraph under it when the
+  reasoning is not obvious from the diff. Never longer than that. No session
+  links, no bullet-point changelogs of what the diff already shows.
 - Never commit `.env` files. `backend/.env.example` is the template.
 - Working notes, task lists, and scratch files stay out of the repository —
   keep them outside the working tree.
