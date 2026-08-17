@@ -34,7 +34,14 @@ export default function BoardCard({ card, mine, ownerName, ghost }: BoardCardPro
       )}
     >
       {card.imageUrl && (
-        <img src={card.imageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+        // Cropped to the illustration. Centring the crop would keep the card's own
+        // printed name and number in frame, which then competes with the sigil below —
+        // two numbers on one card, one of them half cut off.
+        <img
+          src={card.imageUrl}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover object-[50%_78%]"
+        />
       )}
 
       {/* Darkens the top strip so the power sigil stays readable over any art */}

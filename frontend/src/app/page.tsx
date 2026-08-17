@@ -169,7 +169,7 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-6 py-8">
+      <main className="mx-auto max-w-6xl px-6 py-6">
         <div className="text-center">
           <h1 className="text-gold-gradient font-display text-4xl font-bold tracking-[0.03em]">
             Hand of Fate
@@ -180,7 +180,7 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="mt-8 grid gap-5 md:grid-cols-3">
+        <div className="mt-6 grid gap-4 md:grid-cols-3">
           <Panel className="md:col-span-1">
             <PanelHeader
               icon={Trophy}
@@ -188,7 +188,7 @@ export default function Home() {
               subtitle="Your journey through the realms"
             />
             <PanelBody>
-              <div className="rounded-lg border bg-surface-2 p-6 text-center"
+              <div className="rounded-lg border bg-surface-2 p-5 text-center"
                    style={{ borderColor: 'rgba(217,174,78,0.35)' }}>
                 <div className="type-micro text-ink-mid">Power Score</div>
                 <div className="mt-2 font-display text-[40px] font-bold leading-none text-gold-300 tabular">
@@ -205,10 +205,10 @@ export default function Home() {
           <Panel className="md:col-span-2">
             <PanelHeader icon={Swords} title="Enter the Arena" subtitle="Choose your path to glory" />
             <PanelBody>
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-2">
                 <Link
                   href="/game"
-                  className="group flex flex-col rounded-lg border border-subtle bg-surface-2 p-5 transition-[transform,border-color,box-shadow] duration-200 ease-arcane hover:-translate-y-0.5 hover:border-gold-400/40 hover:shadow-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcane-400"
+                  className="group flex flex-col rounded-lg border border-subtle bg-surface-2 p-4 transition-[transform,border-color,box-shadow] duration-200 ease-arcane hover:-translate-y-0.5 hover:border-gold-400/40 hover:shadow-card focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcane-400"
                 >
                   <Swords size={24} strokeWidth={1.75} className="text-gold-400" />
                   <h3 className="type-h3 mt-3 text-ink-hi">Battle Mode</h3>
@@ -221,7 +221,7 @@ export default function Home() {
                   </span>
                 </Link>
 
-                <div className="relative flex flex-col rounded-lg border border-subtle bg-surface-2 p-5 opacity-45">
+                <div className="relative flex flex-col rounded-lg border border-subtle bg-surface-2 p-4 opacity-45">
                   <Badge tone="neutral" className="absolute right-4 top-4">
                     Coming Soon
                   </Badge>

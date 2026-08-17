@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Activity, ArrowLeft, ScrollText, Users, Wifi, WifiOff } from 'lucide-react';
+import { Activity, ArrowLeft, ScrollText, Swords, Users, Wifi, WifiOff } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -670,7 +670,31 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
           : ('loss' as const);
 
     return (
-        <div className="grid h-dvh grid-rows-[56px_1fr] overflow-hidden">
+        <>
+            {/*
+             * The arena is a fixed two-column viewport layout and there is no phone
+             * version of it yet. Saying so is better than serving a board four cells
+             * wide and letting somebody find out mid-duel.
+             */}
+            <main className="flex min-h-dvh items-center justify-center px-6 lg:hidden">
+                <Panel className="w-full max-w-sm">
+                    <PanelBody className="text-center">
+                        <Swords size={28} strokeWidth={1.75} className="mx-auto text-gold-400" />
+                        <h1 className="type-h2 mt-4 text-ink-hi">Best played on a desktop</h1>
+                        <p className="type-small mt-2 text-ink-mid">
+                            The arena needs a window at least 1024 pixels wide to show the board and
+                            your hand at once. Your battle is safe — open this page on a larger
+                            screen to continue it.
+                        </p>
+                        <Button variant="secondary" className="mt-5 w-full" onClick={onBack}>
+                            <ArrowLeft size={16} strokeWidth={1.75} />
+                            Back to Menu
+                        </Button>
+                    </PanelBody>
+                </Panel>
+            </main>
+
+        <div className="hidden h-dvh grid-rows-[56px_1fr] overflow-hidden lg:grid">
             {/* Top bar */}
             <header className="flex items-center justify-between gap-4 border-b border-subtle bg-surface-1/70 px-4 backdrop-blur-md">
                 <Button
@@ -719,8 +743,25 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
             <div className="grid min-h-0 grid-cols-[1fr_300px] gap-4 p-4">
                 {/* Battlefield */}
                 <div
-                    className="grid min-h-0 grid-rows-[auto_1fr_auto] gap-3"
-                    style={{ ['--cell' as string]: 'clamp(60px, 10.5vh, 96px)' }}
+                    /*
+                     * The board has to fit in whatever is left after the bar, the column
+                     * headers and the hand — so the cell size is derived from the viewport
+                     * rather than guessed. Each part of that subtraction is a variable
+                     * here, and the hand panel below is pinned to --hand, so the two
+                     * cannot drift apart and start overlapping.
+                     */
+                    className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] gap-3"
+                    style={
+                        {
+                            '--bar': '56px',
+                            '--pad': '32px',
+                            '--headers': '44px',
+                            '--gaps': '24px',
+                            '--hand': '180px',
+                            '--cell':
+                                'clamp(48px, calc((100dvh - var(--bar) - var(--pad) - var(--headers) - var(--gaps) - var(--hand) - 32px) / 5), 96px)',
+                        } as React.CSSProperties
+                    }
                 >
                     <div className="mx-auto grid grid-cols-3 gap-2"
                          style={{ width: 'calc(var(--cell) * 3 + 1rem)' }}>
@@ -735,8 +776,8 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                         ))}
                     </div>
 
-                    <div className="flex min-h-0 justify-center">
-                        <div className="grid grid-cols-3 gap-2 self-start"
+                    <div className="flex min-h-0 items-center justify-center overflow-hidden">
+                        <div className="grid grid-cols-3 gap-2"
                              style={{ width: 'calc(var(--cell) * 3 + 1rem)' }}>
                             {Array.from({ length: DEFAULT_BOARD_HEIGHT }, (_, y) =>
                                 Array.from({ length: DEFAULT_BOARD_WIDTH }, (_, x) => {
@@ -762,7 +803,10 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                     </div>
 
                     {/* Hand — always on screen, never scrolled to */}
-                    <div className="rounded-lg border border-subtle bg-surface-1 px-4 py-3">
+                    <div
+                        className="flex flex-col rounded-lg border border-subtle bg-surface-1 px-4 py-3"
+                        style={{ height: 'var(--hand)' }}
+                    >
                         <div className="mb-2 flex items-center justify-between gap-4">
                             <span className="type-micro text-ink-low">Your Mystical Hand</span>
                             <div className="flex items-center gap-2">
@@ -793,6 +837,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                         </div>
 
                         <PlayerHand
+                            className="min-h-0 flex-1"
                             cards={gameState.currentPlayerHand}
                             isCurrentTurn={isMyTurn && !isFinished}
                             selectedCard={selectedCard}
@@ -953,5 +998,6 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                 }}
             />
         </div>
+        </>
     );
 }
