@@ -94,6 +94,24 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
     const previousPieces = useRef<Record<string, string> | null>(null);
 
     /**
+     * Card art by card name, learned from every card that arrives carrying it.
+     *
+     * A card played over the socket comes back from the server without its image:
+     * `GameWebSocketHandler` rebuilds the Card from the action field by field and never
+     * copies `imageUrl`, so the only cards on the board with art are the two the server
+     * dealt at setup. Art belongs to the card *type* and both decks are identical, so
+     * the name is enough to put it back. Repairing the display here rather than
+     * inventing paths: nothing is drawn that this client has not already been sent.
+     */
+    const artByName = useRef<Record<string, string>>({});
+
+    const rememberArt = (cards: (Card | undefined)[]) => {
+        cards.forEach((card) => {
+            if (card?.name && card.imageUrl) artByName.current[card.name] = card.imageUrl;
+        });
+    };
+
+    /**
      * Guards the gap between entering a game and the server describing it.
      *
      * The arena shows its loading state while `gameState` is null, which is honest —
@@ -470,6 +488,9 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
     const updateBoardCards = (state: GameState) => {
         const cardMap: Record<string, Card> = {};
 
+        rememberArt(state.currentPlayerHand);
+        rememberArt(Object.values(state.placedCards ?? {}));
+
         if (state.board?.pieces) {
             Object.entries(state.board.pieces).forEach(([posKey, cardId]) => {
                 // For now, create a placeholder card if we don't have the full card data
@@ -479,7 +500,9 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                     power: 1,
                     name: 'Card'
                 };
-                cardMap[posKey] = card;
+                cardMap[posKey] = card.imageUrl
+                    ? card
+                    : { ...card, imageUrl: artByName.current[card.name] };
             });
         }
 
