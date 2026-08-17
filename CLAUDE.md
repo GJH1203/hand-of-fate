@@ -89,6 +89,17 @@ one game at a time, `convertToDto` re-reads every player on every state
 conversion (and that runs once per connected socket per move), and finishing a
 game has to "restore" the player's original deck — a crash mid-game loses it.
 
+**Nakama's Postgres holds account state and has no backup.** The nightly `mongodump`
+to S3 covers MongoDB and nothing else, but a player's *game* account lives in
+Nakama's Postgres on the data volume. Losing that volume loses every game account
+while MongoDB still holds a `nakamaUserId` for each of them — which is not
+hypothetical: it happened when Nakama's Postgres moved onto its own volume and came
+up empty, and it locked every account created before that deploy out of the game
+from 2026-08-16 04:37 PDT until the login path learned to recreate a missing
+account. That recovery is in place now, so the failure is survivable, but the
+backup gap is not fixed: the volume is still the only copy. `pg_dump` alongside the
+existing `mongodump` job is the obvious answer.
+
 **Online matches are in-memory, and they are never released.** `NakamaMatchService`
 keeps matches in a `ConcurrentHashMap` and never uses Nakama's match API despite the
 dependency. A restart drops every active match, and the design cannot survive a
