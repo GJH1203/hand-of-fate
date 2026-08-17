@@ -210,7 +210,7 @@ const STEPS: Step[] = [
     title: 'Contesting the Last Column',
     subtitle: 'Even a one has a job',
     instruction:
-      'They answered your Thunder with a Spark, and they are ahead in column 1. Put a Spark in there to keep the column alive.',
+      'They answered your Thunder with a Spark of their own in column 3. Column 1 is still untouched — put a Spark there and stake a claim before they do.',
     tip: 'Placing next to your own card is also how you deny them room to expand.',
     grid: gridWith(
       P.yourOpening,

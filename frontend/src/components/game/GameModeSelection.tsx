@@ -184,7 +184,7 @@ export default function GameModeSelection({ onModeSelect }: GameModeSelectionPro
         </p>
 
         <div className="mt-5">
-          <CodeInput value={code} onChange={setCode} onComplete={submitJoin} autoFocus />
+          <CodeInput value={code} onChange={setCode} autoFocus />
         </div>
 
         <div className="mt-6 flex justify-end gap-3">

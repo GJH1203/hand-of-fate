@@ -22,6 +22,7 @@ import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
 import { onlineGameService } from '@/services/onlineGameService';
 import { gameWebSocketService } from '@/services/gameWebSocketService';
 import { apiFetch } from '@/lib/apiClient';
+import { humanizeJoinError } from '@/lib/joinErrors';
 import { cn } from '@/lib/utils';
 
 const DEFAULT_BOARD_WIDTH = 3;
@@ -378,7 +379,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                 console.error(err);
                 setFatalError(
                     matchId
-                        ? 'No battle found with this code.'
+                        ? humanizeJoinError(err instanceof Error ? err.message : null)
                         : 'Could not create the battle. Please try again.',
                 );
             } finally {

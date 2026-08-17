@@ -8,8 +8,6 @@ interface CodeInputProps {
   value: string;
   onChange: (value: string) => void;
   length?: number;
-  /** Fires when the last slot is filled — lets Enter-free flows submit on completion. */
-  onComplete?: (value: string) => void;
   autoFocus?: boolean;
   "aria-label"?: string;
 }
@@ -28,7 +26,6 @@ export function CodeInput({
   value,
   onChange,
   length = 6,
-  onComplete,
   autoFocus,
   "aria-label": ariaLabel = "Battle code",
 }: CodeInputProps) {
@@ -37,7 +34,6 @@ export function CodeInput({
   const commit = (next: string) => {
     const clean = next.toUpperCase().replace(ALLOWED, "").slice(0, length);
     onChange(clean);
-    if (clean.length === length) onComplete?.(clean);
     return clean;
   };
 
