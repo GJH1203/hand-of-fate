@@ -93,6 +93,32 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
     // The board as the server last described it, so a new state can be diffed into a log.
     const previousPieces = useRef<Record<string, string> | null>(null);
 
+    /**
+     * Guards the gap between entering a game and the server describing it.
+     *
+     * The arena shows its loading state while `gameState` is null, which is honest —
+     * but only as long as something eventually arrives. If the request goes unanswered
+     * the player would sit on a spinner for ever, so this says so instead.
+     */
+    const firstStateTimer = useRef<number | null>(null);
+
+    const awaitFirstState = useCallback(() => {
+        window.clearTimeout(firstStateTimer.current ?? undefined);
+        firstStateTimer.current = window.setTimeout(() => {
+            setGameState((current) => {
+                if (!current) {
+                    setFatalError('The game server did not send the board. Please try again.');
+                }
+                return current;
+            });
+        }, 10000);
+    }, []);
+
+    const settleFirstState = useCallback(() => {
+        window.clearTimeout(firstStateTimer.current ?? undefined);
+        firstStateTimer.current = null;
+    }, []);
+
     const settlePendingMove = useCallback(() => {
         if (pendingMove.current) {
             window.clearTimeout(pendingMove.current.timer);
@@ -194,6 +220,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
 
                         // The server's word replaces whatever was drawn optimistically.
                         settlePendingMove();
+                        settleFirstState();
 
                         recordMoves(mappedState);
                         setGameState(mappedState);
@@ -325,27 +352,15 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                     setMatchInfo(mockMatch);
 
                     if (joinResponse.status === 'IN_PROGRESS') {
-                        // Game already started, skip lobby
+                        // Game already started, skip lobby.
+                        //
+                        // Nothing is drawn until the server describes the game. This used
+                        // to seed an empty board and an empty hand as a placeholder, which
+                        // is not a loading state but a false one: reconnect into a duel
+                        // already under way and you were shown a blank board and told you
+                        // had no cards left, with no sign that anything was still coming.
                         setIsInLobby(false);
-
-                        // Store the game ID from join response
-                        if (joinResponse.gameId) {
-                            setGameState({
-                                id: joinResponse.gameId,
-                                state: 'IN_PROGRESS',
-                                board: { width: 3, height: 5, pieces: {} },
-                                currentPlayerId: '',
-                                currentPlayerHand: [],
-                                placedCards: {},
-                                scores: {},
-                                winnerId: null,
-                                isTie: false,
-                                hasPendingWinRequest: false,
-                                pendingWinRequestPlayerId: null
-                            });
-                        }
-
-                        // Request current game state
+                        awaitFirstState();
                         setTimeout(() => {
                             gameWebSocketService.requestGameState();
                         }, 100);
@@ -395,8 +410,9 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
     const handleGameStart = useCallback(() => {
         setIsInLobby(false);
         // Game state will come from WebSocket
+        awaitFirstState();
         gameWebSocketService.requestGameState();
-    }, []);
+    }, [awaitFirstState]);
 
     const handleCancelMatch = useCallback(async () => {
         if (matchInfo && user) {
