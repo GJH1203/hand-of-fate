@@ -56,7 +56,7 @@ move, so a client never receives the opponent's hand.
 | Layer | Choice |
 |---|---|
 | Backend | Java 17, Spring Boot 3.4.1, Gradle (Kotlin DSL) |
-| Realtime | Spring WebSocket, Nakama 3.x |
+| Realtime | Spring WebSocket. Nakama 3.x carries accounts, the leaderboard and chat, not the game |
 | Data | MongoDB (game state), Postgres (Nakama) |
 | Frontend | Next.js 15, React 19, TypeScript, Tailwind, shadcn/ui |
 | Auth | Supabase (email + verification) issues the JWT the backend verifies; Nakama issues game sessions |
