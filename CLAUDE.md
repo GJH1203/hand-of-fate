@@ -242,9 +242,31 @@ session is a judgement call that changes with what the project needs next.
 3. **Move game state onto the game.** (Backups exist now, so this is no longer a
    change made without a net.) The single change that unblocks
    concurrent games per player, kills the N+1 reads, and makes crash recovery
-   possible.
-4. **Make matches survive a restart.** Either commit to Nakama's match API or
-   persist match state properly. Add optimistic locking while here.
+   possible. It also turns a move into one document write, which is what makes
+   the next item small: MongoDB is atomic per document on its own, so what is
+   left afterwards is `@Version` for the read-modify-write race, not transactions.
+   **This is the next session's work**; the working checklist is in the notes
+   outside the repository.
+4. **Make matches survive a restart,** with optimistic locking. Either commit to
+   Nakama's match API or persist match state properly.
+
+   Afterwards a projection becomes worth building, and only afterwards: the read
+   side needs one clean thing to project from, and today the write model is split
+   across `Player` documents. Measured 2026-08-17: **only `currentPlayerHand`
+   varies per player** in `convertToDto` — board, ownership, placed cards, names,
+   column scores and state are identical for everyone, and that identical part is
+   rebuilt once per connected socket on every move. Building it once per move
+   instead is worth doing on its own, before any of the architecture.
+
+   Note that the broadcast has to go out immediately after the move, so such a
+   projection would be updated synchronously. That is a cached view rather than
+   eventual consistency, and calling it CQRS oversells it.
+
+   **A Redis cache is not the step after that.** With one instance, an in-memory
+   projection is faster, free, and one fewer thing that can fail; ElastiCache's
+   cheapest node roughly doubles the bill. It becomes the right answer when there
+   is a second instance to share the projection with — which is this item — and
+   not before.
 5. **Hold 100 concurrent players.** It does, and now holds them well: p50 11 ms,
    p95 52 ms, p99 91 ms over two minutes of sustained 100-socket play, no errors,
    memory flat. What is left is a decision rather than work — a move still costs
