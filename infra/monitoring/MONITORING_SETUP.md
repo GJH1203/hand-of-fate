@@ -1,5 +1,11 @@
 # Monitoring Setup - Prometheus & Grafana
 
+> **Not deployed.** Nothing in this directory is running. The Prometheus and
+> Grafana setup described here lived on a DigitalOcean droplet that has been shut
+> down, and `monitoring.handoffate.org` still points at its old address. Metrics
+> are exposed at `/actuator/prometheus`, but that endpoint now requires an admin
+> credential, so any scraper brought back will need one.
+
 This guide explains how to set up monitoring for the Card Game backend using Prometheus and Grafana.
 
 ## Overview

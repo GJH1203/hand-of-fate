@@ -4,9 +4,35 @@
 This document outlines the complete backend API workflow for the Hand of Fate card game, including authentication, game management, and online multiplayer functionality.
 
 ## Base URL
+
 ```
-http://localhost:8080
+http://localhost:8080          # infra/local
+https://api.handoffate.org     # production, through the Cloudflare tunnel
 ```
+
+## Authentication
+
+**Every endpoint below requires a Supabase session token**, except
+`/actuator/health` and `/actuator/info`. There is no anonymous access to anything.
+
+```http
+Authorization: Bearer <supabase access token>
+```
+
+The token is verified against the project's published JWKS, and its `sub` claim is
+the caller's identity. Ids in a request body or path are checked against it, never
+trusted in place of it — so passing somebody else's player id gets a 403, not their
+data.
+
+A request without a token gets 401. A valid token acting outside its own player
+gets 403. `/admin/**` and a handful of destructive endpoints additionally require
+the caller's Supabase id to be listed in `security.admin.supabase-user-ids`, which
+is empty by default.
+
+The WebSocket at `/ws/game` cannot carry a header, so its token travels as a
+`Sec-WebSocket-Protocol: bearer, <token>` pair. The player id established during
+that handshake is what the socket acts as; the one in a `JOIN_MATCH` payload is
+ignored.
 
 ## API Endpoints by Category
 
@@ -14,7 +40,7 @@ http://localhost:8080
 
 #### Unified Authentication
 ```http
-POST /api/unified-auth/authenticate
+POST /api/auth/login-with-supabase
 Content-Type: application/json
 
 {
@@ -51,14 +77,14 @@ Response:
 
 #### Get Player by Username
 ```http
-GET /players/username/{username}
+GET /players/by-name/{name}
 
 Response: Same as above
 ```
 
 #### Create Player Deck
 ```http
-POST /players/{playerId}/create-deck
+POST /players/{playerId}/create-deck   <!-- does not exist; see note below -->
 
 Response: Updated player object with deck
 ```
@@ -470,3 +496,10 @@ curl -X POST http://localhost:8080/api/online-game/join/ABC123 \
   -H "Content-Type: application/json" \
   -d '{"playerId": "64def456..."}'
 ```
+
+## Endpoints that are documented elsewhere but do not exist
+
+`POST /players/{playerId}/create-deck` has never been implemented. The frontend
+calls it in `GameBoard.tsx` when a player has no deck, which is why local mode
+fails with "Failed to create deck" rather than creating one. A deck is created on
+first login instead, by `/api/auth/login-with-supabase`.

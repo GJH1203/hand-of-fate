@@ -2,10 +2,15 @@
 
 This guide will walk you through manually testing the online game functionality in the frontend.
 
+> Written before the API required authentication. Every request now carries a
+> Supabase session token, so both windows have to be signed in as **different**
+> accounts — the same account in two windows is one player, and the second will be
+> refused as not being in the match.
+
 ## Prerequisites
-1. Backend server running on http://localhost:8080
-2. Frontend dev server running on http://localhost:3001
-3. Two browser windows/tabs
+1. Backend running on http://localhost:8080 (`cd infra/local && docker compose up -d`)
+2. Frontend dev server on http://localhost:3000 (`npm run dev`)
+3. Two browser windows, signed in as two different accounts
 
 ## Test Steps
 

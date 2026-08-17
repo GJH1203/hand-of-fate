@@ -53,10 +53,10 @@ Live at **handoffate.org**. Do not assume anything below is still true — check
 | Frontend | Vercel, project `card-game-frontend`, root directory `frontend` |
 | Backend | ECS on EC2, one `t4g.small`, `us-west-2`, four containers in one task |
 | Ingress | Cloudflare Tunnel. The security group has **no inbound rules at all** |
-| Database | MongoDB Atlas M0, same region. Nakama has its own Postgres on the box |
+| Database | MongoDB Atlas M0, same region. Nakama's Postgres is on an EBS volume mounted at `/var/lib/hand-of-fate`, kept apart from the instance so a replacement does not take it |
 | Auth | Supabase project `Hand-of-Fate` issues the JWT; Nakama issues game sessions |
 | Secrets | SSM Parameter Store under `/hand-of-fate/`, read at task start |
-| Cost | ~$6/month until the t4g free trial ends 2026-12-31, ~$19 after |
+| Cost | ~$6.40/month until the t4g free trial ends 2026-12-31, ~$20 after. The extra over the old ~$6 is the 4 GB data volume; S3 backups are a rounding error |
 | Backups | Nightly `mongodump` to S3, run as a scheduled ECS task. Atlas M0 has none of its own |
 | Email | Supabase sends through Resend, from `noreply@mail.handoffate.org` |
 
@@ -97,10 +97,14 @@ instance. `getMatchState` scans the entire games collection on every call.
 **No concurrency control.** No `@Version` on documents, no transactions.
 Simultaneous writes overwrite each other.
 
-**A dangling DNS record.** `monitoring.handoffate.org` points at `134.199.238.66`,
-a DigitalOcean address that looks like the retired Prometheus droplet in
-`infra/monitoring`. If that machine is gone, anyone who lands on the address owns
-the subdomain.
+**A dangling DNS record.** `monitoring.handoffate.org` has its origin set to
+`134.199.238.66`, a DigitalOcean address that looks like the retired Prometheus
+droplet in `infra/monitoring`. The record is proxied, so a public lookup returns a
+Cloudflare address and the origin does not show — but Cloudflare still forwards to
+it. If that machine is gone and somebody else is given the address, they receive
+traffic for a handoffate.org subdomain with Cloudflare's certificate in front of
+it, which looks more legitimate than a plain takeover, not less. Delete the record
+unless the droplet is coming back.
 
 **Most tests still need infrastructure.** The suite runs in CI now, and the
 security tests are plain unit tests, but everything else is still
@@ -120,8 +124,14 @@ importers at all.
 **The site is live.** Deploying takes it down for the length of a container
 start: there is one instance and the task uses host networking, so two copies
 cannot run side by side and the service is set to `MinimumHealthyPercent: 0`.
-Build, push to ECR, then
-`aws ecs update-service --cluster hand-of-fate --service hand-of-fate --force-new-deployment`.
+Build, push to ECR, then deploy the stack — `aws cloudformation deploy` picks up a
+new `BackendImage` and rolls the service on its own; `aws ecs update-service
+--force-new-deployment` is only needed when nothing in the template changed.
+
+**Changing user data does not touch the running instance.** The auto scaling group
+leaves it alone and the new launch template version is only used by the next
+instance, so a boot-time change is inert until you terminate the current one. Which
+also means the data volume is only picked up by a replacement.
 
 **The frontend has to be live before the backend that requires it.** Both sides
 now speak bearer tokens, but they do not ship at the same instant: the frontend
@@ -149,7 +159,8 @@ a checklist:
    is unit-testable game logic and Testcontainers, so the suite stops needing a
    MongoDB somebody remembered to start. This is also what makes the later
    refactors safe.
-3. **Move game state onto the game.** The single change that unblocks
+3. **Move game state onto the game.** (Backups exist now, so this is no longer a
+   change made without a net.) The single change that unblocks
    concurrent games per player, kills the N+1 reads, and makes crash recovery
    possible.
 4. **Make matches survive a restart.** Either commit to Nakama's match API or

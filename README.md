@@ -3,8 +3,7 @@
 A real-time 1v1 online card game. Two players share a 3×5 board, place cards
 under an adjacency constraint, and fight for control of each column.
 
-> **Status:** redeploying. The previous DigitalOcean host was shut down and the
-> stack is being moved to ECS on EC2. Live link goes here once it is back up.
+> Live at **[handoffate.org](https://handoffate.org)**.
 
 ---
 
@@ -62,7 +61,7 @@ move, so a client never receives the opponent's hand.
 | Frontend | Next.js 15, React 19, TypeScript, Tailwind, shadcn/ui |
 | Auth | Supabase (email + verification) issues the JWT the backend verifies; Nakama issues game sessions |
 | Deploy | ECS on EC2 (arm64 / Graviton), Vercel, Cloudflare |
-| Observability | Spring Actuator, Micrometer, Prometheus, Grafana |
+| Observability | Spring Actuator and Micrometer. The Prometheus and Grafana setup in `infra/monitoring` is not deployed |
 
 ## Repository layout
 

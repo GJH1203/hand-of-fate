@@ -1,5 +1,9 @@
 # Frontend Authentication Migration Guide
 
+> A record of a migration that has already happened, kept for the history. It
+> describes the move to unified auth; the bearer-token work that came later is in
+> `backend/BACKEND_API_WORKFLOW.md`.
+
 ## Overview
 This guide explains the migration from the dual authentication system to the unified authentication system.
 

@@ -1,111 +1,37 @@
-# Deployment Instructions for Card Game
+# Deploying the frontend
 
-## Backend Deployment
+The frontend is a Vercel project (`card-game-frontend`, root directory `frontend`)
+that deploys on every push to `main`. There is nothing to run by hand.
 
-1. **Deploy your backend** to a cloud service (e.g., AWS EC2, DigitalOcean, Heroku)
-2. **Ensure your backend is accessible** via a public URL (e.g., `https://your-backend.com`)
-3. **Configure CORS** in your Spring Boot app to allow requests from your Vercel domain
+## Environment variables
 
-## Frontend Deployment on Vercel
+Set in the Vercel dashboard, not in a file — `.env.production` in this repository
+is only a local fallback and its values are stale.
 
-### Option 1: Direct Backend Connection (Recommended for Production)
+| Name | Value |
+|---|---|
+| `NEXT_PUBLIC_API_URL` | `https://api.handoffate.org` |
+| `NEXT_PUBLIC_SUPABASE_URL` | the Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | the Supabase anon key |
 
-1. In your Vercel project settings, add the environment variable:
-   ```
-   NEXT_PUBLIC_API_URL=https://your-backend-url.com
-   ```
+`NEXT_PUBLIC_API_URL` is read by `lib/apiClient.ts` for REST calls and by
+`services/gameWebSocketService.ts`, which derives the `wss://` origin from it.
 
-2. Your frontend will now make direct API calls to your backend.
+## How it reaches the backend
 
-### Option 2: Using Vercel Functions as Proxy (Alternative)
+Directly, over HTTPS. `api.handoffate.org` is a Cloudflare Tunnel to the ECS
+instance — the security group has no inbound rules at all, so there is no origin
+to reach except through the tunnel. The backend's allowed origins are in
+`backend/.../config/AllowedOrigins.java`, and a new frontend domain has to be added
+there before the browser will be allowed to call it.
 
-If you need to proxy requests through Vercel (e.g., to hide backend URL or handle CORS):
+The `app/api/backend/[...path]` route is a proxy from an earlier setup where the
+backend had no TLS. Nothing routes through it now; it forwards the `Authorization`
+header if anything ever does.
 
-1. Create an API route in your Next.js app:
+## The backend
 
-```typescript
-// app/api/backend/[...path]/route.ts
-import { NextRequest } from 'next/server'
-
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8080'
-
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { path: string[] } }
-) {
-  const path = params.path.join('/')
-  const body = await request.text()
-  
-  const response = await fetch(`${BACKEND_URL}/${path}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: body,
-  })
-  
-  const data = await response.json()
-  return Response.json(data, { status: response.status })
-}
-
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { path: string[] } }
-) {
-  const path = params.path.join('/')
-  
-  const response = await fetch(`${BACKEND_URL}/${path}`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  })
-  
-  const data = await response.json()
-  return Response.json(data, { status: response.status })
-}
-```
-
-2. Add the environment variable in Vercel:
-   ```
-   BACKEND_URL=https://your-backend-url.com
-   ```
-
-## Current Issue Fix
-
-Your current deployment is failing because:
-1. The frontend is trying to reach `localhost:8080` which doesn't exist on Vercel
-2. No backend URL is configured in environment variables
-
-### Immediate Fix:
-
-1. Deploy your backend to a public server
-2. Add `NEXT_PUBLIC_API_URL` to your Vercel environment variables
-3. Redeploy your frontend
-
-### Backend CORS Configuration
-
-Add this to your Spring Boot backend to allow requests from Vercel:
-
-```java
-@Configuration
-public class CorsConfig {
-    @Bean
-    public WebMvcConfigurer corsConfigurer() {
-        return new WebMvcConfigurer() {
-            @Override
-            public void addCorsMappings(CorsRegistry registry) {
-                registry.addMapping("/api/**")
-                    .allowedOrigins(
-                        "http://localhost:3000",
-                        "https://card-game-frontend-*.vercel.app",
-                        "https://your-production-domain.com"
-                    )
-                    .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                    .allowedHeaders("*")
-                    .allowCredentials(true);
-            }
-        };
-    }
-}
-```
+Deployed separately and by hand — see `infra/ecs/README.md`. It does not deploy on
+push, so a change that spans both sides lands in two steps. Merge first and let
+Vercel finish, then push the backend: a frontend sending an `Authorization` header
+works fine against a backend that ignores it, and the reverse logs everybody out.
