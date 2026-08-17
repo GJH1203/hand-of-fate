@@ -100,7 +100,25 @@ Simultaneous writes overwrite each other.
 **Nothing notices a wedged application.** The auto scaling group's health check is
 `EC2`, which sees a dead instance and nothing else. A backend that is running but
 answering nothing is invisible to it, and there is no alarm anywhere else either —
-the way you find out the site is down is by looking at it.
+the way you find out the site is down is by looking at it. It has already happened
+once, during the deploy that moved Nakama's Postgres onto its own volume.
+
+Two cheap things fix the part that matters, and neither is a metrics stack:
+
+- an external uptime check on `https://handoffate.org` and
+  `https://api.handoffate.org/actuator/health`, which is the only thing that would
+  have said anything during that outage;
+- a CloudWatch alarm on the ECS service's `runningCount` dropping below one.
+
+**Prometheus and Grafana are not the answer to this, yet.** They draw graphs; they
+do not tell anyone. `infra/monitoring` still holds the old setup and it is tempting
+to put it back, but the instance has ~200 MiB spare of 2 GiB, which is why that
+stack lived on a separate droplet costing more than everything else here. There is
+also nothing to look at: with almost no players every graph is a flat line, and
+`/actuator/prometheus` now needs an admin credential a scraper would have to be
+given. It becomes worth the money and the memory at goal 5 below, where the
+question is which resource gives out first under load — and that question cannot be
+answered by guessing.
 
 **A stale address in `frontend/.env.production`.** `NEXT_PUBLIC_API_URL` still
 names `funnygames.duckdns.org`, a host that has not existed for months. Vercel's
@@ -165,7 +183,12 @@ everybody out until the frontend catches up.
 A stable, genuinely deployable product: roughly **100 concurrent players**, no
 severe bugs, and a codebase that reads as production work rather than
 coursework. Roughly in dependency order — each is a session's worth of work, not
-a checklist:
+a checklist.
+
+Asked what to work on, read this list together with Known problems above and
+propose an ordered set to pick from, rather than starting on one. The severe
+problems are gone; what is left is a mix of sizes, and which of them is worth a
+session is a judgement call that changes with what the project needs next.
 
 1. ~~**Make the backend trustworthy.**~~ Done. Every request carries a Supabase
    JWT verified against the project's published JWKS, the WebSocket handshake is
@@ -186,7 +209,8 @@ a checklist:
    persist match state properly. Add optimistic locking while here.
 5. **Hold 100 concurrent players.** Only meaningful once the above lands — load
    test, fix what it finds, decide whether one `t4g.small` is still the right
-   size.
+   size. This is where Prometheus and Grafana earn their keep; bringing them back
+   before there is load to watch buys a flat line and a memory bill.
 6. **Frontend.** Break up the 900-line components, fix reconnection, delete the
    dead services. (The home page's Power Score is real data, not a placeholder —
    that item was stale.)
