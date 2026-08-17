@@ -34,18 +34,11 @@ public class PlayerController {
     // Removed auto-creation endpoint to prevent unauthorized player creation
     // Players should only be created through proper authentication flow
 
-    /** A player's own record. It carries their hand, so it is not somebody else's to read. */
+    /** A player's own record. It carries their deck, so it is not somebody else's to read. */
     @GetMapping("/{playerId}")
     public ResponseEntity<PlayerDto> getPlayer(@PathVariable String playerId) {
         currentUser.requireSelf(playerId);
         return ResponseEntity.ok(playerService.getPlayerDto(playerId));
-    }
-
-    @GetMapping("/game/players/{playerId}/hand")
-    public ResponseEntity<List<Card>> getPlayerHand(@PathVariable String playerId) {
-        currentUser.requireSelf(playerId);
-        Player player = playerService.getPlayer(playerId);
-        return ResponseEntity.ok(player.getHand());
     }
 
     /**
@@ -53,8 +46,9 @@ public class PlayerController {
      * seat and the only reason this endpoint exists.
      *
      * <p>It still answers with the full PlayerDto, so a signed-in user can see more of a
-     * stranger than they need to. Narrowing it means giving hot-seat a shape of its own,
-     * which belongs with the wider work of moving game state off the Player document.
+     * stranger than they need to — less than it used to, now that a hand is not on the
+     * player, but still their deck and their lifetime score. Narrowing it means giving
+     * hot-seat a shape of its own.
      */
     @GetMapping("/by-name/{name}")
     public ResponseEntity<PlayerDto> getPlayerByName(@PathVariable String name) {

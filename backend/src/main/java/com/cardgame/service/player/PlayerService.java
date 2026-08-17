@@ -74,9 +74,7 @@ public class PlayerService {
         return ImmutablePlayerDto.builder()
                 .id(player.getId())
                 .name(player.getName())
-                .score(player.getScore())
                 .lifetimeScore(player.getLifetimeScore()) // Include lifetime score in DTO
-                .handSize(player.getHand().size())
                 .currentDeck(deckDto)
                 .playerCardCounts(calculatePlayerCardCounts(player))
                 .build();
@@ -86,36 +84,6 @@ public class PlayerService {
     private Map<String, Integer> calculatePlayerCardCounts(Player player) {
         // For now, return an empty map since we're just starting
         return Map.of();
-    }
-
-    public void addCardToHand(PlayerDto player, CardDto card) {
-        List<CardDto> currentHand = player.getHand();
-        currentHand.add(card);
-        ImmutablePlayerDto.builder()
-                .from(player)
-                .hand(currentHand);
-    }
-
-    public void removeCardFromHand(PlayerDto player, CardDto card) {
-        List<CardDto> currentHand = player.getHand();
-        currentHand.remove(card);
-        ImmutablePlayerDto.builder()
-                .from(player)
-                .hand(currentHand);
-    }
-
-    public void placeCard(PlayerDto player, CardDto card, PositionDto position) {
-        // Create a card placement action
-        PlayerAction action = playerActionService.placeCard(player.getId(), card, position);
-
-        // Update the player's placed cards
-        Map<PositionDto, CardDto> currentPlacedCards = new HashMap<>(player.getPlacedCards());
-        currentPlacedCards.put(position, card);
-
-        // Build the updated PlayerDto
-        ImmutablePlayerDto.builder()
-                .from(player)
-                .placedCards(currentPlacedCards);
     }
 
     public void savePlayer(Player player) {
@@ -329,10 +297,7 @@ public class PlayerService {
             player.setEmail(email);
             player.setSupabaseUserId(supabaseUserId);
             player.setNakamaUserId(nakamaUserId);
-            player.setScore(0);
             player.setLifetimeScore(0);
-            player.setHand(new ArrayList<>());
-            player.setPlacedCards(new HashMap<>());
 
             // Save player first to get the ID
             player = playerRepository.save(player);

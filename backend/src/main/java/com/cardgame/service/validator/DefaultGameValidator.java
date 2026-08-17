@@ -2,6 +2,8 @@ package com.cardgame.service.validator;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import com.cardgame.dto.PlayerAction;
 import com.cardgame.exception.game.InvalidMoveException;
 import com.cardgame.model.Card;
@@ -64,41 +66,40 @@ public class DefaultGameValidator implements GameValidator {
         }
     }
 
+    /**
+     * Validates a placement against the game alone.
+     *
+     * <p>This used to load the player to reach their hand and their cards on the board.
+     * Both are on the game now, so validating a move reads nothing.
+     */
     @Override
     public void validateMove(GameModel gameModel, PlayerAction action) {
         Position targetPos = action.getTargetPosition();
         Card card = action.getCard();
-        Player player = playerService.getPlayer(action.getPlayerId());
+        String playerId = action.getPlayerId();
 
         if (!boardManager.isValidPosition(gameModel.getBoard(), targetPos)) {
             throw new InvalidMoveException("Invalid or occupied position");
         }
 
-        if (!player.getHand().contains(card)) {
+        if (!gameModel.handOf(playerId).contains(card)) {
             throw new InvalidMoveException("Card not in player's hand");
         }
 
-        validateCardPlacement(gameModel, player, targetPos);
-    }
-
-    private void validateCardPlacement(GameModel gameModel, Player player, Position targetPos) {
         // After game initialization, players always have cards on board, so adjacency rules always apply
-        validateAdjacentPlacement(gameModel, player, targetPos);
+        validateAdjacentPlacement(gameModel, playerId, targetPos);
     }
 
-    private void validateFirstMove(Position pos, String playerId, GameModel gameModel) {
-        // For the first move after initial placement, any empty position is valid
-        // since cards are already placed at initialization
-        // The adjacency rule will apply from the second move onwards
-    }
+    private void validateAdjacentPlacement(GameModel gameModel, String playerId, Position targetPos) {
+        Set<String> ownCardIds = gameModel.placedCardsOf(playerId).values().stream()
+                .map(Card::getId)
+                .collect(Collectors.toSet());
 
-    private void validateAdjacentPlacement(GameModel gameModel, Player player, Position targetPos) {
         List<Position> adjacentPositions = boardManager.getAdjacentPositions(gameModel.getBoard(), targetPos);
         boolean hasAdjacentCard = adjacentPositions.stream()
                 .map(pos -> gameModel.getBoard().getCardIdAt(pos))
                 .filter(Objects::nonNull)
-                .anyMatch(cardId -> player.getPlacedCards().values().stream()
-                        .anyMatch(c -> c.getId().equals(cardId)));
+                .anyMatch(ownCardIds::contains);
 
         if (!hasAdjacentCard) {
             throw new InvalidMoveException("Must place card adjacent to your existing cards");

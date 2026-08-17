@@ -302,19 +302,11 @@ public class VariedCardPowersTest extends IntegrationTestBase {
             
             // Get the game model to check what cards were placed
             GameModel gameModel = gameRepository.findById(game.getId()).orElseThrow();
-            
-            // Check board positions (1,3) and (1,1) for placed cards
-            String cardId1 = gameModel.getBoard().getPieces().get("1,3");
-            String cardId2 = gameModel.getBoard().getPieces().get("1,1");
-            
-            // Get the placed cards from players
-            Player updatedP1 = playerRepository.findById(p1.getId()).orElseThrow();
-            Player updatedP2 = playerRepository.findById(p2.getId()).orElseThrow();
-            
-            // Count the powers of placed cards
-            updatedP1.getPlacedCards().values().forEach(card -> 
+
+            // Count the powers of the opening cards, which the game itself now records
+            gameModel.placedCardsOf(p1.getId()).values().forEach(card ->
                 placementCounts.merge(card.getPower(), 1, Integer::sum));
-            updatedP2.getPlacedCards().values().forEach(card -> 
+            gameModel.placedCardsOf(p2.getId()).values().forEach(card ->
                 placementCounts.merge(card.getPower(), 1, Integer::sum));
         }
         

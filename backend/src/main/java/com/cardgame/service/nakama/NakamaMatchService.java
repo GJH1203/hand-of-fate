@@ -120,10 +120,19 @@ public class NakamaMatchService {
                 if (!"WAITING".equals(metadata.status)) {
                     throw new IllegalArgumentException("Match already started or completed");
                 }
-                
+
+                // A game is between two players, and everything about it is keyed by player
+                // id — the hands, the cards each has on the board, whose turn it is. One
+                // person on both sides collapses to a single set of those, which is not a
+                // game so much as a way to corrupt one. This has to be refused before the
+                // line below, which would otherwise clear the creator out of their own match.
+                if (playerId.equals(metadata.creatorId)) {
+                    throw new IllegalArgumentException("Cannot join your own match");
+                }
+
                 // Clear any existing matches for this player first
                 clearPlayerFromActiveMatches(playerId);
-                
+
                 // Get the creator's ID from metadata
                 String creatorId = metadata.creatorId;
                 
@@ -139,43 +148,12 @@ public class NakamaMatchService {
                 Player player1 = playerService.getPlayer(creatorId);
                 Player player2 = playerService.getPlayer(playerId);
                 
-                // Ensure players have current decks set
-                if (player1.getCurrentDeck() == null && player1.getOriginalDeck() != null) {
-                    player1.setCurrentDeck(player1.getOriginalDeck());
-                    playerService.savePlayer(player1);
-                    logger.info("Set current deck for player1 from original deck");
-                }
-                
-                if (player2.getCurrentDeck() == null && player2.getOriginalDeck() != null) {
-                    player2.setCurrentDeck(player2.getOriginalDeck());
-                    playerService.savePlayer(player2);
-                    logger.info("Set current deck for player2 from original deck");
-                }
-                
-                // Get deck IDs - handle lazy loading issues
-                String deck1Id = null;
-                String deck2Id = null;
-                
-                // For player 1
-                if (player1.getCurrentDeck() != null && player1.getCurrentDeck().getId() != null) {
-                    deck1Id = player1.getCurrentDeck().getId();
-                } else if (player1.getOriginalDeck() != null && player1.getOriginalDeck().getId() != null) {
-                    deck1Id = player1.getOriginalDeck().getId();
-                    logger.info("Using original deck ID for player1 due to lazy loading");
-                } else {
-                    throw new RuntimeException("Player 1 has no deck available");
-                }
-                
-                // For player 2
-                if (player2.getCurrentDeck() != null && player2.getCurrentDeck().getId() != null) {
-                    deck2Id = player2.getCurrentDeck().getId();
-                } else if (player2.getOriginalDeck() != null && player2.getOriginalDeck().getId() != null) {
-                    deck2Id = player2.getOriginalDeck().getId();
-                    logger.info("Using original deck ID for player2 due to lazy loading");
-                } else {
-                    throw new RuntimeException("Player 2 has no deck available");
-                }
-                
+                // A player's deck is simply their deck now. All of the falling back to
+                // originalDeck that used to be here was working around the game writing an
+                // unsaved temporary deck over currentDeck, which it no longer does.
+                String deck1Id = deckIdOf(player1);
+                String deck2Id = deckIdOf(player2);
+
                 logger.info("Using decks - player1: {}, player2: {}", deck1Id, deck2Id);
                 
                 // Initialize the game - this returns GameDto
@@ -517,6 +495,13 @@ public class NakamaMatchService {
     
     private String generateMatchId() {
         return UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+    }
+
+    private String deckIdOf(Player player) {
+        if (player.getCurrentDeck() == null || player.getCurrentDeck().getId() == null) {
+            throw new IllegalStateException("Player " + player.getId() + " has no deck available");
+        }
+        return player.getCurrentDeck().getId();
     }
     
     /**

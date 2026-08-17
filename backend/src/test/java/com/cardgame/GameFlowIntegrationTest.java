@@ -11,7 +11,6 @@ import com.cardgame.service.GameService;
 import com.cardgame.support.IntegrationTestBase;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Disabled;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
 
@@ -88,6 +87,13 @@ class GameFlowIntegrationTest extends IntegrationTestBase {
         deck2.setCards(testCards2);
         deck2.setRemainingCards(DECK_SIZE);
         deck2 = deckRepository.save(deck2);
+
+        // A real player owns the deck they play with, and the tests below check that a
+        // game leaves that ownership alone.
+        player1.setCurrentDeck(deck1);
+        player1 = playerRepository.save(player1);
+        player2.setCurrentDeck(deck2);
+        player2 = playerRepository.save(player2);
     }
 
     private List<Card> createTestCards(String prefix) {
@@ -155,34 +161,30 @@ class GameFlowIntegrationTest extends IntegrationTestBase {
     }
 
     @Test
-    @Disabled("Adjacency validation needs investigation - move being allowed when it shouldn't be")
     void testInvalidCardPlacement_NotAdjacent() {
         GameDto game = gameService.initializeGame(player1.getId(), player2.getId(), deck1.getId(), deck2.getId());
 
-        // Player 1 tries to place card in non-adjacent position
+        // Player 1's only card on the board is the one placed at (1,3) during
+        // initialization. (0,0) is orthogonally adjacent to (0,1) and (1,0), and neither
+        // holds a card of theirs.
         CardDto cardToPlace = game.getCurrentPlayerHand().get(0);
         Card card = new Card(cardToPlace.getId(), cardToPlace.getPower(), cardToPlace.getName());
         PlayerAction action = ImmutablePlayerAction.builder()
                 .type(PlayerAction.ActionType.PLACE_CARD)
                 .playerId(player1.getId())
                 .card(card)
-                .targetPosition(new Position(0, 0)) // Not adjacent to (2,4)
+                .targetPosition(new Position(0, 0))
                 .timestamp(System.currentTimeMillis())
                 .build();
 
-        // Should throw exception (could be InvalidMoveException or IllegalArgumentException)
-        try {
-            GameDto result = gameService.processMove(game.getId(), action);
-            // If we get here, the move was allowed when it shouldn't be
-            System.out.println("DEBUG: Move was allowed! Board state:");
-            System.out.println("Board pieces: " + result.getBoard().getPieces());
-            System.out.println("Current player: " + result.getCurrentPlayerId());
-            fail("Expected exception to be thrown for non-adjacent card placement, but move was allowed");
-        } catch (Exception e) {
-            // This is expected - the move should fail
-            System.out.println("DEBUG: Exception correctly thrown: " + e.getClass().getSimpleName() + " - " + e.getMessage());
-            assertTrue(true, "Exception correctly thrown: " + e.getMessage());
-        }
+        // Name the reason as well as the refusal. Every other way this move could fail —
+        // an unknown card, an occupied position, the wrong turn — also throws
+        // InvalidMoveException, so a test that only asserts "something was thrown" would
+        // keep passing after adjacency had stopped being checked at all.
+        InvalidMoveException thrown = assertThrows(InvalidMoveException.class,
+                () -> gameService.processMove(game.getId(), action));
+        assertTrue(thrown.getMessage().contains("adjacent"),
+                "Expected the move to be refused for adjacency, but got: " + thrown.getMessage());
     }
 
     @Test
@@ -347,15 +349,10 @@ class GameFlowIntegrationTest extends IntegrationTestBase {
         // Initialize and play a game
         GameDto game = gameService.initializeGame(player1.getId(), player2.getId(), deck1.getId(), deck2.getId());
 
-        // Verify that during game, players have temporary decks
-        Player gamePlayer1 = playerRepository.findById(player1.getId()).orElseThrow();
-        Player gamePlayer2 = playerRepository.findById(player2.getId()).orElseThrow();
-        
-        // During game, currentDeck should be temporary, originalDeck should reference original
-        assertNotEquals(originalDeck1Id, gamePlayer1.getCurrentDeck().getId()); // Temporary deck has different ID
-        assertNotEquals(originalDeck2Id, gamePlayer2.getCurrentDeck().getId()); // Temporary deck has different ID
-        assertEquals(originalDeck1Id, gamePlayer1.getOriginalDeck().getId()); // Original deck stored
-        assertEquals(originalDeck2Id, gamePlayer2.getOriginalDeck().getId()); // Original deck stored
+        // A game in progress does not borrow the deck. It used to copy it into a temporary
+        // deck, write that over currentDeck and park the real one in originalDeck, which
+        // left a player mid-game pointing at a deck document that was never saved.
+        assertDeckUndisturbed(originalDeck1Id, originalDeck2Id);
 
         // Play some moves to modify game state
         CardDto cardDto1 = game.getCurrentPlayerHand().get(0);
@@ -396,22 +393,27 @@ class GameFlowIntegrationTest extends IntegrationTestBase {
             assertEquals(originalDeck2Cards.get(i).getId(), storedDeck2.getCards().get(i).getId());
             assertEquals(originalDeck2Cards.get(i).getPower(), storedDeck2.getCards().get(i).getPower());
         }
+
+        assertDeckUndisturbed(originalDeck1Id, originalDeck2Id);
     }
 
-    @Test 
-    void testDeckRestorationAfterGameCompletion() {
+    /** Asserts that both players still own the deck they started with. */
+    private void assertDeckUndisturbed(String deck1Id, String deck2Id) {
+        Player stored1 = playerRepository.findById(player1.getId()).orElseThrow();
+        Player stored2 = playerRepository.findById(player2.getId()).orElseThrow();
+
+        assertEquals(deck1Id, stored1.getCurrentDeck().getId());
+        assertEquals(deck2Id, stored2.getCurrentDeck().getId());
+    }
+
+    @Test
+    void testDeckSurvivesACompletedGame() {
         // Store original deck references
         String originalDeck1Id = deck1.getId();
         String originalDeck2Id = deck2.getId();
 
         // Initialize game
         GameDto game = gameService.initializeGame(player1.getId(), player2.getId(), deck1.getId(), deck2.getId());
-
-        // Verify players have temporary decks during game
-        Player player1InGame = playerRepository.findById(player1.getId()).orElseThrow();
-        assertNotNull(player1InGame.getOriginalDeck());
-        assertEquals(originalDeck1Id, player1InGame.getOriginalDeck().getId());
-        assertNotEquals(originalDeck1Id, player1InGame.getCurrentDeck().getId());
 
         // Play enough moves to fill the board and complete the game
         // This is a simple way to trigger game completion
@@ -468,32 +470,15 @@ class GameFlowIntegrationTest extends IntegrationTestBase {
             }
         }
 
-        // If game didn't complete naturally, that's OK for this test
-        // The important thing is to verify deck handling during active gameplay
-        
-        // Verify that regardless of game state, original decks are preserved
+        // Whether or not the game reached the end of the board, the decks are untouched.
+        // There is no restoration step to get wrong any more, and no state to lose if the
+        // game never finishes: the same assertion holds either way.
         Deck storedDeck1 = deckRepository.findById(originalDeck1Id).orElseThrow();
         Deck storedDeck2 = deckRepository.findById(originalDeck2Id).orElseThrow();
 
-        assertEquals(DECK_SIZE, storedDeck1.getCards().size()); // Original deck intact
-        assertEquals(DECK_SIZE, storedDeck2.getCards().size()); // Original deck intact
-        
-        // Verify that players still have their originalDeck references during active games
-        Player player1Final = playerRepository.findById(player1.getId()).orElseThrow();
-        Player player2Final = playerRepository.findById(player2.getId()).orElseThrow();
-        
-        if (game.getState() == GameState.IN_PROGRESS) {
-            // Game still active - should have originalDeck references
-            assertNotNull(player1Final.getOriginalDeck());
-            assertNotNull(player2Final.getOriginalDeck());
-            assertEquals(originalDeck1Id, player1Final.getOriginalDeck().getId());
-            assertEquals(originalDeck2Id, player2Final.getOriginalDeck().getId());
-        } else if (game.getState() == GameState.COMPLETED) {
-            // Game completed - original decks should be restored
-            assertEquals(originalDeck1Id, player1Final.getCurrentDeck().getId());
-            assertEquals(originalDeck2Id, player2Final.getCurrentDeck().getId());
-            assertNull(player1Final.getOriginalDeck()); // Cleaned up
-            assertNull(player2Final.getOriginalDeck()); // Cleaned up
-        }
+        assertEquals(DECK_SIZE, storedDeck1.getCards().size());
+        assertEquals(DECK_SIZE, storedDeck2.getCards().size());
+
+        assertDeckUndisturbed(originalDeck1Id, originalDeck2Id);
     }
 }

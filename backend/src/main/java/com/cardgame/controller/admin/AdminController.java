@@ -144,16 +144,12 @@ public class AdminController {
             result.put("playerId", player.getId());
             result.put("playerName", player.getName());
             result.put("hasCurrentDeck", player.getCurrentDeck() != null);
-            result.put("hasOriginalDeck", player.getOriginalDeck() != null);
-            
+
             if (player.getCurrentDeck() != null) {
                 result.put("currentDeckId", player.getCurrentDeck().getId());
+                result.put("currentDeckCardCount", player.getCurrentDeck().getCards().size());
             }
-            if (player.getOriginalDeck() != null) {
-                result.put("originalDeckId", player.getOriginalDeck().getId());
-                result.put("originalDeckCardCount", player.getOriginalDeck().getCards().size());
-            }
-            
+
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             result.put("error", "Failed to get player info: " + e.getMessage());

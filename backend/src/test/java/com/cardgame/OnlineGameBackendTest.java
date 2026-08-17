@@ -107,6 +107,30 @@ public class OnlineGameBackendTest extends IntegrationTestBase {
     }
 
     @Test
+    public void testHostCannotJoinTheirOwnMatch() throws Exception {
+        MatchResponse created = readMatch(createMatchAs(HOST_SUPABASE_ID));
+
+        MvcResult result = mockMvc.perform(post("/api/online-game/join/" + created.getMatchId())
+                        .header(HttpHeaders.AUTHORIZATION, TestJwtSupport.bearerFor(HOST_SUPABASE_ID))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andReturn();
+        if (result.getRequest().isAsyncStarted()) {
+            result.getAsyncResult();
+            result = mockMvc.perform(asyncDispatch(result)).andReturn();
+        }
+
+        assertEquals(400, result.getResponse().getStatus());
+        assertTrue(result.getResponse().getContentAsString().contains("Cannot join your own match"),
+                "Expected the refusal to name the reason, but got: "
+                        + result.getResponse().getContentAsString());
+
+        // The match the host created is still theirs to be joined by somebody else.
+        MatchResponse joined = readMatch(joinMatchAs(GUEST_SUPABASE_ID, created.getMatchId()));
+        assertEquals("IN_PROGRESS", joined.getStatus());
+    }
+
+    @Test
     public void testAnonymousCallerCannotCreateAMatch() throws Exception {
         mockMvc.perform(post("/api/online-game/create")
                         .contentType(MediaType.APPLICATION_JSON)

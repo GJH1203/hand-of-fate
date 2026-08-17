@@ -83,11 +83,21 @@ Not currently reachable — the security group has no inbound rules and Nakama's
 is not published — but exposing Nakama for any reason turns it into account
 takeover.
 
-**Game state lives on the Player document.** Hand, placed cards, and the active
-deck are fields on `Player`, not on the game. A player can therefore only be in
-one game at a time, `convertToDto` re-reads every player on every state
-conversion (and that runs once per connected socket per move), and finishing a
-game has to "restore" the player's original deck — a crash mid-game loses it.
+**~~Game state lives on the Player document.~~** Moved onto `GameModel`, keyed by
+player id: `hands`, `placed_cards` and `player_names`. A player can be in several games
+at once, `convertToDto` reads nothing, and there is no deck to restore because a game
+never borrows one. The temporary deck was deleted rather than moved — a deck is five
+cards and a hand is five cards, so the copy it made was empty from the moment it
+existed.
+
+Measured on the same harness, same machine, before and after, by profiling every
+operation MongoDB saw: **28.4 database operations per move → 6.1**, of which player
+reads were **22.5 → 1.8**. The old number was dominated by `hasValidMoves`, which asked
+the validator about every empty square and had the validator read the player each time.
+p50 11 ms → 6, p95 52 ms → 20-30, p99 91 ms → 32-50 over two runs of 100 concurrent
+sockets; RSS 630 MiB → 520. `action` and `action→broadcast` in the load test are now the
+same number to a tenth of a millisecond, which is the read amplification gone: the gap
+between them used to be the cost of rebuilding the view once per connected socket.
 
 **Nakama's Postgres holds account state and has no backup.** The nightly `mongodump`
 to S3 covers MongoDB and nothing else, but a player's *game* account lives in
@@ -185,9 +195,8 @@ should name is `https://api.handoffate.org`.
 security tests are plain unit tests, but everything else is still
 `@SpringBootTest` against a live MongoDB — there is no Testcontainers. Each
 class uses a database of its own; they used to share one and delete each other's
-data. Two tests are `@Disabled`, each with the reason on it: adjacency
-validation wrongly permits some moves, and player creation does not reject a
-second account on an existing email.
+data. One test is `@Disabled`, with the reason on it: player creation does not
+reject a second account on an existing email.
 
 **Frontend reconnect is dead code.** `connect()` sets `isReconnecting = true`
 on entry and `handleReconnect()` returns early when it is true, so a dropped
@@ -239,24 +248,23 @@ session is a judgement call that changes with what the project needs next.
    is unit-testable game logic and Testcontainers, so the suite stops needing a
    MongoDB somebody remembered to start. This is also what makes the later
    refactors safe.
-3. **Move game state onto the game.** (Backups exist now, so this is no longer a
-   change made without a net.) The single change that unblocks
-   concurrent games per player, kills the N+1 reads, and makes crash recovery
-   possible. It also turns a move into one document write, which is what makes
-   the next item small: MongoDB is atomic per document on its own, so what is
-   left afterwards is `@Version` for the read-modify-write race, not transactions.
-   **This is the next session's work**; the working checklist is in the notes
+3. ~~**Move game state onto the game.**~~ Done — see Known problems above for what
+   it measured. A move is now one read and one write of one document, which is
+   what makes the next item small: MongoDB is atomic per document on its own, so
+   what is left is `@Version` for the read-modify-write race, not transactions.
+   **That is the next session's work**; the working checklist is in the notes
    outside the repository.
 4. **Make matches survive a restart,** with optimistic locking. Either commit to
    Nakama's match API or persist match state properly.
 
-   Afterwards a projection becomes worth building, and only afterwards: the read
-   side needs one clean thing to project from, and today the write model is split
-   across `Player` documents. Measured 2026-08-17: **only `currentPlayerHand`
-   varies per player** in `convertToDto` — board, ownership, placed cards, names,
-   column scores and state are identical for everyone, and that identical part is
-   rebuilt once per connected socket on every move. Building it once per move
-   instead is worth doing on its own, before any of the architecture.
+   Afterwards a projection becomes worth building, and only afterwards. The read
+   side has one clean thing to project from now that the write model is a single
+   document. **Only `currentPlayerHand` varies per player** in `convertToDto` —
+   board, ownership, placed cards, names, column scores and state are identical
+   for everyone, and that identical part is still rebuilt once per connected
+   socket on every move. Building it once per move instead is worth doing on its
+   own, before any of the architecture, though it is now CPU rather than database
+   round trips: the conversion no longer reads anything.
 
    Note that the broadcast has to go out immediately after the move, so such a
    projection would be updated synchronously. That is a cached view rather than

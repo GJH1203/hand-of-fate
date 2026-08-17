@@ -203,16 +203,11 @@ class GameService {
             }
         }
         
-        // Fetch the current player's hand if not included in the response
-        let currentPlayerHand = backendData.currentPlayerHand || [];
-        
-        if (currentPlayerHand.length === 0 && currentPlayerId) {
-            try {
-                currentPlayerHand = await playerService.getPlayerHand(currentPlayerId);
-            } catch (error) {
-                console.error('Failed to fetch player hand:', error);
-            }
-        }
+        // A hand belongs to a game, and the game state carries it. There used to be a
+        // fallback here that asked the player endpoint for "the" hand, which only made
+        // sense while a player could be in one game at a time; an empty hand is now just
+        // a player who has played all their cards.
+        const currentPlayerHand = backendData.currentPlayerHand || [];
         
         return {
             id: backendData.id,
