@@ -120,10 +120,14 @@ given. It becomes worth the money and the memory at goal 5 below, where the
 question is which resource gives out first under load — and that question cannot be
 answered by guessing.
 
-**A stale address in `frontend/.env.production`.** `NEXT_PUBLIC_API_URL` still
-names `funnygames.duckdns.org`, a host that has not existed for months. Vercel's
-own environment variables override it in the deployed build, so production is
-unaffected — but a local `npm run build` bakes the dead address in.
+**`frontend/.env.production` is not in the repository.** It is covered by the
+`.env*` rule in `.gitignore` and was untracked in `f48c6ce`, so a fresh clone does
+not have one and a local `npm run build` falls back to `localhost:8080`. This
+machine's copy still names `funnygames.duckdns.org`, a host that has not existed
+for months; the deployed build is unaffected either way, because Vercel's own
+environment variables are what production reads. Nothing here can be fixed by a
+commit — the file to correct is the one on your own disk, and the address it
+should name is `https://api.handoffate.org`.
 
 **Most tests still need infrastructure.** The suite runs in CI now, and the
 security tests are plain unit tests, but everything else is still
