@@ -391,7 +391,7 @@ export default function GameBoard() {
                     </div>
                     <Button
                         onClick={startNewGame}
-                        variant="outline"
+                        variant="secondary"
                         size="lg"
                         className="bg-purple-600/50 hover:bg-purple-600/70 border-purple-400 text-white"
                     >
@@ -461,14 +461,14 @@ export default function GameBoard() {
                             <div className="flex gap-2">
                                 <Button
                                     onClick={() => respondToWinRequest(gameState.id, gameState.currentPlayerId, true)}
-                                    variant="default"
+                                    variant="primary"
                                     size="sm"
                                 >
                                     Accept
                                 </Button>
                                 <Button
                                     onClick={() => respondToWinRequest(gameState.id, gameState.currentPlayerId, false)}
-                                    variant="outline"
+                                    variant="secondary"
                                     size="sm"
                                 >
                                     Decline

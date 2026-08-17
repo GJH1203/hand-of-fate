@@ -188,7 +188,7 @@ export function TutorialGameBoard({ gameState, playerId, onGameUpdate }: Tutoria
                     </>
                   )}
                 </CardTitle>
-                <Badge variant="secondary" className="bg-purple-900/50 text-purple-300">
+                <Badge tone="neutral" className="bg-purple-900/50 text-purple-300">
                   {gameState.state}
                 </Badge>
               </div>
@@ -219,7 +219,7 @@ export function TutorialGameBoard({ gameState, playerId, onGameUpdate }: Tutoria
                             {column.winner && (
                               <div className="mt-1">
                                 {column.isTie ? (
-                                  <Badge variant="secondary" className="text-xs">Tie</Badge>
+                                  <Badge tone="neutral" className="text-xs">Tie</Badge>
                                 ) : (
                                   <Crown className={`w-4 h-4 mx-auto ${column.winner === playerId ? 'text-yellow-400' : 'text-gray-400'}`} />
                                 )}
@@ -241,7 +241,7 @@ export function TutorialGameBoard({ gameState, playerId, onGameUpdate }: Tutoria
                   <Button
                     onClick={handlePass}
                     disabled={isProcessing}
-                    variant="outline"
+                    variant="secondary"
                     className="bg-gray-900/20 hover:bg-gray-800/30 border-gray-500/50 text-gray-300"
                   >
                     Pass Turn

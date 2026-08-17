@@ -54,7 +54,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ className }) => {
                 <div className="flex items-center justify-between">
                     <CardTitle>Leaderboard</CardTitle>
                     <Button 
-                        variant="outline" 
+                        variant="secondary" 
                         size="sm" 
                         onClick={refreshLeaderboards}
                         disabled={isLoading}
@@ -66,14 +66,14 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ className }) => {
                 {/* Tab Switcher */}
                 <div className="flex space-x-2">
                     <Button
-                        variant={activeTab === 'weekly' ? 'default' : 'outline'}
+                        variant={activeTab === 'weekly' ? 'primary' : 'secondary'}
                         size="sm"
                         onClick={() => setActiveTab('weekly')}
                     >
                         Weekly
                     </Button>
                     <Button
-                        variant={activeTab === 'all-time' ? 'default' : 'outline'}
+                        variant={activeTab === 'all-time' ? 'primary' : 'secondary'}
                         size="sm"
                         onClick={() => setActiveTab('all-time')}
                     >
@@ -122,7 +122,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ className }) => {
                                                     <div className="font-medium">
                                                         {record.username}
                                                         {user?.playerId === record.playerId && (
-                                                            <Badge variant="secondary" className="ml-2 text-xs">
+                                                            <Badge tone="neutral" className="ml-2 text-xs">
                                                                 You
                                                             </Badge>
                                                         )}
@@ -140,7 +140,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ className }) => {
                                 {user?.nakamaUserId && (
                                     <div className="border-t pt-4">
                                         <Button 
-                                            variant="outline" 
+                                            variant="secondary" 
                                             size="sm" 
                                             onClick={handleShowAroundMe}
                                             disabled={isLoading}

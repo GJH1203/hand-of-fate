@@ -228,7 +228,7 @@ export default function TutorialOnboarding({ playerId, playerName, onComplete, o
                     </div>
                   </div>
                   {progress && (
-                    <Badge variant="secondary" className="bg-purple-900/50 text-purple-300">
+                    <Badge tone="neutral" className="bg-purple-900/50 text-purple-300">
                       {progress.gameState}
                     </Badge>
                   )}
@@ -311,7 +311,7 @@ export default function TutorialOnboarding({ playerId, playerName, onComplete, o
                   </div>
                 </div>
                 <Button 
-                  variant="outline" 
+                  variant="secondary" 
                   size="sm"
                   onClick={handleSkip}
                   disabled={isLoading}
@@ -346,7 +346,7 @@ export default function TutorialOnboarding({ playerId, playerName, onComplete, o
               {/* Navigation buttons */}
               <div className="flex justify-between mt-8">
                 <Button 
-                  variant="outline" 
+                  variant="secondary" 
                   onClick={prevStep}
                   disabled={currentStep === 0}
                   className="bg-purple-900/20 hover:bg-purple-800/30 border-purple-500/50 text-purple-300"
