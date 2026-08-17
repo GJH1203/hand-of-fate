@@ -74,7 +74,18 @@ class GameWebSocketService {
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000;
-  private isReconnecting = false;
+  /**
+   * Whether a dropped socket should be brought back.
+   *
+   * This used to be one field doing two jobs — "reconnection is allowed" and "a
+   * reconnect is running" — and the two readings cancelled out: `connect` set it
+   * true, `onclose` only retried while it was true, and `handleReconnect` returned
+   * immediately when it was true. A socket that dropped therefore stayed dropped,
+   * for the life of the tab, and every later action failed silently.
+   */
+  private shouldReconnect = false;
+  /** Guards re-entering the retry loop. */
+  private reconnectInFlight = false;
   private currentMatchId: string | null = null;
   private currentPlayerId: string | null = null;
   /** Whose token opened this socket. A handshake authenticates once and never again. */
@@ -88,13 +99,10 @@ class GameWebSocketService {
       throw new Error('Not signed in — cannot open a game connection');
     }
     this.authenticatedSub = subjectOf(token);
+    this.shouldReconnect = true;
 
     return new Promise((resolve, reject) => {
       try {
-        // Reset connection state for fresh start
-        this.reconnectAttempts = 0;
-        this.isReconnecting = true; // Allow reconnection for this session
-        
         // Check if already connected or connecting
         if (this.ws) {
           if (this.ws.readyState === WebSocket.CONNECTING) {
@@ -169,11 +177,10 @@ class GameWebSocketService {
         };
         
         this.ws.onclose = () => {
-          console.log('WebSocket closed, isReconnecting:', this.isReconnecting);
+          console.log('WebSocket closed, shouldReconnect:', this.shouldReconnect);
           this.callbacks.onConnectionClosed?.();
-          
-          // Only attempt to reconnect if we're supposed to
-          if (this.isReconnecting === true) {
+
+          if (this.shouldReconnect) {
             this.handleReconnect();
           }
         };
@@ -300,7 +307,7 @@ class GameWebSocketService {
 
   disconnect(): void {
     console.log('Disconnecting WebSocket...');
-    this.isReconnecting = false; // Prevent auto-reconnection
+    this.shouldReconnect = false; // Deliberate close: stay closed.
     
     if (this.ws) {
       // Remove event handlers to prevent any callbacks
@@ -343,10 +350,7 @@ class GameWebSocketService {
     }
     
     console.log('WebSocket not connected, establishing connection...');
-    // Reset state for new connection
-    this.isReconnecting = true;
     this.reconnectAttempts = 0;
-    
     return this.connect(callbacks);
   }
 
@@ -392,13 +396,13 @@ class GameWebSocketService {
   }
 
   private async handleReconnect(): Promise<void> {
-    if (this.isReconnecting || this.reconnectAttempts >= this.maxReconnectAttempts) {
+    if (this.reconnectInFlight || this.reconnectAttempts >= this.maxReconnectAttempts) {
       return;
     }
 
-    this.isReconnecting = true;
+    this.reconnectInFlight = true;
 
-    while (this.reconnectAttempts < this.maxReconnectAttempts) {
+    while (this.shouldReconnect && this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
       console.log(`Reconnection attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts}`);
 
@@ -406,13 +410,14 @@ class GameWebSocketService {
         await new Promise(resolve => setTimeout(resolve, this.reconnectDelay));
         await this.connect(this.callbacks);
 
-        // Rejoin match if we were in one
+        // Rejoin the match, or the new session is a stranger to it and every
+        // message it sends is answered with "Not in a match".
         if (this.currentMatchId && this.currentPlayerId) {
-          this.joinMatch(this.currentMatchId, this.currentPlayerId);
+          await this.joinMatch(this.currentMatchId, this.currentPlayerId);
         }
 
         console.log('Reconnected successfully');
-        this.isReconnecting = false;
+        this.reconnectInFlight = false;
         return;
       } catch (error) {
         console.error('Reconnection attempt failed:', error);
@@ -422,7 +427,7 @@ class GameWebSocketService {
 
     console.error('Failed to reconnect after maximum attempts');
     this.callbacks.onError?.('Failed to reconnect to game server');
-    this.isReconnecting = false;
+    this.reconnectInFlight = false;
   }
 }
 
