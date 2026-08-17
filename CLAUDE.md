@@ -89,26 +89,49 @@ one game at a time, `convertToDto` re-reads every player on every state
 conversion (and that runs once per connected socket per move), and finishing a
 game has to "restore" the player's original deck — a crash mid-game loses it.
 
-**Online matches are in-memory.** `NakamaMatchService` keeps matches in a
-`ConcurrentHashMap` and never uses Nakama's match API despite the dependency.
-A restart drops every active match, and the design cannot survive a second
-instance. `getMatchState` scans the entire games collection on every call.
+**Online matches are in-memory, and they are never released.** `NakamaMatchService`
+keeps matches in a `ConcurrentHashMap` and never uses Nakama's match API despite the
+dependency. A restart drops every active match, and the design cannot survive a
+second instance. `getMatchState` scans the entire games collection on every call.
+
+`cleanupMatch` exists to empty `matchMetadata`, `matchSubscriptions` and
+`activeSockets` for a finished match, and **nothing calls it**. A completed game
+leaves its entries behind for the life of the process; `handleGameAction` logs the
+completion and returns. This is measured, not suspected — see below.
+
+**The backend runs out of memory at 100 concurrent players.** `loadtest/` drives
+50 concurrent games over 100 WebSocket sessions. On a clean database it holds up:
+3,294 moves, no errors, p50 16 ms and p99 510 ms for a move to reach the opponent.
+The memory does not come back afterwards — the process finished that run sitting at
+636 MiB — and a second identical run against the same process is OOM-killed at the
+768 MiB the production task allocates, roughly forty seconds in. `OOMKilled=true`,
+exit 137, reproduced twice.
+
+The p99 is 32× the p50 even in the run that succeeded, which is the read
+amplification above rather than anything the machine ran out of. Both numbers come
+from an Apple Silicon laptop against a local MongoDB, so they are not production
+latencies; they are a baseline to compare the next change against.
 
 **No concurrency control.** No `@Version` on documents, no transactions.
 Simultaneous writes overwrite each other.
 
 **Nothing notices a wedged application.** The auto scaling group's health check is
 `EC2`, which sees a dead instance and nothing else. A backend that is running but
-answering nothing is invisible to it, and there is no alarm anywhere else either —
-the way you find out the site is down is by looking at it. It has already happened
-once, during the deploy that moved Nakama's Postgres onto its own volume.
+answering nothing is invisible to it. It has already caught nobody out once, during
+the deploy that moved Nakama's Postgres onto its own volume.
 
-Two cheap things fix the part that matters, and neither is a metrics stack:
+`ServiceStoppedAlarm` in `infra/ecs/cloudformation.yml` now covers half of this: it
+watches `AWS/ECS` `LiveTaskCount`, which is published every minute *without*
+Container Insights — that is what makes it free, since Container Insights is billed
+per metric and stays disabled on the cluster. Five evaluation periods, because a
+deploy legitimately sits at zero tasks for two to four minutes. It emails the
+address in the `AlertEmail` parameter through SNS.
 
-- an external uptime check on `https://handoffate.org` and
-  `https://api.handoffate.org/actuator/health`, which is the only thing that would
-  have said anything during that outage;
-- a CloudWatch alarm on the ECS service's `runningCount` dropping below one.
+What is still missing is the half that catches a backend answering nothing while
+its task is happily running — an external uptime check on `https://handoffate.org`
+and `https://api.handoffate.org/actuator/health`. That is the only thing that would
+have said anything during the outage above, and it wants a third-party monitor
+rather than anything in this template.
 
 **Prometheus and Grafana are not the answer to this, yet.** They draw graphs; they
 do not tell anyone. `infra/monitoring` still holds the old setup and it is tempting
@@ -193,10 +216,15 @@ session is a judgement call that changes with what the project needs next.
    possible.
 4. **Make matches survive a restart.** Either commit to Nakama's match API or
    persist match state properly. Add optimistic locking while here.
-5. **Hold 100 concurrent players.** Only meaningful once the above lands — load
-   test, fix what it finds, decide whether one `t4g.small` is still the right
-   size. This is where Prometheus and Grafana earn their keep; bringing them back
-   before there is load to watch buys a flat line and a memory bill.
+5. **Hold 100 concurrent players.** The load test exists now (`loadtest/`) and it
+   already answers what gives out first: memory, at the 768 MiB the production
+   task allocates, because finished matches are never released. That is item 4,
+   so the order above still holds — but 4 now has a number attached and a way to
+   tell whether fixing it worked. What is left here afterwards is re-running it,
+   deciding whether one `t4g.small` is still the right size, and only then asking
+   whether Prometheus and Grafana are worth the money. They are not yet: the
+   question "which resource gives out first" got answered by `docker stats` and a
+   container exit code.
 6. **Frontend.** Break up the 900-line components, fix reconnection, delete the
    dead services. (The home page's Power Score is real data, not a placeholder —
    that item was stale.)
