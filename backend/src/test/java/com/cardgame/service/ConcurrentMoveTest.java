@@ -6,6 +6,7 @@ import com.cardgame.dto.ImmutablePlayerAction;
 import com.cardgame.dto.PlayerAction;
 import com.cardgame.exception.game.ConcurrentMoveException;
 import com.cardgame.model.Card;
+import com.cardgame.model.ConnectionStatus;
 import com.cardgame.model.Deck;
 import com.cardgame.model.GameModel;
 import com.cardgame.model.Player;
@@ -197,6 +198,47 @@ class ConcurrentMoveTest extends IntegrationTestBase {
         reset(gameRepository);
         GameModel stored = gameRepository.findById(game.getId()).orElseThrow();
         assertFalse(stored.getBoard().getPieces().containsKey("1,4"));
+    }
+
+    @Test
+    @DisplayName("two players dropping at once both get recorded")
+    void bothDisconnectionsLand() {
+        GameDto game = gameService.initializeGame(player1.getId(), player2.getId(), deck1.getId(), deck2.getId());
+
+        // Both players leaving a finished match at the same moment is the ordinary way a
+        // match ends, and it used to be a read, a change and a save each — so one of the
+        // two lost the version check and its disconnection was never recorded. Neither of
+        // these reads the game, so neither can lose.
+        assertDoesNotThrow(() -> {
+            gameService.recordConnectionStatus(game.getId(), player1.getId(), ConnectionStatus.DISCONNECTED);
+            gameService.recordConnectionStatus(game.getId(), player2.getId(), ConnectionStatus.DISCONNECTED);
+        });
+
+        GameModel stored = gameRepository.findById(game.getId()).orElseThrow();
+        assertEquals(ConnectionStatus.DISCONNECTED, stored.getPlayerConnections().get(player1.getId()));
+        assertEquals(ConnectionStatus.DISCONNECTED, stored.getPlayerConnections().get(player2.getId()));
+    }
+
+    @Test
+    @DisplayName("a move interrupted by a disconnection is retried rather than refused")
+    void moveSurvivesAConcurrentDisconnection() {
+        GameDto game = gameService.initializeGame(player1.getId(), player2.getId(), deck1.getId(), deck2.getId());
+        PlayerAction action = placeFirstCardAt(game, new Position(1, 4));
+
+        // MongoTemplate still advances the version on a targeted update, so a move already
+        // in flight when somebody drops does lose its check. That is the retry's job and
+        // it is worth naming: the fix is that the disconnection stops failing, not that it
+        // stops being noticed.
+        doAnswer(invocation -> {
+            reset(gameRepository);
+            gameService.recordConnectionStatus(game.getId(), player2.getId(), ConnectionStatus.DISCONNECTED);
+            throw new OptimisticLockingFailureException("a socket dropped mid-move");
+        }).when(gameRepository).save(any(GameModel.class));
+
+        GameModel result = gameService.applyMove(game.getId(), action);
+
+        assertTrue(result.getBoard().getPieces().containsKey("1,4"), "the move should still have landed");
+        assertEquals(ConnectionStatus.DISCONNECTED, result.getPlayerConnections().get(player2.getId()));
     }
 
     private PlayerAction placeFirstCardAt(GameDto game, Position position) {
