@@ -1,0 +1,5 @@
+# Generated on first run. The keypair signs load-test tokens only and protects
+# nothing, but there is no reason to carry it in git; players.json holds tokens for
+# whichever database was last seeded.
+keys/
+players.json
