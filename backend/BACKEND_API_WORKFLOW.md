@@ -479,12 +479,7 @@ Add `credentials: 'include'` to fetch requests if using cookies.
 
 ## Testing Endpoints
 
-Use the provided test scripts:
-- `test-online-game-new.sh` - Test backend APIs
-- `test-websocket.js` - Test WebSocket connections
-- `test-online-quick.sh` - Quick integration test
-
-Or use curl/Postman:
+Use curl/Postman:
 ```bash
 # Create match
 curl -X POST http://localhost:8080/api/online-game/create \

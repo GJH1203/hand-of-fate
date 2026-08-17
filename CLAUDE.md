@@ -125,11 +125,6 @@ names `funnygames.duckdns.org`, a host that has not existed for months. Vercel's
 own environment variables override it in the deployed build, so production is
 unaffected — but a local `npm run build` bakes the dead address in.
 
-**Debris in the working tree.** `frontend/test-cors.html`,
-`test-frontend-automated.js`, `test-online-quick.sh`, `deploy-setup.sh` and
-`backend/cleanup_script.sh` are one-off scripts from earlier debugging. They hold
-no credentials and hurt nothing; they are just noise pointing at `localhost:8080`.
-
 **Orphaned games.** `DELETE /players/{playerId}` removes the player and leaves
 their games behind, holding ids that no longer resolve. `AdminController` has a
 delete that cleans up properly; the self-service one does not.
