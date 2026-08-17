@@ -151,8 +151,15 @@ MongoDB. Production is a `t4g.small` sharing two vCPU with postgres, Nakama and
 cloudflared, so it has *less* CPU than this. The memory conclusion transfers,
 because the 768 MiB budget is the same; the latencies do not.
 
-**No concurrency control.** No `@Version` on documents, no transactions.
-Simultaneous writes overwrite each other.
+**~~No concurrency control.~~** `GameModel` carries `@Version`, and a move that loses
+the version check is retried once; a second failure sends the client the game as it
+actually stands and tells it to reload. Still no transactions, and deliberately so —
+a move is one document write, and MongoDB is atomic per document.
+
+`Player` and `Deck` are still unversioned. That is a smaller problem than it was:
+a game no longer writes to them, so the only writers left are registration, deck
+editing and the victory bonus at the end of a game, and none of those race with a
+move.
 
 **Nothing notices a wedged application.** The auto scaling group's health check is
 `EC2`, which sees a dead instance and nothing else. A backend that is running but
@@ -254,8 +261,10 @@ session is a judgement call that changes with what the project needs next.
    what is left is `@Version` for the read-modify-write race, not transactions.
    **That is the next session's work**; the working checklist is in the notes
    outside the repository.
-4. **Make matches survive a restart,** with optimistic locking. Either commit to
-   Nakama's match API or persist match state properly.
+4. **Make matches survive a restart.** Either commit to Nakama's match API or
+   persist match state properly. (Optimistic locking was the other half of this
+   item and is done; what is left is that `NakamaMatchService` keeps matches in a
+   `ConcurrentHashMap`, so a restart drops every active one.)
 
    Afterwards a projection becomes worth building, and only afterwards. The read
    side has one clean thing to project from now that the write model is a single

@@ -3,6 +3,7 @@ package com.cardgame.websocket;
 import com.cardgame.dto.ImmutablePlayerAction;
 import com.cardgame.dto.PlayerAction;
 import com.cardgame.dto.PlayerAction.ActionType;
+import com.cardgame.exception.game.ConcurrentMoveException;
 import com.cardgame.model.Card;
 import com.cardgame.model.Position;
 import com.cardgame.service.GameService;
@@ -326,6 +327,12 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                     updatedGame.getId(), updatedGame.getWinnerId(), updatedGame.getPlayerScores());
             }
             
+        } catch (ConcurrentMoveException e) {
+            // The move was legal and was not applied. Hand back what the game actually
+            // says instead of leaving the client showing a move the server never took.
+            logger.warn("Move on match {} gave up after two version conflicts", info.matchId);
+            sendCurrentState(session, info);
+            sendError(session, e.getMessage());
         } catch (Exception e) {
             logger.error("Failed to process game action", e);
             sendError(session, "Failed to process action: " + e.getMessage());
@@ -371,8 +378,25 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         }
     }
     
+    /**
+     * Sends one session the game as it currently stands. The same message a client gets
+     * when it asks for the state itself, so nothing on the client has to learn a new
+     * shape to recover from a refused move.
+     */
+    private void sendCurrentState(WebSocketSession session, SessionInfo info) {
+        try {
+            var gameModel = nakamaMatchService.getMatchState(info.matchId);
+            sendMessage(session, new WebSocketMessage(
+                MessageType.GAME_STATE_UPDATE,
+                gameService.convertToDto(gameModel, info.playerId)
+            ));
+        } catch (Exception e) {
+            logger.error("Could not send current state for match {}", info.matchId, e);
+        }
+    }
+
     // Utility methods
-    
+
     private void sendMessage(WebSocketSession session, WebSocketMessage message) {
         try {
             String json = objectMapper.writeValueAsString(message);
