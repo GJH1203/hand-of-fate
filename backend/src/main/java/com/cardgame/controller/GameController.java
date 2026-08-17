@@ -111,12 +111,7 @@ public class GameController {
             @RequestBody PlayerMoveRequest moveRequest) {
         gameAccess.requireMayActAs(gameId, moveRequest.getPlayerId());
         PlayerAction action = convertToPlayerAction(moveRequest);
-        GameDto updatedGame = gameService.processMove(gameId, action);
-        
-        // Broadcast the update via WebSocket for online games
-        broadcastGameUpdateIfOnline(gameId, updatedGame);
-        
-        return ResponseEntity.ok(updatedGame);
+        return applyAndBroadcast(gameId, action);
     }
 
     @PostMapping("/{gameId}/pass")
@@ -129,12 +124,7 @@ public class GameController {
                 .playerId(passRequest.getPlayerId())
                 .timestamp(System.currentTimeMillis())
                 .build();
-        GameDto updatedGame = gameService.processMove(gameId, action);
-        
-        // Broadcast the update via WebSocket for online games
-        broadcastGameUpdateIfOnline(gameId, updatedGame);
-        
-        return ResponseEntity.ok(updatedGame);
+        return applyAndBroadcast(gameId, action);
     }
 
     private PlayerAction convertToPlayerAction(PlayerMoveRequest moveRequest) {
@@ -170,12 +160,7 @@ public class GameController {
                 .playerId(request.getPlayerId())
                 .timestamp(System.currentTimeMillis())
                 .build();
-        GameDto updatedGame = gameService.processMove(gameId, action);
-        
-        // Broadcast the update via WebSocket for online games
-        broadcastGameUpdateIfOnline(gameId, updatedGame);
-        
-        return ResponseEntity.ok(updatedGame);
+        return applyAndBroadcast(gameId, action);
     }
 
     /**
@@ -192,40 +177,40 @@ public class GameController {
                 .actionData(request.isAccepted())
                 .timestamp(System.currentTimeMillis())
                 .build();
-        GameDto updatedGame = gameService.processMove(gameId, action);
-        
-        // Broadcast the update via WebSocket for online games
-        broadcastGameUpdateIfOnline(gameId, updatedGame);
-        
-        return ResponseEntity.ok(updatedGame);
+        return applyAndBroadcast(gameId, action);
     }
     
     /**
      * Helper method to broadcast game updates via WebSocket for online games ONLY
      * This method is safe for local mode - it checks if the game is online before broadcasting
      */
-    private void broadcastGameUpdateIfOnline(String gameId, GameDto updatedGame) {
-        try {
-            // Get the game model to check if it's an online game
-            GameModel gameModel = gameService.getGameModel(gameId);
-            
-            // SAFETY CHECK: Only broadcast for online games
-            if (gameModel.getGameMode() == GameMode.ONLINE && gameModel.getNakamaMatchId() != null) {
-                // Extract match ID from Nakama match ID (format: "nakama_XXXXXX")
-                String matchId = gameModel.getNakamaMatchId().replace("nakama_", "");
-                
-                // Broadcast to all players in the match
-                // The WebSocket handler will take care of sending to all connected sessions
-                gameWebSocketHandler.broadcastGameUpdate(matchId, updatedGame);
-                
-                log.info("Broadcasted game update for online match {} after REST API move", matchId);
-            } else {
-                // Local mode game - no broadcast needed
-                log.debug("Game {} is in local mode, skipping WebSocket broadcast", gameId);
+    /**
+     * Applies an action, tells everyone else about it, and answers the caller.
+     *
+     * <p>The answer is built for **whoever made the move**. It used to be built for
+     * whoever's turn it had become, which after a move is the opponent — so a player
+     * posting a move was handed their opponent's hand. Local hot-seat is the one case
+     * where the old behaviour is the right one: the same screen belongs to the next
+     * player as soon as the turn passes.
+     *
+     * <p>The game is read once. Applying it, deciding whether to broadcast and building
+     * the views all work from that one copy; each of those three used to read it again.
+     */
+    private ResponseEntity<GameDto> applyAndBroadcast(String gameId, PlayerAction action) {
+        GameModel updated = gameService.applyMove(gameId, action);
+
+        boolean online = updated.getGameMode() == GameMode.ONLINE && updated.getNakamaMatchId() != null;
+        if (online) {
+            try {
+                String matchId = updated.getNakamaMatchId().replace("nakama_", "");
+                gameWebSocketHandler.broadcastGameUpdate(matchId, updated);
+            } catch (Exception e) {
+                // A failed broadcast must not fail the move, which is already saved.
+                log.error("Failed to broadcast game update for game {}", gameId, e);
             }
-        } catch (Exception e) {
-            log.error("Failed to broadcast game update for game {}", gameId, e);
-            // Don't fail the request if broadcast fails - this ensures local mode continues to work
         }
+
+        String forPlayerId = online ? action.getPlayerId() : updated.getCurrentPlayerId();
+        return ResponseEntity.ok(gameService.convertToDto(updated, forPlayerId));
     }
 }

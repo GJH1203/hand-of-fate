@@ -431,6 +431,31 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         }
     }
     
+    /**
+     * Sends every session in a match the game as its own player sees it.
+     *
+     * <p>Takes the game rather than a view of it, because a view belongs to one player
+     * and each session needs its own. The overload below re-read the game to get back to
+     * this; callers that already hold it should use this one.
+     */
+    public void broadcastGameUpdate(String matchId, com.cardgame.model.GameModel gameModel) {
+        Set<WebSocketSession> sessions = matchSessions.get(matchId);
+        if (sessions == null || sessions.isEmpty()) {
+            logger.warn("No sessions found for match {} when trying to broadcast", matchId);
+            return;
+        }
+        logger.info("Broadcasting game update to {} players in match {}", sessions.size(), matchId);
+        for (WebSocketSession session : sessions) {
+            SessionInfo sInfo = sessionInfoMap.get(session.getId());
+            if (sInfo != null) {
+                sendMessage(session, new WebSocketMessage(
+                    MessageType.GAME_STATE_UPDATE,
+                    gameService.convertToDto(gameModel, sInfo.playerId)
+                ));
+            }
+        }
+    }
+
     public void broadcastGameUpdate(String matchId, Object gameState) {
         WebSocketMessage message = new WebSocketMessage();
         message.setType(MessageType.GAME_STATE_UPDATE);
