@@ -42,6 +42,14 @@ export function Modal({
   const [mounted, setMounted] = React.useState(false);
   const panelRef = React.useRef<HTMLDivElement>(null);
 
+  // `onClose` is nearly always an inline arrow, so its identity changes on every
+  // render of the parent. Reading it from a ref keeps the effect below tied to
+  // `open` alone — with onClose in the dependency array the effect tore down and
+  // set up again on every keystroke, and its setup moves focus to the dialog, so
+  // typing into anything inside a modal lost the caret after one character.
+  const onCloseRef = React.useRef(onClose);
+  onCloseRef.current = onClose;
+
   React.useEffect(() => setMounted(true), []);
 
   React.useEffect(() => {
@@ -50,12 +58,16 @@ export function Modal({
     const previouslyFocused = document.activeElement as HTMLElement | null;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    panelRef.current?.focus();
+    // Only take focus if the dialog's own content has not already claimed it —
+    // otherwise this undoes the autoFocus on the first field.
+    if (!panelRef.current?.contains(document.activeElement)) {
+      panelRef.current?.focus();
+    }
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.stopPropagation();
-        onClose();
+        onCloseRef.current();
       }
     };
     window.addEventListener("keydown", onKeyDown);
@@ -65,7 +77,7 @@ export function Modal({
       document.body.style.overflow = previousOverflow;
       previouslyFocused?.focus?.();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!mounted || !open) return null;
 

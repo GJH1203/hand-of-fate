@@ -66,7 +66,7 @@ type BoardCell = { power: number; side: Side } | null;
 function MiniBoard({
   cells,
   highlight = [],
-  cellSize = 34,
+  cellSize = 42,
 }: {
   cells: BoardCell[][];
   /** "row,col" keys drawn as legal placements. */
@@ -120,14 +120,14 @@ function HandCard({ power, name, dimmed }: { power: number; name: string; dimmed
   return (
     <div
       className={cn(
-        'flex h-[92px] w-[66px] flex-col items-center justify-center rounded-md border border-gold-400/60 bg-surface-0 shadow-card',
+        'flex h-[120px] w-[86px] flex-col items-center justify-center rounded-md border border-gold-400/60 bg-surface-0 shadow-card',
         dimmed && 'opacity-35',
       )}
     >
-      <span className="font-display text-[9px] uppercase tracking-[0.12em] text-ink-mid">
+      <span className="font-display text-[10px] uppercase tracking-[0.14em] text-ink-mid">
         {name}
       </span>
-      <span className="mt-1 font-display text-2xl font-bold text-gold-300 tabular">{power}</span>
+      <span className="mt-1 font-display text-3xl font-bold text-gold-300 tabular">{power}</span>
     </div>
   );
 }
@@ -298,7 +298,7 @@ const STEPS: Step[] = [
           board[1][1] = { power: 3, side: OPPONENT };
           board[3][1] = { power: 5, side: YOU };
           board[2][1] = { power: 3, side: YOU };
-          board[3][2] = { power: 5, side: YOU };
+          board[3][2] = { power: 1, side: YOU };
           board[0][1] = { power: 3, side: OPPONENT };
           board[0][0] = { power: 1, side: OPPONENT };
           return board;

@@ -69,7 +69,7 @@ export default function AppBackground() {
 
       {/* The rune circle, borrowed from the battle arena and pushed right back */}
       <div
-        className="absolute left-1/2 top-1/2 h-[140vmax] w-[140vmax] -translate-x-1/2 -translate-y-1/2 bg-contain bg-center bg-no-repeat opacity-[0.05]"
+        className="absolute left-1/2 top-1/2 h-[125vmin] w-[170vmin] -translate-x-1/2 -translate-y-1/2 bg-contain bg-center bg-no-repeat opacity-[0.06]"
         style={{ backgroundImage: "url('/backgrounds/battle-arena.png')" }}
       />
 
