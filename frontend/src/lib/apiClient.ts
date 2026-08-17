@@ -99,6 +99,24 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
   return response
 }
 
+/**
+ * Reads a JSON body without trusting that there is one.
+ *
+ * `response.json()` throws a `SyntaxError` on an empty body, and an error path that
+ * returns 500 with nothing in it is exactly when that happens — so the parse failure
+ * replaced the real problem with "Unexpected end of JSON input" and the UI showed
+ * whatever string was nearest. Returns null instead; the caller decides what to say.
+ */
+export async function readJson<T = unknown>(response: Response): Promise<T | null> {
+  const contentType = response.headers.get('content-type') ?? ''
+  if (!contentType.includes('json')) return null
+  try {
+    return (await response.json()) as T
+  } catch {
+    return null
+  }
+}
+
 async function forceRefresh(): Promise<string | null> {
   if (!supabase) return null
   try {

@@ -2,63 +2,79 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  font-family: Arial, Helvetica, sans-serif;
-}
+/*
+ * Arcane Noir — the design system.
+ *
+ * Every colour, radius and shadow in the application comes from here. The palette
+ * is taken from the card faces: near-black ink blue, gold as the only lead accent,
+ * violet demoted from "background" to "interaction feedback".
+ */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
-  }
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    /* Surfaces — deep ink blue, darkest at the page, lighter as things stack up */
+    --bg-0: #0a0c16;
+    --bg-1: #111527;
+    --bg-2: #1a1f36;
+    --bg-3: #232946;
+
+    /* Borders and text */
+    --border-subtle: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.16);
+    --text-hi: #edeef5;
+    --text-mid: #a9aec7;
+    --text-low: #767c9e;
+
+    /* Arcane gold — the lead accent, borrowed from the card frames */
+    --gold-300: #ebcb7e;
+    --gold-400: #d9ae4e;
+    --gold-500: #b98d2f;
+    --gold-glow: rgba(217, 174, 78, 0.22);
+
+    /* Arcane violet — interaction feedback and accents only, never a background */
+    --violet-300: #a08bf0;
+    --violet-400: #8468e4;
+    --violet-500: #6c4fd1;
+    --violet-glow: rgba(132, 104, 228, 0.3);
+
+    /* Semantic */
+    --success: #3dd68c;
+    --danger: #f0716f;
+    --warning: #e7a13b;
+    --info: #56c2e6;
+
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.45);
+    --glow-gold: 0 0 0 1px rgba(217, 174, 78, 0.4), 0 0 22px rgba(217, 174, 78, 0.16);
+    --glow-violet: 0 0 0 1px rgba(132, 104, 228, 0.45), 0 0 20px rgba(132, 104, 228, 0.2);
+
+    /*
+     * shadcn's variables, pointed at the palette above. Components that still read
+     * them (Card, Alert, Tooltip) land in the same world as everything else instead
+     * of rendering the stock light theme on a black page.
+     */
+    --background: 231 42% 6%;
+    --foreground: 232 30% 95%;
+    --card: 230 41% 11%;
+    --card-foreground: 232 30% 95%;
+    --popover: 230 41% 11%;
+    --popover-foreground: 232 30% 95%;
+    --primary: 42 65% 58%;
+    --primary-foreground: 33 62% 6%;
+    --secondary: 231 32% 16%;
+    --secondary-foreground: 232 30% 95%;
+    --muted: 231 32% 16%;
+    --muted-foreground: 231 18% 72%;
+    --accent: 253 71% 68%;
+    --accent-foreground: 232 30% 95%;
+    --destructive: 1 79% 69%;
+    --destructive-foreground: 232 30% 95%;
+    --border: 231 25% 22%;
+    --input: 231 25% 22%;
+    --ring: 253 71% 65%;
+    --radius: 0.625rem;
   }
 }
 
@@ -66,157 +82,238 @@ body {
   * {
     @apply border-border;
   }
+
+  html {
+    color-scheme: dark;
+  }
+
   body {
-    @apply bg-background text-foreground;
+    background-color: var(--bg-0);
+    color: var(--text-hi);
+    font-family: var(--font-ui), system-ui, -apple-system, sans-serif;
+    font-size: 0.9375rem; /* 15px body */
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2 {
+    font-family: var(--font-display), Georgia, serif;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+  }
+
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-ui), system-ui, sans-serif;
+    font-weight: 600;
+  }
+
+  /*
+   * The reason the login inputs used to turn into two white plasters: Chrome paints
+   * its own autofill background and the only way to stop it is to cover it with an
+   * inset shadow, then park the transition far enough in the future that it never runs.
+   */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px var(--bg-2) inset;
+    -webkit-text-fill-color: var(--text-hi);
+    caret-color: var(--text-hi);
+    transition: background-color 9999s ease-in-out 0s;
+  }
+
+  ::selection {
+    background: rgba(132, 104, 228, 0.35);
+    color: var(--text-hi);
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--bg-3);
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(160, 139, 240, 0.5);
+    background-clip: content-box;
   }
 }
 
-
-
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
+@layer components {
+  /* Type scale. Sizes are fixed rather than fluid — the layouts are desktop-first. */
+  .type-display {
+    font-family: var(--font-display), Georgia, serif;
+    font-size: 2.75rem;
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: 0.04em;
   }
-  body {
-    @apply bg-background text-foreground;
+  .type-h1 {
+    font-family: var(--font-display), Georgia, serif;
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: 0.02em;
+  }
+  .type-h2 {
+    font-family: var(--font-display), Georgia, serif;
+    font-size: 1.375rem;
+    font-weight: 600;
+    line-height: 1.25;
+  }
+  .type-h3 {
+    font-family: var(--font-ui), system-ui, sans-serif;
+    font-size: 1.0625rem;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+  .type-small {
+    font-size: 0.8125rem;
+    line-height: 1.5;
+  }
+  .type-micro {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    line-height: 1.4;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* Numbers that sit in a column — scores, codes, counters — must not jitter. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* The one gradient allowed on text, and it stays inside a single hue family. */
+  .text-gold-gradient {
+    background: linear-gradient(105deg, #f3dfa6 0%, var(--gold-400) 45%, #9a742a 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* The hairline under a title. */
+  .rule-gold {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-400), transparent);
   }
 }
 
-/* Custom game styling */
 @layer utilities {
-  .shadow-glow-blue {
-    box-shadow: 0 0 10px rgba(59, 130, 246, 0.8);
+  .shadow-card {
+    box-shadow: var(--shadow-card);
   }
-  
-  .shadow-glow-red {
-    box-shadow: 0 0 10px rgba(239, 68, 68, 0.8);
+  .glow-gold {
+    box-shadow: var(--glow-gold);
   }
-  
-  .shadow-glow-yellow {
-    box-shadow: 0 0 20px rgba(251, 191, 36, 0.6);
+  .glow-violet {
+    box-shadow: var(--glow-violet);
   }
-  
-  .shadow-glow-green {
-    box-shadow: 0 0 15px rgba(34, 197, 94, 0.7);
+
+  /* A cell you are allowed to drop the selected card into. */
+  .cell-valid {
+    box-shadow:
+      inset 0 0 0 1px rgba(132, 104, 228, 0.55),
+      inset 0 0 18px rgba(132, 104, 228, 0.2);
+    animation: breathe 1.6s ease-in-out infinite;
   }
-  
-  /* Card hover animation */
-  .card-hover {
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+  .cell-valid:hover {
+    box-shadow:
+      inset 0 0 0 1px rgba(217, 174, 78, 0.75),
+      inset 0 0 20px rgba(217, 174, 78, 0.22);
+    animation: none;
   }
-  
-  .card-hover:hover {
-    transform: translateY(-8px) scale(1.05);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+/* Motion baseline: colour and shadow 150ms, movement 200ms on a decelerating curve. */
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.55;
   }
-  
-  /* Pulse animation for selected cards */
-  @keyframes pulse-ring {
-    0% {
-      box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.7);
-    }
-    70% {
-      box-shadow: 0 0 0 10px rgba(251, 191, 36, 0);
-    }
-    100% {
-      box-shadow: 0 0 0 0 rgba(251, 191, 36, 0);
-    }
+  50% {
+    opacity: 1;
   }
-  
-  .animate-pulse-ring {
-    animation: pulse-ring 2s infinite;
+}
+
+@keyframes star-twinkle {
+  0%,
+  100% {
+    opacity: var(--star-opacity, 0.5);
   }
-  
-  /* Floating particles animation */
-  @keyframes float-up {
-    0% {
-      transform: translateY(100vh) translateX(0);
-      opacity: 0;
-    }
-    10% {
-      opacity: 1;
-    }
-    90% {
-      opacity: 1;
-    }
-    100% {
-      transform: translateY(-100vh) translateX(100px);
-      opacity: 0;
-    }
+  50% {
+    opacity: calc(var(--star-opacity, 0.5) * 0.35);
   }
-  
-  .particle-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    pointer-events: none;
-    z-index: 1;
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
   }
-  
-  .particle {
-    position: absolute;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, transparent 70%);
-    border-radius: 50%;
-    animation: float-up 15s linear infinite;
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
-  
-  /* Lightning flash effect */
-  @keyframes lightning-flash {
-    0%, 100% { opacity: 0; }
-    50% { opacity: 0.3; }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
   }
-  
-  .lightning-overlay {
-    animation: lightning-flash 4s ease-in-out infinite;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
-  
-  /* Card placement effect */
-  @keyframes ripple {
-    0% {
-      transform: scale(0);
-      opacity: 1;
-    }
-    100% {
-      transform: scale(4);
-      opacity: 0;
-    }
+}
+
+@keyframes score-pop {
+  0% {
+    transform: scale(1.25);
   }
-  
-  .ripple-effect {
-    animation: ripple 0.6s ease-out;
+  100% {
+    transform: scale(1);
   }
-  
-  /* Spin animation */
-  @keyframes spin {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
+}
+
+@keyframes card-land {
+  0% {
+    box-shadow: inset 0 0 0 1px rgba(217, 174, 78, 0.9), 0 0 26px rgba(217, 174, 78, 0.45);
   }
-  
-  /* Card slam effect */
-  @keyframes card-slam {
-    0% {
-      transform: scale(1.5) translateY(-20px);
-      opacity: 0;
-    }
-    50% {
-      transform: scale(1.1) translateY(0);
-      opacity: 1;
-    }
-    100% {
-      transform: scale(1) translateY(0);
-      opacity: 1;
-    }
+  100% {
+    box-shadow: inset 0 0 0 1px rgba(217, 174, 78, 0), 0 0 0 rgba(217, 174, 78, 0);
   }
-  
-  .card-slam {
-    animation: card-slam 0.3s ease-out;
+}
+
+@keyframes drift {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-14px) rotate(3deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

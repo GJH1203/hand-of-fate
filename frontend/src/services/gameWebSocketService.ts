@@ -10,6 +10,21 @@ import { getAccessToken } from '@/lib/apiClient';
  */
 const BEARER_SUBPROTOCOL = 'bearer';
 
+/**
+ * The subject of a Supabase access token — who the socket is authenticated as.
+ *
+ * Read locally rather than trusted: it is only ever compared against another token
+ * this client just fetched, to notice that the signed-in user changed.
+ */
+function subjectOf(token: string): string | null {
+  try {
+    const payload = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(atob(payload)).sub ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export enum MessageType {
   // Connection
   CONNECTION_SUCCESS = 'CONNECTION_SUCCESS',
@@ -59,9 +74,22 @@ class GameWebSocketService {
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000;
-  private isReconnecting = false;
+  /**
+   * Whether a dropped socket should be brought back.
+   *
+   * This used to be one field doing two jobs — "reconnection is allowed" and "a
+   * reconnect is running" — and the two readings cancelled out: `connect` set it
+   * true, `onclose` only retried while it was true, and `handleReconnect` returned
+   * immediately when it was true. A socket that dropped therefore stayed dropped,
+   * for the life of the tab, and every later action failed silently.
+   */
+  private shouldReconnect = false;
+  /** Guards re-entering the retry loop. */
+  private reconnectInFlight = false;
   private currentMatchId: string | null = null;
   private currentPlayerId: string | null = null;
+  /** Whose token opened this socket. A handshake authenticates once and never again. */
+  private authenticatedSub: string | null = null;
 
   async connect(callbacks: GameWebSocketCallbacks): Promise<void> {
     // Read before opening the socket: the backend rejects a handshake it cannot attribute
@@ -70,13 +98,11 @@ class GameWebSocketService {
     if (!token) {
       throw new Error('Not signed in — cannot open a game connection');
     }
+    this.authenticatedSub = subjectOf(token);
+    this.shouldReconnect = true;
 
     return new Promise((resolve, reject) => {
       try {
-        // Reset connection state for fresh start
-        this.reconnectAttempts = 0;
-        this.isReconnecting = true; // Allow reconnection for this session
-        
         // Check if already connected or connecting
         if (this.ws) {
           if (this.ws.readyState === WebSocket.CONNECTING) {
@@ -151,11 +177,10 @@ class GameWebSocketService {
         };
         
         this.ws.onclose = () => {
-          console.log('WebSocket closed, isReconnecting:', this.isReconnecting);
+          console.log('WebSocket closed, shouldReconnect:', this.shouldReconnect);
           this.callbacks.onConnectionClosed?.();
-          
-          // Only attempt to reconnect if we're supposed to
-          if (this.isReconnecting === true) {
+
+          if (this.shouldReconnect) {
             this.handleReconnect();
           }
         };
@@ -253,27 +278,36 @@ class GameWebSocketService {
     this.ws.send(JSON.stringify(message));
   }
 
-  requestGameState(): void {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+  /**
+   * Asks the server to describe the game. Answers whether it managed to ask.
+   *
+   * It used to return silently when the socket was not open, which is exactly what
+   * happens for a moment after a reconnect — so the one request a rejoining client
+   * makes could vanish without a trace on either side, and the player waited on a
+   * board that nobody had been asked for.
+   */
+  requestGameState(): boolean {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      console.warn('Cannot request game state: socket is not open');
+      return false;
+    }
     if (!this.currentMatchId || !this.currentPlayerId) {
-      console.error('Cannot request game state without match/player ID');
-      return;
+      console.warn('Cannot request game state without match/player ID');
+      return false;
     }
 
-    const message: WebSocketMessage = {
-      type: MessageType.GAME_STATE_REQUEST,
-      data: {
-        matchId: this.currentMatchId,
-        playerId: this.currentPlayerId
-      }
-    };
-
-    this.ws.send(JSON.stringify(message));
+    this.ws.send(
+      JSON.stringify({
+        type: MessageType.GAME_STATE_REQUEST,
+        data: { matchId: this.currentMatchId, playerId: this.currentPlayerId },
+      } satisfies WebSocketMessage),
+    );
+    return true;
   }
 
   disconnect(): void {
     console.log('Disconnecting WebSocket...');
-    this.isReconnecting = false; // Prevent auto-reconnection
+    this.shouldReconnect = false; // Deliberate close: stay closed.
     
     if (this.ws) {
       // Remove event handlers to prevent any callbacks
@@ -291,6 +325,7 @@ class GameWebSocketService {
     // Clear state
     this.currentMatchId = null;
     this.currentPlayerId = null;
+    this.authenticatedSub = null;
   }
 
   isConnected(): boolean {
@@ -299,15 +334,23 @@ class GameWebSocketService {
 
   async ensureConnected(callbacks: GameWebSocketCallbacks): Promise<void> {
     if (this.isConnected()) {
-      console.log('WebSocket already connected');
-      return;
+      // A socket authenticates once, at the handshake, and carries that identity for
+      // its whole life. Signing out and back in as somebody else leaves the page
+      // acting as the new player over a socket that is still the old one — the server
+      // refuses every action with "asked to join as X but the token says Y", and
+      // nothing on the client notices. Compare and re-open.
+      const token = await getAccessToken();
+      const sub = token ? subjectOf(token) : null;
+      if (sub && this.authenticatedSub && sub === this.authenticatedSub) {
+        console.log('WebSocket already connected');
+        return;
+      }
+      console.log('WebSocket belongs to a previous session, reconnecting');
+      this.disconnect();
     }
     
     console.log('WebSocket not connected, establishing connection...');
-    // Reset state for new connection
-    this.isReconnecting = true;
     this.reconnectAttempts = 0;
-    
     return this.connect(callbacks);
   }
 
@@ -353,13 +396,13 @@ class GameWebSocketService {
   }
 
   private async handleReconnect(): Promise<void> {
-    if (this.isReconnecting || this.reconnectAttempts >= this.maxReconnectAttempts) {
+    if (this.reconnectInFlight || this.reconnectAttempts >= this.maxReconnectAttempts) {
       return;
     }
 
-    this.isReconnecting = true;
+    this.reconnectInFlight = true;
 
-    while (this.reconnectAttempts < this.maxReconnectAttempts) {
+    while (this.shouldReconnect && this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
       console.log(`Reconnection attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts}`);
 
@@ -367,13 +410,14 @@ class GameWebSocketService {
         await new Promise(resolve => setTimeout(resolve, this.reconnectDelay));
         await this.connect(this.callbacks);
 
-        // Rejoin match if we were in one
+        // Rejoin the match, or the new session is a stranger to it and every
+        // message it sends is answered with "Not in a match".
         if (this.currentMatchId && this.currentPlayerId) {
-          this.joinMatch(this.currentMatchId, this.currentPlayerId);
+          await this.joinMatch(this.currentMatchId, this.currentPlayerId);
         }
 
         console.log('Reconnected successfully');
-        this.isReconnecting = false;
+        this.reconnectInFlight = false;
         return;
       } catch (error) {
         console.error('Reconnection attempt failed:', error);
@@ -383,7 +427,7 @@ class GameWebSocketService {
 
     console.error('Failed to reconnect after maximum attempts');
     this.callbacks.onError?.('Failed to reconnect to game server');
-    this.isReconnecting = false;
+    this.reconnectInFlight = false;
   }
 }
 

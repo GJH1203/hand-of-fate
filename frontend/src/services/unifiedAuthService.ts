@@ -1,5 +1,5 @@
 import { SupabaseAuthService } from './supabaseAuthService'
-import { apiFetch } from '@/lib/apiClient'
+import { apiFetch, readJson } from '@/lib/apiClient'
 import { User } from '@supabase/supabase-js'
 
 export interface UnifiedAuthResponse {
@@ -184,7 +184,12 @@ export class UnifiedAuthService {
         throw new Error(errorText || 'Failed to sync user')
       }
 
-      return await response.json()
+      return (
+        (await readJson<UnifiedAuthResponse>(response)) ?? {
+          isSuccess: false,
+          message: 'The game server answered with an empty response',
+        }
+      )
     } catch (error: any) {
       console.error('Backend sync error:', error)
       return {
@@ -213,8 +218,17 @@ export class UnifiedAuthService {
         } as BackendSyncRequest)
       })
 
-      const data = await response.json()
-      return data
+      const data = await readJson<UnifiedAuthResponse>(response)
+      if (data) return data
+
+      // No JSON came back. Say which failure this was rather than letting a parse
+      // error surface as though the credentials were wrong.
+      return {
+        isSuccess: false,
+        message: response.ok
+          ? 'The game server answered with an empty response'
+          : `The game server refused the request (${response.status})`,
+      }
     } catch (error: any) {
       console.error('Backend login error:', error)
       return {

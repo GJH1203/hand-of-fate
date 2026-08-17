@@ -1,4 +1,4 @@
-import { apiFetch } from '@/lib/apiClient';
+import { apiFetch, readJson } from '@/lib/apiClient';
 import { OnlineMatchInfo } from '@/types/gameMode';
 
 export interface CreateMatchResponse {
@@ -52,7 +52,10 @@ class OnlineGameService {
     });
 
     if (!response.ok) {
-      throw new Error('Failed to join match');
+      // The server says why — unknown code, already under way, or your own room.
+      // Carry that through instead of flattening every refusal into one string.
+      const body = await readJson<{ message?: string }>(response);
+      throw new Error(body?.message || 'Failed to join match');
     }
 
     return response.json();

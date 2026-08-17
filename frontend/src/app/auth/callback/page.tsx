@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { unifiedAuthService } from '@/services/unifiedAuthService'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Alert } from '@/components/ui/alert'
+import { InlineAlert } from '@/components/ui/inline-alert'
+import { Panel, PanelBody } from '@/components/ui/panel'
+import { Spinner } from '@/components/ui/spinner'
 
 export default function AuthCallback() {
   const router = useRouter()
@@ -75,35 +76,31 @@ export default function AuthCallback() {
   }, [router])
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle>
-            {error ? '❌ Verification Error' : '✅ Email Verification'}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="text-center space-y-4">
-          {message && !error && (
-            <Alert>
-              <p>{message}</p>
-            </Alert>
-          )}
-          
-          {error && (
-            <Alert className="border-red-200 bg-red-50 text-red-800">
-              <p>{error}</p>
-            </Alert>
+    <main className="flex min-h-dvh items-center justify-center p-4">
+      <Panel className="w-full max-w-md">
+        <PanelBody className="space-y-4 p-8 text-center">
+          <h1 className="type-h2 text-ink-hi">
+            {error ? 'Verification failed' : 'Verifying your account'}
+          </h1>
+
+          {error ? (
+            <InlineAlert tone="danger" className="text-left">
+              {error}
+            </InlineAlert>
+          ) : (
+            <>
+              <InlineAlert tone="info" className="text-left">
+                {message}
+              </InlineAlert>
+              <Spinner size={24} className="mx-auto text-arcane-300" />
+            </>
           )}
 
-          {!error && (
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          )}
-          
-          <p className="text-sm text-muted-foreground">
-            {error ? 'Redirecting to login page...' : 'Please wait...'}
+          <p className="type-small text-ink-low">
+            {error ? 'Taking you back to the sign-in page…' : 'Please wait…'}
           </p>
-        </CardContent>
-      </Card>
-    </div>
+        </PanelBody>
+      </Panel>
+    </main>
   )
 }
