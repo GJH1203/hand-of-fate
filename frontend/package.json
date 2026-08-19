@@ -7,7 +7,8 @@
     "dev:network": "next dev --turbopack -H 0.0.0.0",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "vitest run"
   },
   "dependencies": {
     "@heroiclabs/nakama-js": "^2.8.0",
@@ -35,6 +36,7 @@
     "postcss": "^8",
     "puppeteer": "^24.10.0",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.7"
   }
 }
