@@ -205,10 +205,36 @@ class uses a database of its own; they used to share one and delete each other's
 data. One test is `@Disabled`, with the reason on it: player creation does not
 reject a second account on an existing email.
 
-**Frontend reconnect is dead code.** `connect()` sets `isReconnecting = true`
-on entry and `handleReconnect()` returns early when it is true, so a dropped
-socket never reconnects. `gameSocketService.ts` and `userSyncService.ts` have no
-importers at all.
+`GameModelPlayCardTest` is the first test of game logic that needs neither: it
+runs against `GameModel` directly, in milliseconds, and it exists because a bug
+lived in `playCard` that no integration test noticed. That is the shape the rest
+of goal 2 should take.
+
+**~~Frontend reconnect is dead code.~~** Fixed, and it cost more than the note
+suggested. `isReconnecting` meant two things at once — "reconnection is allowed"
+and "a reconnect is running" — and the readings cancelled out exactly, so a
+dropped socket stayed dropped for the life of the tab. Everything after that
+failed in silence, because `requestGameState` returns without sending on a closed
+socket and says nothing. That is why rejoining a duel in progress could never
+work: the client asked for the board once, 100ms after joining, into a socket that
+was not open. Split into `shouldReconnect`, which only a deliberate `disconnect()`
+clears, and `reconnectInFlight`, which guards re-entry; the retry loop rejoins the
+match afterwards, or the new session is a stranger the server answers "Not in a
+match". The dead services are deleted, along with seven other unreachable files.
+
+Two more from the same afternoon, both fixed, both worth knowing about because
+neither is visible from the code alone. A socket authenticates once at the
+handshake and keeps that identity for life, so signing out and in as somebody else
+in one tab left the page acting as the new player over the old player's
+connection — the server refused everything and nothing noticed. And a Supabase
+session that its refresh could not repair only flipped a flag, so you were
+returned to the sign-in form mid-duel with no explanation.
+
+**Abandoning a room does not release it.** The confirmation says the room will be
+closed and the code will expire. Nothing does that: leaving only closes the
+socket, and the entry stays in `matchMetadata` for the life of the process — the
+same `cleanupMatch` gap as above, seen from the front. Either the copy is wrong or
+the call is missing; it has been the copy since the redesign, which is worse.
 
 ## Before changing the backend
 
@@ -218,6 +244,18 @@ cannot run side by side and the service is set to `MinimumHealthyPercent: 0`.
 Build, push to ECR, then deploy the stack — `aws cloudformation deploy` picks up a
 new `BackendImage` and rolls the service on its own; `aws ecs update-service
 --force-new-deployment` is only needed when nothing in the template changed.
+
+Two things that are easy to get wrong here. The task definition pins the image by
+commit sha, not `latest`, so `--force-new-deployment` on its own re-pulls the same
+image and deploys nothing — go through CloudFormation with a new `BackendImage`.
+And run `--no-execute-changeset` first: it costs nothing and tells you whether you
+are shipping only the image or also whatever else has drifted into the template.
+
+The `Deploy backend` workflow cannot run: `AWS_DEPLOY_ROLE_ARN` has never been
+set, so it stops at the credentials step — which is the failure it was designed to
+have. It also pushes `latest` and rolls the service, which the sha-pinned task
+definition would ignore. Deploying by hand, from `infra/ecs/README.md`, is the
+path that works today.
 
 **Changing user data does not touch the running instance.** The auto scaling group
 leaves it alone and the new launch template version is only used by the next
@@ -291,9 +329,11 @@ session is a judgement call that changes with what the project needs next.
    path is one Atlas round trip times that. Taking it off the hot path is item 4.
    Prometheus and Grafana are still not worth the money: every question so far got
    answered by `docker stats`, a class histogram and a container exit code.
-6. **Frontend.** Break up the 900-line components, fix reconnection, delete the
-   dead services. (The home page's Power Score is real data, not a placeholder —
-   that item was stale.)
+6. **Frontend.** Reconnection is fixed and the dead services are gone. What is
+   left is the size: `OnlineGameBoard` is **1054 lines** — longer than before,
+   because it grew a battle log, a result screen and the early-end exchange — and
+   `GuidedTutorial` is 641. Both are one component doing the work of five. (The
+   home page's Power Score is real data, not a placeholder — that item was stale.)
 
 Ordering is deliberate: 3 and 4 rewrite the core, so 2 comes first.
 
