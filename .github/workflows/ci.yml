@@ -79,6 +79,11 @@ jobs:
       - name: Type check
         run: npx tsc --noEmit
 
+      # The rules of the game, checked without a browser or a database. Fast enough
+      # that there is no excuse for a change to land without running them.
+      - name: Test
+        run: npm test
+
       # No Supabase credentials here on purpose. lib/supabase.ts falls back to a null
       # client when they are absent, so the build proves the code compiles without
       # putting real project keys in CI.
