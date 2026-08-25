@@ -57,7 +57,7 @@ Live at **handoffate.org**. Do not assume anything below is still true — check
 | Auth | Supabase project `Hand-of-Fate` issues the JWT; Nakama issues game sessions |
 | Secrets | SSM Parameter Store under `/hand-of-fate/`, read at task start |
 | Cost | ~$6.40/month until the t4g free trial ends 2026-12-31, ~$20 after. The extra over the old ~$6 is the 4 GB data volume; S3 backups are a rounding error |
-| Backups | Nightly `mongodump` to S3, run as a scheduled ECS task. Atlas M0 has none of its own |
+| Backups | Nightly `mongodump` to S3, run as a scheduled ECS task at 09:00 UTC — confirmed firing on its own since 2026-08-17. Atlas M0 has none of its own |
 | Email | Supabase sends through Resend, from `noreply@mail.handoffate.org` |
 
 Shell access is SSM Session Manager, not SSH — there is no open port 22.
@@ -113,7 +113,15 @@ existing `mongodump` job is the obvious answer.
 **Online matches are in-memory, and they are never released.** `NakamaMatchService`
 keeps matches in a `ConcurrentHashMap` and never uses Nakama's match API despite the
 dependency. A restart drops every active match, and the design cannot survive a
-second instance. `getMatchState` scans the entire games collection on every call.
+second instance.
+
+Be precise about what Nakama does here, because the name suggests more than is true.
+The SDK calls this codebase actually makes are `authenticateDevice` for accounts,
+`writeLeaderboardRecord` and `listLeaderboardRecords` for the leaderboard, and the
+chat socket. **No match API at all** — the real-time game runs on this project's own
+`GameWebSocketHandler`. `infra/local/modules/game_match.lua` is 215 lines of match
+handler exporting the full interface, and nothing registers it: `register_match`
+appears nowhere, so Nakama has never loaded it and it has never run.
 
 `cleanupMatch` exists to empty `matchMetadata`, `matchSubscriptions` and
 `activeSockets` for a finished match, and **nothing calls it**. A completed game
@@ -146,10 +154,32 @@ account on an existing email — which is exactly what the `@Disabled` test in
 nullable, so a second document with a null would fail the build and stop the
 application starting. It needs a duplicate audit against production first.
 
-Numbers come from an Apple Silicon laptop with two CPUs allocated, against a local
-MongoDB. Production is a `t4g.small` sharing two vCPU with postgres, Nakama and
-cloudflared, so it has *less* CPU than this. The memory conclusion transfers,
-because the 768 MiB budget is the same; the latencies do not.
+`nakamaMatchId` has no unique index either, and the same objection applies. Uniqueness
+is enforced in code instead: a match code is checked against the matches in memory and
+against every saved game before it is handed out. It had to be — six hex characters is
+16.7 million codes that are never retired, so two games shared one after about 4,800
+had been created, and a duplicate broke *both*, because `findByNakamaMatchId` expects
+a single result. A load test found it, and the local database reached 8,556 games with
+three duplicate codes, against a birthday-bound prediction of about two.
+
+Numbers come from an Apple Silicon laptop, against a local MongoDB. `infra/local`
+sets `mem_limit` on every container and **no CPU limit at all**, so the backend can
+use the whole Docker VM — eight cores on this machine, not the "two CPUs allocated"
+this file used to claim.
+
+The latencies transfer better than that suggests, and in the opposite direction.
+Checked on 2026-08-17 by running the same stack and the same harness on a throwaway
+t4g.medium (2 vCPU Graviton2): **p50 3.4-4.0 ms there against 7.8 ms on the laptop**,
+p95 comparable. Docker Desktop's network stack on macOS costs more than a Graviton
+core's slowness saves, so the laptop is pessimistic about the median, not optimistic.
+Nothing was CPU-bound at 100 concurrent players — the whole stack sat at about 0.65
+of the 2 cores. Production is also on `CpuCredits=unlimited`, so it is not throttled
+to the burstable baseline under sustained load.
+
+What the laptop cannot show is Cloudflare. A round trip to `api.handoffate.org`
+through the tunnel measured **46 ms median from this machine**, which is larger than
+the entire server-side p95. Anything measured here is server-side move-to-broadcast;
+it is not end-to-end, and it is not close to it.
 
 **~~No concurrency control.~~** `GameModel` carries `@Version`, and a move that loses
 the version check is retried once; a second failure sends the client the game as it
@@ -160,6 +190,16 @@ a move is one document write, and MongoDB is atomic per document.
 a game no longer writes to them, so the only writers left are registration, deck
 editing and the victory bonus at the end of a game, and none of those race with a
 move.
+
+**`@Version` constrains every writer of the document, not just the move path.** This
+is written down because forgetting it shipped a regression: `handleDisconnection` also
+read the game, changed it and saved it, so when both players left a match at the same
+moment — which is how a match ordinarily ends — one lost the check and its
+disconnection was never recorded. Connection status and `lastSyncTime` are targeted
+updates now, on the grounds that they are bookkeeping rather than part of the position.
+`clearPlayerMatches` is deliberately left under the check, because marking a game
+ABANDONED is a real state transition. Anything new that writes a game belongs in one
+of those two categories, on purpose.
 
 **Nothing notices a wedged application.** The auto scaling group's health check is
 `EC2`, which sees a dead instance and nothing else. A backend that is running but
@@ -181,11 +221,16 @@ rather than anything in this template.
 
 **Prometheus and Grafana are not the answer to this, yet.** They draw graphs; they
 do not tell anyone. `infra/monitoring` still holds the old setup and it is tempting
-to put it back, but the instance has ~200 MiB spare of 2 GiB, which is why that
-stack lived on a separate droplet costing more than everything else here. There is
-also nothing to look at: with almost no players every graph is a flat line, and
-`/actuator/prometheus` now needs an admin credential a scraper would have to be
-given. It becomes worth the money and the memory at goal 5 below, where the
+to put it back. Room is less of an objection than this file used to say — measured
+2026-08-17, the instance has **~1 GB available** of 1846 MiB (`free` shows 120, but
+1068 is reclaimable cache), with the backend at 230 MiB of its 768 limit at rest.
+The binding constraint is that the backend reaches 520-630 MiB under 100 concurrent
+players, which is most of that cushion. There is also nothing to look at: with
+almost no players every graph is a flat line, and `/actuator/prometheus` sits behind
+the `/actuator/**` admin rule in `SecurityConfig`, so a scraper needs a credential or
+its own rule. The metrics themselves already exist — `MetricsConfig` registers
+counters and gauges for games created and completed, active games and players, and
+live WebSocket connections. It becomes worth the money and the memory at goal 5 below, where the
 question is which resource gives out first under load — and that question cannot be
 answered by guessing.
 
