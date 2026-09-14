@@ -1,15 +1,16 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Check, CheckCircle2, Copy, Share2, Shield } from 'lucide-react';
+import { Check, Copy, Link2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
-import { Panel, PanelBody } from '@/components/ui/panel';
+import { Panel } from '@/components/ui/panel';
 import { Spinner } from '@/components/ui/spinner';
 import { useToast } from '@/components/ui/toast';
 import { onlineGameService } from '@/services/onlineGameService';
 import { OnlineMatchInfo } from '@/types/gameMode';
+import { cn } from '@/lib/utils';
 
 interface GameLobbyProps {
   matchInfo: OnlineMatchInfo;
@@ -92,114 +93,122 @@ export default function GameLobby({
   };
 
   return (
-    <main className="flex min-h-dvh items-center justify-center px-6 py-10">
-      <Panel className="w-full max-w-[460px]">
-        <PanelBody className="p-7">
-          <h1 className="type-h2 text-center text-ink-hi">
-            {isHost ? 'Summoning Opponent' : 'Entering Arena'}
-          </h1>
-          <p className="type-small mt-1 text-center text-ink-low">Sacred Battle Code</p>
+    <main id="main" className="mx-auto flex min-h-dvh max-w-[520px] flex-col justify-center px-6 py-16">
+      <div className="stagger">
+        <p className="type-label text-ember-400">
+          {hasOpponent ? 'Both here' : isHost ? 'Waiting' : 'Joining'}
+        </p>
+        <h1 className="type-h1 mt-3 text-ink-hi">
+          {hasOpponent ? 'Your opponent is here' : isHost ? 'Send them the code' : 'Finding the room'}
+        </h1>
 
-          <div
-            className="mt-4 flex items-center justify-between gap-3 rounded-lg bg-surface-0 px-5 py-4"
-            style={{ border: '2px solid rgba(217,174,78,0.45)' }}
-          >
-            <code className="flex-1 text-center font-display text-[40px] font-bold leading-none tracking-[0.25em] text-gold-300 tabular">
+        {/*
+         * The code, set as large as the room allows.
+         *
+         * It is the one thing on this screen anybody has to do something with — read it
+         * out, or type it into a chat window — so it is the size of a headline and not
+         * a field label. The characters are spaced out because six run-together
+         * characters get miscopied, and lined tabular so they never reflow.
+         */}
+        <Panel tone="raised" className="mt-7 overflow-hidden">
+          <div className="flex items-center gap-4 px-6 py-6">
+            <code className="flex-1 text-center text-[44px] font-bold leading-none tracking-[0.22em] text-ember-300 tabular">
               {gameCode}
             </code>
             <button
               type="button"
               onClick={copyCode}
-              aria-label="Copy the battle code"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-gold-400 transition-colors duration-150 hover:bg-gold-400/10 hover:text-gold-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcane-400"
+              aria-label="Copy the room code"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-ink-mid transition-all duration-200 ease-arcane hover:bg-ember-400/10 hover:text-ember-300 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ember-400"
             >
               {copiedCode ? (
-                <Check size={18} strokeWidth={1.75} />
+                <Check size={19} strokeWidth={2} className="text-success" />
               ) : (
-                <Copy size={18} strokeWidth={1.75} />
+                <Copy size={19} strokeWidth={1.75} />
               )}
             </button>
           </div>
 
-          <div className="mt-6 space-y-2.5">
-            <div
-              className="flex items-center justify-between rounded-md px-4 py-3"
-              style={{
-                backgroundColor: 'rgba(61,214,140,0.06)',
-                border: '1px solid rgba(61,214,140,0.22)',
-              }}
-            >
-              <span className="flex items-center gap-2.5 text-sm text-ink-hi">
-                <Shield size={16} strokeWidth={1.75} className="text-success" />
-                Champion (Host)
-              </span>
-              <CheckCircle2 size={18} strokeWidth={1.75} className="text-success" />
-            </div>
-
-            <div className="flex items-center justify-between rounded-md border border-subtle bg-surface-2 px-4 py-3">
-              <span className="flex items-center gap-2.5 text-sm text-ink-mid">
-                <Shield size={16} strokeWidth={1.75} className="text-ink-low" />
-                {hasOpponent ? 'Challenger' : 'Waiting for challenger…'}
-              </span>
-              {hasOpponent ? (
-                <CheckCircle2 size={18} strokeWidth={1.75} className="text-success" />
-              ) : (
-                <Spinner size={16} className="text-arcane-300" />
-              )}
-            </div>
+          {/* Seat list. A filled bar for a seat taken, a hollow one for a seat waiting. */}
+          <div className="border-t border-subtle">
+            <Seat label={isHost ? 'You — host' : 'Host'} present />
+            <Seat
+              label={hasOpponent ? (isHost ? 'Challenger' : 'You — challenger') : 'Waiting for a challenger'}
+              present={hasOpponent}
+              last
+            />
           </div>
+        </Panel>
 
-          {hasOpponent ? (
-            <p className="mt-6 text-center text-sm text-ink-mid">
-              Battle commencing in{' '}
-              <span className="font-display text-lg font-bold text-gold-300 tabular">
-                {countdown}
-              </span>
-            </p>
-          ) : (
-            <p className="type-small mt-6 text-center text-ink-low">
-              Share the code above. The arena opens the moment they arrive.
-            </p>
-          )}
+        {hasOpponent ? (
+          <p className="mt-6 flex items-center gap-2.5 text-sm text-ink-mid">
+            <span className="h-2 w-2 rounded-full bg-success" />
+            Board opens in{' '}
+            <span className="text-[17px] font-bold text-ember-300 tabular">{countdown}</span>
+          </p>
+        ) : (
+          <p className="type-small mt-6 text-ink-low">
+            The board opens by itself the moment they arrive. You can leave this tab open.
+          </p>
+        )}
 
-          <div className="mt-7 space-y-2.5">
-            {isHost && !hasOpponent && (
-              <Button variant="secondary" size="lg" className="w-full" onClick={copyLink}>
-                <Share2 size={18} strokeWidth={1.75} />
-                Share Portal Link
-              </Button>
-            )}
-            <Button
-              variant="danger"
-              size="lg"
-              className="w-full"
-              onClick={() => setConfirmAbandon(true)}
-              disabled={hasOpponent}
-            >
-              {hasOpponent ? 'Portal Opening…' : 'Abandon Match'}
+        <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
+          {isHost && !hasOpponent && (
+            <Button variant="secondary" size="lg" onClick={copyLink}>
+              <Link2 size={18} strokeWidth={1.75} />
+              Copy invite link
             </Button>
-          </div>
-        </PanelBody>
-      </Panel>
+          )}
+          {!hasOpponent && (
+            <Button variant="link" onClick={() => setConfirmAbandon(true)}>
+              Close this room
+            </Button>
+          )}
+        </div>
+      </div>
 
       <Modal
         open={confirmAbandon}
         onClose={() => setConfirmAbandon(false)}
-        title="Abandon this battle?"
+        title="Close this room?"
         widthClassName="max-w-sm"
       >
         <p className="text-sm text-ink-mid">
-          The room will be closed and the sacred code will expire.
+          You will go back to the menu and stop waiting. Anyone you already sent the code to
+          will not be able to get in.
         </p>
         <div className="mt-6 flex justify-end gap-3">
           <Button variant="ghost" onClick={() => setConfirmAbandon(false)}>
-            Cancel
+            Keep waiting
           </Button>
           <Button variant="danger" onClick={onCancel}>
-            Abandon
+            Close it
           </Button>
         </div>
       </Modal>
     </main>
+  );
+}
+
+/** One row of the seat list: a status mark, a name, and nothing else. */
+function Seat({ label, present, last }: { label: string; present: boolean; last?: boolean }) {
+  return (
+    <div
+      className={cn(
+        'flex items-center gap-3 px-6 py-3.5 text-sm',
+        !last && 'border-b border-subtle',
+      )}
+    >
+      {present ? (
+        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-success/15">
+          <Check size={12} strokeWidth={2.5} className="text-success" />
+        </span>
+      ) : (
+        <span className="flex h-5 w-5 items-center justify-center">
+          <Spinner size={14} className="text-ink-low" />
+        </span>
+      )}
+      <span className={present ? 'text-ink-hi' : 'text-ink-low'}>{label}</span>
+    </div>
   );
 }

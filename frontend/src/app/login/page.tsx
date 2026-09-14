@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
-import { BookOpen, Lock, Mail, ShieldCheck, User } from 'lucide-react';
+import { ArrowRight, BookOpen, Mail } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Field, Input } from '@/components/ui/input';
@@ -16,42 +16,71 @@ import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
 import { humanizeAuthError } from '@/lib/authErrors';
 import GameTutorial from '@/components/tutorial/GameTutorial';
 
-/** The two card silhouettes drifting behind the form. Decoration, kept quiet. */
-function DriftingCards() {
+/*
+ * The left half of the sign-in screen.
+ *
+ * The old page was a card in the dead centre of an otherwise empty viewport, which is
+ * the most common shape an auth page can have. Splitting it gives the artwork somewhere
+ * to live at full bleed and gives the form a left edge to align to, and it puts the one
+ * thing a returning player wants — the door — on the side they read to.
+ */
+function BrandPanel() {
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden opacity-[0.06]">
+    <section className="relative hidden overflow-hidden lg:flex lg:flex-col lg:justify-between lg:p-14">
       <div
-        className="absolute left-[14%] top-[22%] h-40 w-28 rounded-lg border border-gold-400 bg-surface-2"
-        style={{ transform: 'rotate(-11deg)', animation: 'drift 14s ease-in-out infinite' }}
-      />
-      <div
-        className="absolute right-[13%] bottom-[20%] h-40 w-28 rounded-lg border border-gold-400 bg-surface-2"
+        aria-hidden
+        className="absolute inset-0 bg-cover bg-center"
         style={{
-          transform: 'rotate(9deg)',
-          animation: 'drift 17s ease-in-out infinite',
-          animationDelay: '2.5s',
+          backgroundImage: "url('/backgrounds/battle-arena.png')",
+          opacity: 0.55,
         }}
       />
-    </div>
-  );
-}
-
-function BrandMark() {
-  return (
-    <div className="mb-8 text-center">
-      <Image
-        src="/images/mystical-portal.png"
-        alt=""
-        width={96}
-        height={96}
-        priority
-        className="mx-auto"
-        style={{ filter: 'drop-shadow(0 0 24px rgba(86,140,230,0.35))' }}
+      {/* Warm wash over the cold plate, so it belongs to the rest of the palette */}
+      <div
+        aria-hidden
+        className="absolute inset-0"
+        style={{
+          background:
+            'linear-gradient(155deg, rgba(12,11,10,0.3) 0%, rgba(12,11,10,0.72) 48%, rgba(12,11,10,0.96) 100%)',
+        }}
       />
-      <h1 className="type-display text-gold-gradient mt-5">HAND OF FATE</h1>
-      <div className="rule-gold mx-auto mt-4 w-40" />
-      <p className="mt-3 text-[15px] text-ink-mid">Embrace Your Mystical Destiny</p>
-    </div>
+      {/* The seam between the two halves, lit */}
+      <div
+        aria-hidden
+        className="absolute inset-y-0 right-0 w-px"
+        style={{
+          background:
+            'linear-gradient(180deg, transparent, rgba(217,142,67,0.35) 45%, transparent)',
+        }}
+      />
+
+      <div className="relative">
+        <Image
+          src="/images/mystical-portal.png"
+          alt=""
+          width={64}
+          height={64}
+          priority
+          style={{ filter: 'drop-shadow(0 0 28px rgba(92,147,186,0.45))' }}
+        />
+      </div>
+
+      <div className="relative max-w-[30ch]">
+        <h1 className="type-display text-ink-hi">
+          Hand of
+          <br />
+          <span className="text-ember-gradient">Fate</span>
+        </h1>
+        <p className="type-body mt-6 text-ink-mid">
+          Fifteen squares, five cards, and one opponent deciding at the same moment you
+          are. Win two columns of three.
+        </p>
+      </div>
+
+      <p className="type-label relative text-ink-low">
+        Three columns · five rows · about four minutes
+      </p>
+    </section>
   );
 }
 
@@ -62,6 +91,7 @@ function UnifiedAuthPageContent() {
   const [username, setUsername] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [pendingVerification, setPendingVerification] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState('');
@@ -88,7 +118,7 @@ function UnifiedAuthPageContent() {
 
   if (!isSupabaseConfigured) {
     return (
-      <main className="flex min-h-dvh items-center justify-center p-4">
+      <main id="main" className="flex min-h-dvh items-center justify-center p-6">
         <Panel className="w-full max-w-md p-8">
           <h1 className="type-h2 text-ink-hi">Configuration required</h1>
           <p className="type-small mt-2 text-ink-low">
@@ -101,14 +131,15 @@ function UnifiedAuthPageContent() {
                 href="https://supabase.com"
                 target="_blank"
                 rel="noreferrer"
-                className="text-arcane-300 hover:underline"
+                className="text-ember-300 underline-offset-4 hover:underline"
               >
                 supabase.com
               </a>
             </li>
             <li>Copy the project URL and the anon key</li>
             <li>
-              Put them in <code className="rounded bg-surface-2 px-1.5 py-0.5">frontend/.env.local</code>
+              Put them in{' '}
+              <code className="rounded-xs bg-surface-2 px-1.5 py-0.5">frontend/.env.local</code>
             </li>
           </ol>
         </Panel>
@@ -116,19 +147,41 @@ function UnifiedAuthPageContent() {
     );
   }
 
+  /**
+   * Checks the form before it goes anywhere.
+   *
+   * Returns per-field messages rather than one banner. A single red box at the top
+   * saying "Fill in every field to continue" makes the reader work out which field it
+   * means; a line under the empty one does not.
+   */
+  const validate = (): Record<string, string> => {
+    const next: Record<string, string> = {};
+
+    if (isSignUp && !username.trim()) {
+      next.username = 'Pick a name other players will see.';
+    }
+    if (!email.trim()) {
+      next.email = 'Enter the address you signed up with.';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      next.email = 'That does not look like an email address.';
+    }
+    if (!password) {
+      next.password = 'Enter your password.';
+    } else if (isSignUp && password.length < 6) {
+      next.password = 'Use at least 6 characters.';
+    }
+
+    return next;
+  };
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setMessage('');
 
-    if (!email || !password || !username) {
-      setError('Fill in every field to continue.');
-      return;
-    }
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters.');
-      return;
-    }
+    const problems = validate();
+    setFieldErrors(problems);
+    if (Object.keys(problems).length > 0) return;
 
     setIsLoading(true);
     try {
@@ -160,10 +213,9 @@ function UnifiedAuthPageContent() {
     setError('');
     setMessage('');
 
-    if (!email || !password) {
-      setError('Fill in every field to continue.');
-      return;
-    }
+    const problems = validate();
+    setFieldErrors(problems);
+    if (Object.keys(problems).length > 0) return;
 
     setIsLoading(true);
     try {
@@ -201,96 +253,130 @@ function UnifiedAuthPageContent() {
     }
   };
 
+  const switchMode = () => {
+    setIsSignUp(!isSignUp);
+    setError('');
+    setMessage('');
+    setFieldErrors({});
+    setPassword('');
+    if (!isSignUp) setUsername('');
+  };
+
   if (pendingVerification) {
     return (
-      <main className="relative flex min-h-dvh items-center justify-center p-4">
-        <DriftingCards />
-        <Panel className="relative z-10 w-full max-w-[420px] p-8 text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-gold-400/40 bg-gold-400/10">
-            <Mail size={22} strokeWidth={1.75} className="text-gold-300" />
+      <main id="main" className="flex min-h-dvh items-center justify-center p-6">
+        <Panel className="w-full max-w-[420px] p-8">
+          <div className="flex h-12 w-12 items-center justify-center rounded-[14px] bg-ember-400/10 ring-1 ring-inset ring-ember-400/30">
+            <Mail size={20} strokeWidth={1.75} className="text-ember-300" />
           </div>
           <h1 className="type-h2 mt-5 text-ink-hi">Check your inbox</h1>
-          <p className="type-small mt-2 text-ink-low">
-            A verification link is on its way to {verificationEmail}.
+          <p className="type-small mt-2 text-ink-mid">
+            A verification link is on its way to{' '}
+            <span className="text-ink-hi">{verificationEmail}</span>. Nothing yet? Look in the
+            spam folder, or send it again.
           </p>
 
           {message && (
-            <InlineAlert tone="success" className="mt-5 text-left">
+            <InlineAlert tone="success" className="mt-5">
               {message}
             </InlineAlert>
           )}
           {error && (
-            <InlineAlert tone="danger" className="mt-5 text-left">
+            <InlineAlert tone="danger" className="mt-5">
               {error}
             </InlineAlert>
           )}
 
-          <p className="type-small mt-6 text-ink-mid">
-            Nothing yet? Check the spam folder, or send it again.
-          </p>
-
           <Button
             variant="primary"
             size="lg"
-            className="mt-4 w-full"
+            className="mt-7 w-full"
             onClick={handleResendVerification}
             disabled={isLoading}
           >
             {isLoading && <Spinner size={16} />}
-            {isLoading ? 'Sending…' : 'Resend verification email'}
+            {isLoading ? 'Sending…' : 'Send it again'}
           </Button>
 
-          <Button
-            variant="ghost"
-            className="mt-2 w-full"
-            onClick={() => {
-              setPendingVerification(false);
-              setVerificationEmail('');
-              setPassword('');
-              setUsername('');
-              setIsSignUp(false);
-            }}
-          >
-            Back to sign in
-          </Button>
+          <div className="mt-5 text-center">
+            <Button
+              variant="link"
+              onClick={() => {
+                setPendingVerification(false);
+                setVerificationEmail('');
+                setPassword('');
+                setUsername('');
+                setIsSignUp(false);
+              }}
+            >
+              Back to sign in
+            </Button>
+          </div>
         </Panel>
       </main>
     );
   }
 
   return (
-    <main className="relative flex min-h-dvh items-center justify-center p-4 py-10">
-      <DriftingCards />
+    <div className="grid min-h-dvh lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] xl:grid-cols-[1.15fr_1fr]">
+      <BrandPanel />
 
-      <div className="relative z-10 w-full max-w-[420px]">
-        <BrandMark />
-
-        <Panel className="p-8">
-          <div className="text-center">
-            <h2 className="type-h2 text-ink-hi">
-              {isSignUp ? 'Begin Your Journey' : 'Return to the Realm'}
-            </h2>
-            <p className="type-small mt-1 text-ink-low">
-              {isSignUp ? 'Create your destiny in the realm' : 'Your cards await your return'}
-            </p>
+      {/*
+        * The form half gets its own opaque ground. The shared background is deliberately
+        * faint, but "faint artwork behind a password field" is still artwork behind a
+        * password field — and the split only reads as a split if one side is picture and
+        * the other is paper.
+        */}
+      <main
+        id="main"
+        className="relative flex items-center justify-center px-6 py-14"
+        style={{ backgroundColor: '#0C0B0A' }}
+      >
+        <div className="w-full max-w-[380px]">
+          {/* The wordmark only appears here when the panel beside it is not on screen. */}
+          <div className="mb-10 lg:hidden">
+            <Image
+              src="/images/mystical-portal.png"
+              alt=""
+              width={52}
+              height={52}
+              priority
+              style={{ filter: 'drop-shadow(0 0 22px rgba(92,147,186,0.4))' }}
+            />
+            <h1 className="type-h1 mt-5 text-ink-hi">
+              Hand of <span className="text-ember-gradient">Fate</span>
+            </h1>
           </div>
 
-          <form onSubmit={isSignUp ? handleSignUp : handleSignIn} className="mt-7 space-y-4">
+          <h2 className="type-h1 text-ink-hi">
+            {isSignUp ? 'Make an account' : 'Sign in'}
+          </h2>
+          <p className="type-small mt-2 text-ink-low">
+            {isSignUp
+              ? 'One name, one address, and you are in the next duel.'
+              : 'Your matches and score are waiting where you left them.'}
+          </p>
+
+          <form
+            onSubmit={isSignUp ? handleSignUp : handleSignIn}
+            noValidate
+            className="mt-8 space-y-5"
+          >
             {isSignUp && (
-              <Field label="Username" htmlFor="username" icon={User}>
+              <Field label="Username" htmlFor="username" error={fieldErrors.username}>
                 <Input
                   id="username"
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Choose a unique username"
+                  placeholder="The name on the board"
                   autoComplete="username"
-                  required
+                  aria-invalid={!!fieldErrors.username}
                 />
               </Field>
             )}
 
-            <Field label="Email" htmlFor="email" icon={Mail}>
+            <Field label="Email" htmlFor="email" error={fieldErrors.email}>
               <Input
                 id="email"
                 type="email"
@@ -298,75 +384,71 @@ function UnifiedAuthPageContent() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 autoComplete="email"
-                required
+                aria-invalid={!!fieldErrors.email}
               />
             </Field>
 
             <Field
               label="Password"
               htmlFor="password"
-              icon={Lock}
-              hint={isSignUp ? 'Must be at least 6 characters' : undefined}
-              hintIcon={ShieldCheck}
+              hint={isSignUp ? 'At least 6 characters' : undefined}
+              error={fieldErrors.password}
             >
               <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder={isSignUp ? 'Minimum 6 characters' : 'Enter your password'}
+                placeholder={isSignUp ? 'At least 6 characters' : 'Your password'}
                 autoComplete={isSignUp ? 'new-password' : 'current-password'}
-                required
+                aria-invalid={!!fieldErrors.password}
               />
             </Field>
 
             {error && <InlineAlert tone="danger">{error}</InlineAlert>}
             {message && <InlineAlert tone="success">{message}</InlineAlert>}
 
-            <Button type="submit" variant="primary" size="lg" className="w-full" disabled={isLoading}>
+            <Button
+              type="submit"
+              variant="primary"
+              size="lg"
+              className="w-full"
+              disabled={isLoading}
+            >
               {isLoading && <Spinner size={16} />}
               {isLoading
                 ? isSignUp
-                  ? 'Forging…'
-                  : 'Entering…'
+                  ? 'Creating…'
+                  : 'Signing in…'
                 : isSignUp
-                  ? 'Forge Your Destiny'
-                  : 'Enter the Realm'}
+                  ? 'Create account'
+                  : 'Sign in'}
+              {!isLoading && <ArrowRight size={18} strokeWidth={1.75} />}
             </Button>
           </form>
 
-          <div className="mt-6 space-y-3 text-center">
+          <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-subtle pt-6">
             <p className="type-small text-ink-low">
-              {isSignUp ? 'Already have powers? ' : 'New to this realm? '}
-              <button
-                type="button"
-                onClick={() => {
-                  setIsSignUp(!isSignUp);
-                  setError('');
-                  setMessage('');
-                  setPassword('');
-                  if (!isSignUp) setUsername('');
-                }}
-                className="rounded-sm text-arcane-300 transition-colors duration-150 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcane-400"
-              >
-                {isSignUp ? 'Sign in to your realm' : 'Begin your mystical journey'}
-              </button>
+              {isSignUp ? 'Already have an account? ' : 'First time here? '}
+              <Button variant="link" size="sm" onClick={switchMode}>
+                {isSignUp ? 'Sign in' : 'Make one'}
+              </Button>
             </p>
 
-            <Button variant="ghost" size="md" onClick={() => setShowTutorial(true)}>
-              <BookOpen size={16} strokeWidth={1.75} />
-              How to Play
+            <Button variant="ghost" size="sm" onClick={() => setShowTutorial(true)}>
+              <BookOpen size={15} strokeWidth={1.75} />
+              How to play
             </Button>
           </div>
-        </Panel>
-      </div>
+        </div>
+      </main>
 
       <GameTutorial
         open={showTutorial}
         onClose={() => setShowTutorial(false)}
         finishLabel="Got it"
       />
-    </main>
+    </div>
   );
 }
 
@@ -375,7 +457,7 @@ export default function UnifiedAuthPage() {
     <Suspense
       fallback={
         <div className="flex min-h-dvh items-center justify-center">
-          <Spinner size={28} className="text-arcane-300" />
+          <Spinner size={26} className="text-ember-300" />
         </div>
       }
     >

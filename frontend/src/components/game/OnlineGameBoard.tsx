@@ -93,7 +93,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
   if (match.isLoading || !gameState) {
     return (
       <main className="flex min-h-dvh flex-col items-center justify-center gap-3">
-        <Spinner size={28} className="text-arcane-300" />
+        <Spinner size={28} className="text-steel-300" />
         <p className="type-small text-ink-low">Opening the arena…</p>
       </main>
     );
@@ -117,7 +117,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
       <main className="flex min-h-dvh items-center justify-center px-6 lg:hidden">
         <Panel className="w-full max-w-sm">
           <PanelBody className="text-center">
-            <Swords size={28} strokeWidth={1.75} className="mx-auto text-gold-400" />
+            <Swords size={28} strokeWidth={1.75} className="mx-auto text-ember-400" />
             <h1 className="type-h2 mt-4 text-ink-hi">Best played on a desktop</h1>
             <p className="type-small mt-2 text-ink-mid">
               The arena needs a window at least 1024 pixels wide to show the board and your hand
@@ -148,8 +148,14 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
              * and the hand, so the cell size is derived rather than guessed. Each part
              * of that subtraction is a variable, and the hand panel is pinned to
              * --hand, so the two cannot drift apart and start overlapping.
+             *
+             * The column is capped and centred as well. Without it the board sat as a
+             * ~280px island in the middle of a 1100px space while the hand panel under
+             * it stretched the full width — the two halves of the same screen on
+             * different measures, which is what made the arena read as unfinished on a
+             * wide monitor. They share one now.
              */
-            className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] gap-3"
+            className="mx-auto grid min-h-0 w-full max-w-[760px] grid-rows-[auto_minmax(0,1fr)_auto] gap-3"
             style={
               {
                 '--bar': '56px',
@@ -158,7 +164,7 @@ export default function OnlineGameBoard({ matchId, onBack }: OnlineGameBoardProp
                 '--gaps': '24px',
                 '--hand': '180px',
                 '--cell':
-                  'clamp(48px, calc((100dvh - var(--bar) - var(--pad) - var(--headers) - var(--gaps) - var(--hand) - 32px) / 5), 96px)',
+                  'clamp(48px, calc((100dvh - var(--bar) - var(--pad) - var(--headers) - var(--gaps) - var(--hand) - 32px) / 5), 112px)',
               } as React.CSSProperties
             }
           >

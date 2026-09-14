@@ -1,23 +1,21 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { Check, Globe, KeyRound, RotateCw, Users, Zap } from 'lucide-react';
+import { ArrowRight, KeyRound, RotateCw } from 'lucide-react';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CodeInput } from '@/components/ui/code-input';
 import { InlineAlert } from '@/components/ui/inline-alert';
 import { Modal } from '@/components/ui/modal';
-import { Panel, PanelBody } from '@/components/ui/panel';
+import { Panel } from '@/components/ui/panel';
 import { GameMode } from '@/types/gameMode';
 import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
 import { onlineGameService, ActiveGame } from '@/services/onlineGameService';
+import { cn } from '@/lib/utils';
 
 interface GameModeSelectionProps {
   onModeSelect: (mode: GameMode, matchId?: string) => void;
 }
-
-const LOCAL_FEATURES = ['Same device gameplay', 'No internet required', 'Perfect for friends & family'];
 
 export default function GameModeSelection({ onModeSelect }: GameModeSelectionProps) {
   const { user } = useUnifiedAuth();
@@ -107,114 +105,85 @@ export default function GameModeSelection({ onModeSelect }: GameModeSelectionPro
   };
 
   return (
-    <main className="flex min-h-dvh items-center justify-center px-6 py-10">
-      <div className="w-full max-w-4xl">
-        <div className="text-center">
-          <h1 className="text-gold-gradient font-display text-4xl font-bold tracking-[0.03em]">
-            Choose Your Path
-          </h1>
-          <div className="rule-gold mx-auto mt-3 w-40" />
-          <p className="mt-3 text-[15px] text-ink-mid">
-            Select your battlefield for mystical card combat
-          </p>
+    <main id="main" className="mx-auto flex min-h-dvh max-w-[720px] flex-col justify-center px-6 py-16">
+      <div className="stagger">
+        <p className="type-label text-ember-400">Online</p>
+        <h1 className="type-h1 mt-3 text-ink-hi">Start a duel</h1>
+        <p className="type-body mt-3 text-ink-mid">
+          Open a room and send the code, or type in the one you were sent. Either way the
+          board opens as soon as both of you are there.
+        </p>
+
+        {activeGame && (
+          <div className="mt-8">
+            <InlineAlert tone="warning">
+              <span className="text-ink-hi">You are already in a duel.</span> Rejoin it, or
+              start something else and give it up.
+            </InlineAlert>
+            <Button
+              size="lg"
+              variant="secondary"
+              className="mt-3 w-full border-success/40 text-success hover:border-success/70 hover:bg-success/10 hover:text-success sm:w-auto"
+              onClick={handleReconnect}
+            >
+              <RotateCw size={18} strokeWidth={1.75} />
+              Rejoin that duel
+            </Button>
+          </div>
+        )}
+
+        {/*
+         * Two rows, not two towers.
+         *
+         * These are a primary action and its alternative, and the old screen gave them
+         * equal billing as side-by-side cards — next to a third card that was greyed
+         * out at 45% and said "Coming Soon", which spent half the screen saying nothing.
+         * Stacked rows let the first one be visibly the main one, and the unbuilt modes
+         * shrink to the line of text they are worth.
+         */}
+        <div className="mt-9 space-y-3">
+          <ActionRow
+            title="Create a room"
+            body="You get a six-character code. Send it to whoever you are playing."
+            accent
+            disabled={dispatched}
+            onClick={startCreate}
+            icon={<ArrowRight size={18} strokeWidth={1.75} />}
+          />
+          <ActionRow
+            title="Join with a code"
+            body="Already been sent one? Type the six characters and you are in."
+            disabled={dispatched}
+            onClick={startJoin}
+            icon={<KeyRound size={18} strokeWidth={1.75} />}
+          />
         </div>
 
-        <div className="mt-8 grid items-stretch gap-5 md:grid-cols-2">
-          <Panel className="relative flex flex-col opacity-45">
-            <Badge tone="neutral" className="absolute right-4 top-4">
-              Coming Soon
-            </Badge>
-            <PanelBody className="flex flex-1 flex-col items-center pt-8 text-center">
-              <Users size={28} strokeWidth={1.75} className="text-ink-mid" />
-              <h2 className="type-h2 mt-4 text-ink-hi">Local Duel</h2>
-              <p className="type-small mt-2 text-ink-mid">
-                Face your opponent in person, sharing the same arena
-              </p>
-              <ul className="mt-5 w-full space-y-2 text-left">
-                {LOCAL_FEATURES.map((feature) => (
-                  <li key={feature} className="flex items-center gap-2 text-[13px] text-ink-low">
-                    <Check size={14} strokeWidth={1.75} className="shrink-0" />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-            </PanelBody>
-          </Panel>
-
-          <Panel className="flex flex-col" style={{ borderColor: 'rgba(217,174,78,0.25)' }}>
-            <PanelBody className="flex flex-1 flex-col items-center pt-8 text-center">
-              <Globe size={28} strokeWidth={1.75} className="text-gold-400" />
-              <h2 className="type-h2 mt-4 text-ink-hi">Global Arena</h2>
-              <p className="type-small mt-2 text-ink-mid">
-                Challenge mystics across realms in real-time duels
-              </p>
-
-              <div className="mt-6 w-full space-y-2.5">
-                {activeGame && (
-                  <>
-                    <InlineAlert tone="warning" className="text-left">
-                      You have a battle in progress
-                    </InlineAlert>
-                    <Button
-                      size="lg"
-                      className="w-full border-0 bg-gradient-to-b from-success to-[#27a86c] text-[#04231A] hover:brightness-[1.07]"
-                      onClick={handleReconnect}
-                    >
-                      <RotateCw size={18} strokeWidth={1.75} />
-                      Reconnect to Battle
-                    </Button>
-                  </>
-                )}
-
-                <Button
-                  variant="primary"
-                  size="lg"
-                  className="w-full"
-                  onClick={startCreate}
-                  disabled={dispatched}
-                >
-                  <Zap size={18} strokeWidth={1.75} />
-                  Create Game
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="lg"
-                  className="w-full"
-                  onClick={startJoin}
-                  disabled={dispatched}
-                >
-                  <KeyRound size={18} strokeWidth={1.75} />
-                  Join with Code
-                </Button>
-                <Button variant="ghost" size="lg" className="w-full" disabled>
-                  Quick Match (Coming Soon)
-                </Button>
-              </div>
-            </PanelBody>
-          </Panel>
-        </div>
+        <p className="type-small mt-8 border-t border-subtle pt-6 text-ink-low">
+          Quick match and local same-device duels are not built yet.
+        </p>
       </div>
 
       <Modal
         open={showJoin}
         onClose={() => setShowJoin(false)}
-        title="Join Mystical Battle"
+        title="Join a duel"
         widthClassName="max-w-md"
       >
         <p className="type-small text-ink-low">
-          Enter the six-character code your opponent shared with you.
+          The six characters your opponent sent you.
         </p>
 
-        <div className="mt-5">
+        <div className="mt-6">
           <CodeInput value={code} onChange={setCode} autoFocus />
         </div>
 
-        <div className="mt-6 flex justify-end gap-3">
+        <div className="mt-7 flex justify-end gap-3">
           <Button variant="ghost" onClick={() => setShowJoin(false)}>
-            Back
+            Cancel
           </Button>
           <Button variant="primary" onClick={submitJoin} disabled={code.length !== 6 || dispatched}>
-            Join Battle
+            Join
           </Button>
         </div>
       </Modal>
@@ -222,21 +191,73 @@ export default function GameModeSelection({ onModeSelect }: GameModeSelectionPro
       <Modal
         open={pendingAction !== null}
         onClose={() => setPendingAction(null)}
-        title="Abandon your current battle?"
+        title="Give up your current duel?"
         widthClassName="max-w-sm"
       >
         <p className="text-sm text-ink-mid">
-          You are already in a duel. Starting another one abandons it, and it cannot be resumed.
+          You are in a match already. Starting another one abandons it, and it cannot be
+          picked up again.
         </p>
         <div className="mt-6 flex justify-end gap-3">
           <Button variant="ghost" onClick={() => setPendingAction(null)}>
             Cancel
           </Button>
           <Button variant="danger" onClick={confirmAbandonAndContinue}>
-            Abandon &amp; continue
+            Abandon it
           </Button>
         </div>
       </Modal>
     </main>
+  );
+}
+
+interface ActionRowProps {
+  title: string;
+  body: string;
+  /** The one row on the screen that gets the accent. */
+  accent?: boolean;
+  disabled?: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+}
+
+/** A full-width row you press. The chevron slides on hover; the whole row presses. */
+function ActionRow({ title, body, accent, disabled, onClick, icon }: ActionRowProps) {
+  return (
+    <Panel
+      tone="quiet"
+      spotlight
+      className={cn(
+        'group w-full text-left transition-[transform,box-shadow] duration-200 ease-arcane',
+        !disabled && 'hover:-translate-y-0.5 hover:shadow-card',
+        disabled && 'pointer-events-none opacity-40',
+      )}
+    >
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={disabled}
+        className={cn(
+          'flex w-full items-center gap-5 rounded-lg border px-6 py-5 text-left transition-colors duration-200 ease-arcane',
+          'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ember-400',
+          accent
+            ? 'border-ember-400/35 hover:border-ember-400/60'
+            : 'border-subtle hover:border-strong',
+        )}
+      >
+        <span className="min-w-0 flex-1">
+          <span className="type-h3 block text-ink-hi">{title}</span>
+          <span className="type-small mt-1 block text-ink-mid">{body}</span>
+        </span>
+        <span
+          className={cn(
+            'flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] transition-transform duration-200 ease-arcane group-hover:translate-x-1',
+            accent ? 'bg-ember-400 text-[#231405]' : 'bg-white/[0.06] text-ink-mid',
+          )}
+        >
+          {icon}
+        </span>
+      </button>
+    </Panel>
   );
 }
