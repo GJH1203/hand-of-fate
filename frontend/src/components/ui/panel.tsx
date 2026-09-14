@@ -8,23 +8,29 @@ import { cn } from "@/lib/utils";
 /*
  * The surface everything sits on.
  *
- * Three tones, and on paper they mean something they could not mean on glass, where
- * every one of them was some quantity of white at some low alpha:
+ * Three tones, and on the night they mean something they could not mean on glass,
+ * where every one of them was some quantity of white at some low alpha:
  *
- *   raised  — `.sheet`. Bone stock with its fibre and the one shadow in the system,
- *             the cast a piece of paper genuinely makes on a table. For anything
- *             that is its own object.
- *   quiet   — paper-sunk, no edge. A well pressed into the sheet it is already on.
- *             The default for grouping, and it costs no rule and no shadow.
- *   outline — a full-weight ink rule and no fill. For things that are containers
- *             rather than objects.
+ *   raised  — `.panel`. A dark board inside a gilt frame, the way an altarpiece is
+ *             built: two rules with air between them, because a single line is a
+ *             border and two lines with a gap is a frame. For anything that is its
+ *             own object.
+ *   quiet   — night-2, no edge. A raised ground pressed into the panel it is already
+ *             on. The default for grouping, and it costs no rule at all.
+ *   outline — a gilt rule and no fill. For things that are containers rather than
+ *             objects.
+ *
+ * None of the three is arched. An arch marks a NICHE — something that holds a
+ * figure — and a panel that holds a list of rows is furniture, not a shrine. The
+ * arched variants are `.panel--arched` and `.niche`, applied by the screens that
+ * genuinely frame something.
  */
 const panelVariants = cva("relative", {
   variants: {
     tone: {
-      quiet: "bg-paper-sunk",
-      raised: "sheet",
-      outline: "border-rule border-ink bg-transparent",
+      quiet: "bg-night-2",
+      raised: "panel",
+      outline: "border-rule border-gold-deep bg-transparent",
     },
   },
   defaultVariants: {
@@ -34,22 +40,10 @@ const panelVariants = cva("relative", {
 
 export interface PanelProps
   extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof panelVariants> {
-  /**
-   * Accepted and ignored.
-   *
-   * This used to light the border under the cursor — a radial gradient tracking the
-   * pointer, which is the cheapest way to make a flat dark surface feel like a
-   * material and has nothing whatever to say about a sheet of paper. It is a glass
-   * idiom and there is no glass. The prop stays in the signature only because
-   * `GameModeSelection` still passes it; it can be deleted outright once that file
-   * has been through.
-   */
-  spotlight?: boolean;
-}
+    VariantProps<typeof panelVariants> {}
 
 const Panel = React.forwardRef<HTMLDivElement, PanelProps>(
-  ({ className, tone, spotlight: _spotlight, children, ...props }, ref) => (
+  ({ className, tone, children, ...props }, ref) => (
     <div ref={ref} className={cn(panelVariants({ tone }), className)} {...props}>
       {children}
     </div>
@@ -65,25 +59,31 @@ interface PanelHeaderProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "t
 }
 
 /**
- * The title, then a heavy rule under it.
+ * The title in Roman capitals, then a gilt rule under it.
  *
- * There used to be a short ember tick standing to the left of every heading, which
- * was itself a replacement for a gold icon. Both were a mark beside the words saying
- * "this is a heading" — the job the words were already doing. A 3px rule beneath
- * instead is how a section head is set on a printed page, it groups the title with
- * the body rather than with the margin, and `--rule-heavy` exists for exactly this.
+ * There used to be a short tick standing to the left of every heading, which was
+ * itself a replacement for a gold icon. Both were a mark beside the words saying
+ * "this is a heading" — the job the words were already doing. A rule beneath instead
+ * is how a section head is set on a page, and it groups the title with the body
+ * rather than with the margin.
+ *
+ * A header with nothing on its right is CENTRED, because this design is axial and a
+ * title with no counterweight ranged left is a composition apologising for itself.
+ * One with an `action` stays ranged left: there is no way to centre a line that has
+ * a control at one end of it, and pretending otherwise moves the title off the axis
+ * anyway.
  */
 function PanelHeader({ title, subtitle, action, className, ...props }: PanelHeaderProps) {
   return (
     <div className={cn("px-5 pb-3 pt-4", className)} {...props}>
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <h2 className="type-h2 truncate text-ink">{title}</h2>
-          {subtitle && <p className="type-small mt-0.5 text-ink-2">{subtitle}</p>}
+      <div className={cn("flex items-start justify-between gap-4", !action && "justify-center")}>
+        <div className={cn("min-w-0", !action && "text-center")}>
+          <h2 className="type-h2 truncate text-parchment">{title}</h2>
+          {subtitle && <p className="type-small mt-1 text-parchment-2">{subtitle}</p>}
         </div>
         {action}
       </div>
-      <div aria-hidden className="mt-2.5 border-t-heavy border-ink" />
+      <div aria-hidden className="mt-3 border-t-rule border-gold-deep" />
     </div>
   );
 }

@@ -15,16 +15,20 @@ interface CodeInputProps {
 const ALLOWED = /[^A-Z0-9]/g;
 
 /**
- * The room code, one character per slot — six letterpress slugs in a stick.
+ * The room code, one character per slot — six arched niches in a row.
  *
  * A six-character code pasted into a single text field is a form. Six slots is a
- * game — and it is also the only shape that makes a mistyped character obvious at
- * a glance. Typing advances, backspace retreats, and pasting the whole code (with
- * or without the surrounding link) fills every slot at once.
+ * game, and an arch around each one makes it an arcade: the same three-bay rhythm
+ * the board is built on, which is the one place in this interface where the shape
+ * language and the thing being shown are the same idea. An arch marks a niche —
+ * something that holds a figure — and a character of a code is exactly that.
  *
- * 32px, and that is now the only size the code is ever set at. It used to be 44px
- * in the lobby and 30px here, which meant the thing you read off one screen and
- * typed into the other did not look like the same object.
+ * Typing advances, backspace retreats, and pasting the whole code (with or without
+ * the surrounding link) fills every slot at once.
+ *
+ * `.type-code` is the only size the code is ever set at. It used to be 44px in the
+ * lobby and 30px here, which meant the thing you read off one screen and typed into
+ * the other did not look like the same object.
  */
 export function CodeInput({
   value,
@@ -111,23 +115,26 @@ export function CodeInput({
           aria-label={`${ariaLabel}, character ${index + 1} of ${length}`}
           className={cn(
             // `block`, because `.slug` is written for a flex box and this is an input.
-            "slug block h-16 w-12 text-center text-ink caret-verm",
-            // The mono, not the display serif: a room code is read out loud and typed
-            // back in, so it wants unambiguous figures, not elegant ones.
+            // The niche carries the arch, the night-2 fill and the gold-lit letter.
+            "slug block h-16 w-12 text-center caret-gold",
+            // Marcellus, because a room code is read aloud off one screen and typed
+            // into another: these are the inscriptional capitals, and the figures are
+            // lining and tabular so every slot is the same width whatever is in it.
             "type-code",
             /*
-             * `.type-code` tracks at 0.28em, which is right for a code set as one run
-             * of characters. Here the gap between the slugs is the tracking, and the
-             * trailing 0.28em on a single centred character would push it visibly
-             * left of its box.
+             * `.type-code` tracks at 0.3em, which is right for a code set as one run
+             * of characters. Here the gap between the niches is the tracking, and the
+             * trailing 0.3em on a single centred character would push it visibly left
+             * of its box.
              */
             "tracking-[0]",
             /*
-             * Focus is a heavier impression, not a glow and not a lift. Border-box
-             * sizing means going from 1.5px to 3px moves nothing on the page. The
-             * offset outline from globals.css is left alone on top of it.
+             * Focus takes the rule from the recess to the leaf — the niche lights up
+             * rather than lifting. Border-box sizing and an unchanged width mean
+             * nothing on the page moves. The offset nimbus from globals.css is left
+             * alone on top of it.
              */
-            "transition-[border-width] duration-ink focus:border-heavy",
+            "transition-colors duration-lume focus:border-gold",
           )}
         />
       ))}

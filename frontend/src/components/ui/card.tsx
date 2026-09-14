@@ -3,14 +3,19 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 
 /*
- * shadcn's Card, retoned onto paper. It is not dead — `Leaderboard` still builds
- * every panel out of it — but it is the last surface in the application that is not
- * a `Panel`, and the two should converge.
+ * shadcn's Card, retoned onto the night.
  *
- * A card here is a lifted object rather than a sheet: paper-raised stock inside a
- * full-weight ink rule, square, no shadow. The `shadow-sm` it shipped with is gone
- * for good, along with the 11px radius; the one shadow in this design belongs to
- * `.sheet` and is spent already.
+ * It has exactly one importer, `Leaderboard`, and `Leaderboard` has none of its own:
+ * nothing in the application renders it, so this whole file is reachable only
+ * through dead code. It is retoned rather than deleted because deleting a component
+ * another unit may be about to pick up is not this unit's call — but the two should
+ * converge on `Panel`, and the honest end state is that both this and the
+ * leaderboard go.
+ *
+ * A card here is a lifted object rather than a framed one: a night-1 board inside a
+ * single gilt rule, square, no shadow. The `shadow-sm` it shipped with is gone for
+ * good along with the 11px radius — depth in this design is a gilt frame and an
+ * aureole of drawn rings, and a blurred cast shadow is the idiom it exists against.
  */
 const Card = React.forwardRef<
   HTMLDivElement,
@@ -19,7 +24,7 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "border-rule border-ink bg-paper-raised text-ink",
+      "border-rule border-gold-deep bg-night-1 text-parchment",
       className
     )}
     {...props}
@@ -44,13 +49,14 @@ const CardTitle = React.forwardRef<
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
   /*
-   * `tracking-tight` is gone rather than retuned. A renaissance face opens up under
-   * its own weight; closing it is a grotesque's habit and there is no negative
-   * tracking anywhere in this system.
+   * `tracking-tight` is gone rather than retuned. Marcellus is cut from Roman
+   * inscriptional capitals and they are carved with air between them; closing that
+   * up is a grotesque's habit, and there is no negative tracking anywhere in this
+   * system.
    */
   <div
     ref={ref}
-    className={cn("type-h2 text-ink", className)}
+    className={cn("type-h2 text-parchment", className)}
     {...props}
   />
 ))
@@ -62,7 +68,7 @@ const CardDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("type-small text-ink-2", className)}
+    className={cn("type-small text-parchment-2", className)}
     {...props}
   />
 ))

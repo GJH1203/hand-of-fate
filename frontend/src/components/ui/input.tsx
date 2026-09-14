@@ -4,11 +4,11 @@ import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /*
- * One field recipe, and it lives in globals.css as `.field-input`: paper-raised
- * stock, a full-weight ink rule, mono figures. Everything the old input did with a
- * glow ring and a tinted shadow is now done with the weight of a line — including
- * the invalid state, which thickens the rule to 3px rather than turning it red, so
- * it survives greyscale and forced-colors.
+ * One field recipe, and it lives in globals.css as `.field-input`: a night-2 well
+ * inside a gilt rule, set in Spectral with lining tabular figures. Everything the
+ * old input did with a glow ring and a tinted shadow is done here with the weight
+ * and the colour of a line — including the invalid state, which goes to cinnabar
+ * rather than thickening, so it survives greyscale and forced-colors.
  *
  * `:user-invalid` (not `:invalid`) is set on the class in globals.css, with the
  * reasoning kept there: a half-typed address is not yet wrong, and marking it while
@@ -22,12 +22,12 @@ const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLI
       className={cn(
         "field-input",
         /*
-         * Disabled drops to the lighter rule and the disabled ink rather than to a
-         * lower opacity — weight and density carry state here, never transparency.
-         * The fill stays on paper-sunk: paper-deep never carries text, and a
-         * disabled field still has to be readable.
+         * Disabled drops the rule from gilt to the bare edge of the night and the
+         * text to `parchment-4`, which is the one value in the palette reserved for
+         * a disabled control and may never carry content. State is carried by
+         * weight and colour here, never by transparency.
          */
-        "disabled:cursor-not-allowed disabled:border-rule-min disabled:bg-paper-sunk disabled:text-ink-4",
+        "disabled:cursor-not-allowed disabled:border-night-3 disabled:bg-night-1 disabled:text-parchment-4",
         className,
       )}
       {...props}
@@ -39,6 +39,15 @@ Input.displayName = "Input";
 interface FieldProps {
   label: string;
   htmlFor: string;
+  /**
+   * Accepted and ignored, both of them.
+   *
+   * A glyph beside a label that already says "Email" is ornament, and ornament is
+   * the one thing this system spends nothing on: an icon here has to carry meaning
+   * the words do not — a copy button, a back arrow — or it does not appear. The
+   * props stay in the signature because eight other units compile against it; no
+   * call site passes either one today.
+   */
   icon?: LucideIcon;
   hint?: React.ReactNode;
   hintIcon?: LucideIcon;
@@ -50,23 +59,14 @@ interface FieldProps {
 /**
  * Label above, input, then one line underneath — a hint, or an error in its place.
  *
- * Label, hint and error are all mono. They are the apparatus around the printed
- * artefact rather than its text, and the serif has a hard 15px floor that none of
- * them could sit above without shouting.
+ * The label is a lapidary one: Marcellus capitals at 12px with open tracking, which
+ * is the apparatus around the field rather than its text. The line underneath is
+ * Spectral, because it is a sentence and sentences are set in the reading face.
  */
-function Field({
-  label,
-  htmlFor,
-  icon: Icon,
-  hint,
-  hintIcon: HintIcon,
-  error,
-  children,
-}: FieldProps) {
+function Field({ label, htmlFor, hint, error, children }: FieldProps) {
   return (
     <div>
-      <label htmlFor={htmlFor} className="type-label mb-2 flex items-center gap-1.5 text-ink-2">
-        {Icon && <Icon size={13} strokeWidth={1.75} aria-hidden />}
+      <label htmlFor={htmlFor} className="type-label mb-2 block text-parchment-2">
         {label}
       </label>
       {children}
@@ -74,17 +74,12 @@ function Field({
         <p
           id={`${htmlFor}-error`}
           role="alert"
-          className="mt-2 font-mono text-[12px] leading-[1.45] text-verm-deep"
+          className="mt-2 text-[13px] leading-[1.45] text-cinnabar"
         >
           {error}
         </p>
       ) : (
-        hint && (
-          <p className="mt-2 flex items-center gap-1.5 font-mono text-[12px] leading-[1.45] text-ink-3">
-            {HintIcon && <HintIcon size={13} strokeWidth={1.75} aria-hidden />}
-            {hint}
-          </p>
-        )
+        hint && <p className="mt-2 text-[13px] leading-[1.45] text-parchment-3">{hint}</p>
       )}
     </div>
   );

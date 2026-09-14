@@ -5,30 +5,30 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 /*
- * Five faces, printed rather than lit.
+ * Five faces, cut square and lettered in Roman capitals.
  *
- * The old set was a gradient key, an outlined key, a ghost, an underline and a red
- * outline — five, but only because a gradient and a glow were doing the work that a
- * rule now does. On paper the whole hierarchy is available in one ink: a control is
- * either the key plate solid, the key plate as an outline, or no edge at all until
- * you reach for it.
+ * A control is not a niche. The arch in this system marks something that CONTAINS a
+ * figure — a panel, a board square, a slug a room-code character is set in — and an
+ * arched button reads as a headstone. So every one of these is square, and the
+ * difference between them is the weight of a rule and whether the gold is lit or
+ * only drawn.
  *
- * primary  — `.btn--key`. The ink plate laid solid, paper knocked out of it. One per
- *            screen, on the thing the page exists to do. Its hover goes to
- *            vermillion-deep, which is the only place a colour plate ever fills a
- *            control.
- * secondary— `.btn--rule`. A ruled box. Anything you might do instead of the primary.
- * ghost    — `.btn--quiet`. No edge until hover, when the rule is printed.
+ * primary  — `.btn--key`. The gilded ground, with the ink knocked out of it. ONE per
+ *            screen, on the thing the page exists to do. Gold here is not a colour,
+ *            it is light: spent on everything it is a casino, spent once it is a
+ *            reliquary.
+ * secondary— `.btn`. A gilt rule around nothing. Anything you might do instead of
+ *            the primary.
+ * ghost    — `.btn--quiet`. No edge until you reach for it, when the rule is drawn.
  * link     — `.link`. A word with a rule under it. Most tertiary actions are really
  *            links wearing a button's clothes, so they get to look like links.
- * danger   — a ruled box lettered in vermillion-deep. Deep rather than the full
- *            vermillion because the label is 12px and `--verm` is only legible as
- *            text at 24px and up.
+ * danger   — a ruled box lettered in cinnabar. Cinnabar is rubrication: in a
+ *            manuscript red is an index rather than an emotion, and it marks the one
+ *            place you are meant to look before you commit to something.
  *
- * There is no fill that fakes light and no shadow anywhere. The press is
- * translateY(1px) and nothing else: on a press the ink is pushed INTO the sheet, so
- * a control goes down. It never lifts. `.btn:active` in globals.css carries that for
- * every variant except the link, which is not a `.btn` and gets it here.
+ * There is no gradient faking light on any of them and no shadow anywhere. Depth in
+ * this design is a gilt frame and an aureole of drawn rings, and both belong to
+ * surfaces rather than controls.
  */
 const buttonVariants = cva(
   "inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap " +
@@ -37,12 +37,21 @@ const buttonVariants = cva(
     variants: {
       variant: {
         primary: "btn btn--key",
-        secondary: "btn btn--rule",
+        secondary: "btn",
         ghost: "btn btn--quiet",
         link:
-          "link active:translate-y-px " +
-          "disabled:cursor-not-allowed disabled:border-b-rule-min disabled:text-ink-4",
-        danger: "btn btn--rule border-verm-deep text-verm-deep",
+          "link disabled:cursor-not-allowed disabled:border-b-night-3 disabled:text-parchment-4",
+        /*
+         * The hover pair is written as an arbitrary variant rather than `hover:`.
+         * `.btn:hover:not(:disabled)` in globals.css scores (0,3,0) and takes the
+         * border back to gold; a plain `hover:border-cinnabar` is only (0,2,0) and
+         * loses to it, so a danger control turned gold under the cursor. Matching
+         * the selector matches the specificity, and the utility layer is emitted
+         * after the component layer, so the later rule wins the tie.
+         */
+        danger:
+          "btn border-cinnabar text-cinnabar " +
+          "[&:hover:not(:disabled)]:border-cinnabar [&:hover:not(:disabled)]:bg-cinnabar/10",
       },
       size: {
         sm: "h-8 px-3 text-[11px] [&_svg]:size-3.5",

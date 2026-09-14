@@ -27,10 +27,18 @@ interface ModalProps {
  * Every dialog in the application — confirmations, the join form, the tutorial,
  * the result screen. `window.alert` is not used anywhere.
  *
- * A dialog is a second sheet laid on top of the first, so it is literally `.sheet`
- * and carries the one shadow in the system. The overlay dims the table rather than
- * blurring it: frosted glass is a lens, and there is no glass here — the sheet
- * underneath is simply further from the light.
+ * A dialog is a panel with an arched head, standing on the axis. The overlay dims
+ * the firmament rather than blurring it: frosted glass is a lens, and there is no
+ * glass in this design — the sky behind is simply further from the light.
+ *
+ * THE HEAD IS A TYMPANUM RATHER THAN AN ARCH ON THE PANEL ITSELF, and the reason is
+ * geometric. `--arch` is a semicircular head expressed as a percentage — 50% of the
+ * width by 22% of the height — so on a tall dialog it eats the top corners entirely:
+ * measured on a 448×400 panel the border at 12px in from the right edge is already
+ * 60px down the page, and a close control in that corner floats outside the frame.
+ * Arching a fixed-height band at the head instead keeps the arch, keeps the panel's
+ * corners square, and leaves the two spandrels beside the dome as real space. The
+ * close control stands in the right-hand one, which is what a spandrel is for.
  */
 export function Modal({
   open,
@@ -89,7 +97,7 @@ export function Modal({
   return createPortal(
     <div
       className="fixed inset-0 z-overlay flex items-center justify-center p-4"
-      style={{ backgroundColor: "rgba(10,5,2,0.62)" }}
+      style={{ backgroundColor: "rgba(3,4,10,0.72)" }}
       onMouseDown={(event) => {
         if (closeOnOverlayClick && event.target === event.currentTarget) onClose();
       }}
@@ -99,36 +107,44 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         tabIndex={-1}
-        className={cn("sheet relative w-full outline-none", widthClassName, className)}
+        className={cn("panel relative w-full outline-none", widthClassName, className)}
         /*
          * `card-settle` is the keyframe a placed card uses: it arrives a few pixels
-         * proud and settles into the sheet. A dialog is a sheet being put down, so it
-         * gets the same motion rather than a scale-and-fade of its own.
+         * proud and settles onto the ground. A dialog is a panel being set down, so
+         * it gets the same motion rather than a scale-and-fade of its own.
          */
-        style={{ animation: "card-settle var(--t-move) var(--ease-settle)" }}
+        style={{ animation: "card-settle var(--t-move) var(--ease-rise)" }}
       >
         {(title || showCloseButton) && (
-          <div className="flex items-start justify-between gap-4 px-6 pb-4 pt-5">
-            {title ? <h2 className="type-h2 text-ink">{title}</h2> : <span />}
+          /* Without a title there is no dome, so the band still has to reserve the
+             height the close control stands in. */
+          <div className={cn("relative", !title && "h-12")}>
+            {title && (
+              <div className="mx-12 mt-4 rounded-arch bg-night-2 px-5 pb-3 pt-6">
+                <h2 className="type-h2 text-center text-gold-lit">{title}</h2>
+              </div>
+            )}
             {showCloseButton && (
               <button
                 type="button"
                 onClick={onClose}
                 aria-label="Close"
-                className="-mr-2 -mt-1 flex h-9 w-9 shrink-0 items-center justify-center text-ink-3 transition-colors duration-ink hover:bg-paper-deep hover:text-ink"
+                className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center text-parchment-3 transition-colors duration-lume hover:bg-night-2 hover:text-gold-lit"
               >
-                <X size={18} strokeWidth={1.75} />
+                <X size={18} strokeWidth={1.5} />
               </button>
             )}
           </div>
         )}
 
-        <div className={contentClassName ?? cn("px-6", title || showCloseButton ? "pb-6" : "py-6")}>
+        <div
+          className={contentClassName ?? cn("px-6", title || showCloseButton ? "pb-6 pt-5" : "py-6")}
+        >
           {children}
         </div>
 
         {footer && (
-          <div className="flex items-center justify-end gap-3 border-t-hair border-ink px-6 py-4">
+          <div className="flex items-center justify-center gap-3 border-t-hair border-gold-deep px-6 py-4">
             {footer}
           </div>
         )}
@@ -162,8 +178,10 @@ export function ConfirmModal({
 }: ConfirmModalProps) {
   return (
     <Modal open={open} onClose={onCancel} title={title} widthClassName="max-w-sm">
-      <p className="type-small text-ink-2">{description}</p>
-      <div className="mt-6 flex justify-end gap-3">
+      {/* Centred, like everything else here: a question put to somebody is set on
+          the axis, not ranged left with its answers pushed into a corner. */}
+      <p className="type-small mx-auto max-w-[42ch] text-center text-parchment-2">{description}</p>
+      <div className="mt-7 flex justify-center gap-3">
         <Button variant="ghost" onClick={onCancel}>
           {cancelLabel}
         </Button>
