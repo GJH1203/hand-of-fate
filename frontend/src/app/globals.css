@@ -3,315 +3,713 @@
 @tailwind utilities;
 
 /*
- * Ember & Ash — the design system.
+ * THE TABLE — the design system.
  *
- * Three decisions hold the whole thing together.
+ * Three materials, in a stack, and the whole system falls out of them.
  *
- * One accent. The old palette led with gold *and* violet, which meant no colour on
- * the page was the important one. Ember is the only accent now, and "warning" is an
- * alias of it, because every warning here is really the same request for attention.
+ *   THE TABLE   dark walnut. The viewport. This is where the page ends.
+ *   THE SHEET   bone paper laid on it, printed in a black key plate and two
+ *               colour plates. Every surface of the interface is on this sheet.
+ *   THE CARDS   the artwork, which was always dark navy with a gold keyline —
+ *               objects that want to lie on something pale.
  *
- * The duel is warm against cool. Your cards are ember, your opponent's are cold
- * steel. Crimson used to do double duty as "the other player" and "something went
- * wrong" — two meanings on one colour, on a screen where both appear at once.
- * Crimson now means only the second. Warm against cool also survives colour
- * blindness, which gold against crimson did not.
+ * Why a table at all: a page of paper running to all four edges of the viewport
+ * at every width is a background-colour wearing a costume. A sheet has
+ * dimensions. Giving it an edge, and something behind that edge, is what buys
+ * the hierarchy (on the sheet or off it), the home for the margin line, and a
+ * ground for the grain to sit against.
  *
- * The ground is warm. Near-black with a little brown in it, so the indigo arena
- * art and the blue lightning read as the only cold light in the room.
+ * THE ONE RULE THAT SHAPES EVERYTHING: there is one key plate in black and two
+ * colour plates, vermillion and prussian. Ownership is *which plate you were
+ * printed on* — a position, a hatch direction, a rule weight, an ink — never a
+ * border colour. Every visual decision below follows from that.
  */
 
 @layer base {
   :root {
-    /* Ink — warm near-black, darkest at the page, lighter as surfaces stack */
-    --bg-0: #0c0b0a;
-    --bg-1: #141210;
-    --bg-2: #1c1a17;
-    --bg-3: #2a2621;
+    color-scheme: light;
 
-    /* Borders and text, tinted to the same warm family as the ground */
-    --border-subtle: rgba(242, 238, 231, 0.09);
-    --border-strong: rgba(242, 238, 231, 0.18);
-    --text-hi: #f2eee7;
-    --text-mid: #a8a29a;
-    --text-low: #7a746c;
+    /* ───────────────────────────────────────────────────────────────
+       THE TABLE. Only three values, because it is furniture and must
+       never compete with the sheet. The walnut image carries the grain;
+       these are the fallback and the edge.
+       ─────────────────────────────────────────────────────────────── */
+    --table: #2a1a10;
+    --table-deep: #140c07;
+    --table-edge: #0b0603;
 
-    /* Ember — the only accent. Lit brass, not the yellow gold it replaces. */
-    --ember-300: #f0b268;
-    --ember-400: #d98e43;
-    --ember-500: #a9662a;
-    --ember-glow: rgba(217, 142, 67, 0.22);
+    /* ───────────────────────────────────────────────────────────────
+       PAPER — one stock at four depths. A single flat fill has no value
+       range, so nothing printed on it looks lit.
+       ─────────────────────────────────────────────────────────────── */
+    --paper-raised: #f2ebdc; /* cards, fields, the lifted slug */
+    --paper: #ede4d2; /* the sheet itself. THE default ground */
+    --paper-sunk: #e8e0cf; /* wells, the board mat */
+    --paper-deep: #dcd2bc; /* empty cells, disabled fills. NEVER carries text */
 
-    /* Steel — the opponent, and anything purely informational */
-    --steel-300: #8fbbd9;
-    --steel-400: #5c93ba;
-    --steel-500: #3e6b8c;
-    --steel-glow: rgba(92, 147, 186, 0.28);
+    /* ───────────────────────────────────────────────────────────────
+       THE KEY PLATE — one lampblack at four densities.
+       A halftone ramp of a single ink is exactly what a press would do,
+       so the accessible ramp and the authentic ramp are the same object.
+       #1A1614 is warm: lampblack in linseed varnish is never neutral, and
+       a pure #000 keyline is the first thing that gives away a fake.
+       Ratios are against --paper (14.23 / 7.84 / 5.13 / 3.56).
+       ─────────────────────────────────────────────────────────────── */
+    --ink: #1a1614;
+    --ink-2: #48423c; /* secondary prose */
+    --ink-3: #645d55; /* tertiary, placeholders. NOT on --paper-deep */
+    --ink-4: #7d766b; /* disabled only. NOT on --paper-deep */
 
-    /* Semantic. Warning is ember on purpose; info is steel on purpose. */
-    --success: #5fbf8f;
-    --danger: #e0645c;
-    --warning: #d98e43;
-    --info: #5c93ba;
+    /* ───────────────────────────────────────────────────────────────
+       PLATE ONE — VERMILLION. This is YOU.
+       Cinnabar, orange-leaning, not crimson. Three stops because the one
+       value fails AA for small text and there is no way around that.
+       ─────────────────────────────────────────────────────────────── */
+    --verm: #c4351f; /* fills, hatch, pips, rules. Text only at 24px+ */
+    --verm-text: #b1301c; /* vermillion text below 24px */
+    --verm-deep: #7e2214; /* knockout ground, small text anywhere */
+
+    /* ───────────────────────────────────────────────────────────────
+       PLATE TWO — PRUSSIAN. This is THEM.
+       One value only, deliberately: it already clears AA on every paper
+       step, so it needs no ramp. The asymmetry with vermillion is real
+       and is not tidied up — a press has one can of each ink and they
+       are not equally dark.
+       ─────────────────────────────────────────────────────────────── */
+    --prus: #2a4a7a;
+
+    /* Attention. FILL AND RULE ONLY, NEVER TEXT — 3.59:1 on the sheet. */
+    --ochre: #9a6e23;
 
     /*
-     * Radii vary by how big the thing is. A 6px corner on a full-width panel looks
-     * like a mistake, and a 16px corner on a badge looks like a speech bubble.
+     * There is no green, no success, no danger, no info. The Bootstrap
+     * quartet is inherited furniture. This game has one status that
+     * matters (whose turn) and one failure (the socket dropped). A draw
+     * is not a third colour, it is both plates. An error is not a
+     * player's colour — it is ink in a ruled box, the way an errata slip
+     * is set. That permanently fixes the bug the old system documented:
+     * crimson meaning both "the opponent" and "something went wrong".
      */
-    --radius-xs: 4px;
-    --radius-sm: 7px;
-    --radius-md: 11px;
-    --radius-lg: 16px;
 
-    /*
-     * Shadows carry the ground's hue rather than pure black, and they all fall from
-     * the same place — above, slightly in front — so the page has one light source.
-     */
-    --shadow-sm: 0 2px 6px -2px rgba(8, 6, 4, 0.6);
-    --shadow-card: 0 18px 44px -14px rgba(8, 6, 4, 0.85), 0 2px 8px -3px rgba(8, 6, 4, 0.5);
-    --shadow-lift: 0 26px 60px -18px rgba(8, 6, 4, 0.9), 0 3px 10px -4px rgba(8, 6, 4, 0.55);
-    --glow-ember: 0 0 0 1px rgba(217, 142, 67, 0.45), 0 0 26px -4px rgba(217, 142, 67, 0.38);
-    --glow-steel: 0 0 0 1px rgba(92, 147, 186, 0.45), 0 0 24px -4px rgba(92, 147, 186, 0.32);
+    /* ───────────────────────────────────────────────────────────────
+       RULES — weight carries hierarchy, not opacity.
+       On glass, hierarchy is white at low alpha. On paper the ink is
+       full strength and THE LINE GETS HEAVIER.
+       ─────────────────────────────────────────────────────────────── */
+    --rule-hair: 0.75px; /* ornamental dividers. Never a control edge */
+    --rule: 1.5px; /* every control, card and panel edge */
+    --rule-heavy: 3px; /* section heads, the errata box */
+    --rule-ghost: #b5ac9c; /* decoration only — 1.78:1, may not bound a control */
+    --rule-min: #8c8271; /* 3.00:1. The floor when an edge must be lighter than ink */
 
-    /* One stacking scale, so nothing ever needs a 9999 again. */
-    --z-base: 0;
+    /* ───────────────────────────────────────────────────────────────
+       MISREGISTRATION — two global constants, not per-element jitter.
+       Real stencil error is a per-SHEET bias. One direction per ink,
+       constant everywhere, applied only to the colour layer; the key
+       plate never moves. Two ghosts moving opposite ways on one element
+       is anaglyph, not print, so no element ever carries both.
+       ─────────────────────────────────────────────────────────────── */
+    --plate-verm-x: 0.6px;
+    --plate-verm-y: -0.5px;
+    --plate-prus-x: -0.5px;
+    --plate-prus-y: 0.4px;
+
+    /* ───────────────────────────────────────────────────────────────
+       CORNERS. A sheet is cut with a knife. Two values, one of them 0.
+       ─────────────────────────────────────────────────────────────── */
+    --r-0: 0;
+    --r-1: 2px; /* the die-cut card edge, and nothing else */
+
+    /* ───────────────────────────────────────────────────────────────
+       MOTION. Two durations. Paper is either still or it has been moved.
+       ─────────────────────────────────────────────────────────────── */
+    --t-ink: 90ms; /* colour and rule weight. Ink does not fade in slowly */
+    --t-move: 260ms; /* anything that physically travels */
+    --ease-settle: cubic-bezier(0.2, 0.9, 0.25, 1);
+
+    /* Stacking. */
     --z-raised: 10;
     --z-sticky: 30;
     --z-overlay: 50;
     --z-toast: 60;
 
     /*
-     * shadcn's variables, pointed at the palette above, so the components that still
-     * read them land in the same world as everything else.
+     * shadcn's variables, pointed at the sheet, so the handful of
+     * components that still read them land on paper rather than
+     * rendering the stock light theme's blue-grey.
      */
-    --background: 30 10% 5%;
-    --foreground: 38 26% 93%;
-    --card: 30 12% 7%;
-    --card-foreground: 38 26% 93%;
-    --popover: 30 12% 7%;
-    --popover-foreground: 38 26% 93%;
-    --primary: 28 68% 56%;
-    --primary-foreground: 30 40% 6%;
-    --secondary: 30 10% 11%;
-    --secondary-foreground: 38 26% 93%;
-    --muted: 30 10% 11%;
-    --muted-foreground: 33 7% 63%;
-    --accent: 28 68% 56%;
-    --accent-foreground: 30 40% 6%;
-    --destructive: 4 68% 62%;
-    --destructive-foreground: 38 26% 93%;
-    --border: 30 9% 18%;
-    --input: 30 9% 18%;
-    --ring: 28 68% 56%;
-    --radius: 0.6875rem;
+    --background: 40 41% 88%;
+    --foreground: 20 11% 9%;
+    --card: 40 47% 91%;
+    --card-foreground: 20 11% 9%;
+    --popover: 40 47% 91%;
+    --popover-foreground: 20 11% 9%;
+    --primary: 20 11% 9%;
+    --primary-foreground: 40 41% 88%;
+    --secondary: 40 33% 86%;
+    --secondary-foreground: 20 11% 9%;
+    --muted: 40 33% 86%;
+    --muted-foreground: 27 8% 36%;
+    --accent: 9 72% 44%;
+    --accent-foreground: 40 47% 91%;
+    --destructive: 9 72% 44%;
+    --destructive-foreground: 40 47% 91%;
+    --border: 20 11% 9%;
+    --input: 20 11% 9%;
+    --ring: 9 72% 44%;
+    --radius: 0;
   }
 }
 
 @layer base {
   * {
-    @apply border-border;
+    border-color: var(--ink);
   }
 
   html {
-    color-scheme: dark;
-    scroll-behavior: smooth;
+    /*
+     * Load-bearing, not decorative: this is the opt-out for Chrome's Auto
+     * Dark Theme on Android and for Samsung Internet. Without it those
+     * browsers algorithmically invert a bone-paper interface and every
+     * contrast ratio in this file becomes fiction.
+     */
+    color-scheme: light;
+    background-color: var(--table-deep);
   }
 
   body {
-    background-color: var(--bg-0);
-    color: var(--text-hi);
-    font-family: var(--font-ui), system-ui, -apple-system, sans-serif;
-    font-size: 0.9375rem;
-    line-height: 1.6;
+    /* The serif is the default voice. On a printed sheet, prose is the norm. */
+    font-family: var(--font-display), Georgia, "Times New Roman", serif;
+    font-size: 17px; /* not 15 — EB Garamond's x-height is small */
+    line-height: 1.55;
+    color: var(--ink);
+    background-color: var(--table-deep);
+
     /*
-     * Space Grotesk ships proportional figures. Every number in a card game sits in
-     * a column that changes — scores, power, codes, counters — so they are lined and
-     * tabular everywhere, not only where somebody remembered to add a class.
+     * Forced globally and never overridden. EB Garamond defaults to
+     * old-style proportional figures: 3, 4, 5, 7 and 9 descend below the
+     * baseline and none are the same height. In a score column that
+     * updates every move that is unreadable. This project has written the
+     * same lesson down three times; this is the last time.
      */
-    font-variant-numeric: tabular-nums lining-nums;
-    -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeLegibility;
+    font-variant-numeric: lining-nums tabular-nums;
+
+    /*
+     * -webkit-font-smoothing: antialiased is deliberately absent. It is a
+     * dark-UI reflex — on a light ground it thins the strokes, and EB
+     * Garamond's hairlines are fine enough already.
+     */
   }
 
   h1,
-  h2 {
+  h2,
+  h3 {
     font-family: var(--font-display), Georgia, serif;
-    font-weight: 600;
-    /* Large type needs the air taken out of it, not added. */
-    letter-spacing: -0.02em;
-    text-wrap: balance;
-  }
-
-  h3,
-  h4,
-  h5,
-  h6 {
-    font-family: var(--font-ui), system-ui, sans-serif;
-    font-weight: 600;
-    letter-spacing: -0.01em;
-    text-wrap: balance;
-  }
-
-  p {
-    text-wrap: pretty;
+    font-weight: 500;
+    /* Positive tracking. A renaissance face opens up; it does not close. */
+    letter-spacing: 0.005em;
   }
 
   /*
-   * The reason the login inputs used to turn into two white plasters: Chrome paints
-   * its own autofill background, and the only way to stop it is to cover it with an
-   * inset shadow, then park the transition far enough in the future that it never runs.
+   * Chrome paints its own autofill background and the only way to stop it
+   * is to cover it with an inset shadow, then park the transition far
+   * enough in the future that it never runs. Retuned for paper — the old
+   * value filled the field with #1C1A17 and the caret with ember.
    */
   input:-webkit-autofill,
   input:-webkit-autofill:hover,
   input:-webkit-autofill:focus,
   input:-webkit-autofill:active {
-    -webkit-box-shadow: 0 0 0 1000px var(--bg-2) inset;
-    -webkit-text-fill-color: var(--text-hi);
-    caret-color: var(--ember-300);
+    -webkit-box-shadow: 0 0 0 1000px var(--paper-raised) inset;
+    -webkit-text-fill-color: var(--ink);
+    caret-color: var(--verm);
     transition: background-color 9999s ease-in-out 0s;
   }
 
   ::selection {
-    background: rgba(217, 142, 67, 0.3);
-    color: var(--text-hi);
+    background: var(--verm);
+    color: var(--paper-raised);
   }
 
   ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+    width: 12px;
+    height: 12px;
   }
   ::-webkit-scrollbar-track {
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: var(--bg-3);
-    border-radius: 999px;
-    border: 3px solid transparent;
+    background: var(--ink-4);
+    border: 4px solid transparent;
     background-clip: content-box;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(217, 142, 67, 0.45);
+    background: var(--ink-2);
     background-clip: content-box;
   }
 }
 
 @layer components {
+  /* ═══════════════════════════════════════════════════════════════════
+     THE TABLE AND THE SHEET
+     ═══════════════════════════════════════════════════════════════════ */
+
   /*
-   * Type scale.
-   *
-   * The display face is Cormorant Garamond, a high-contrast old-style serif, and it
-   * only works large: below roughly 20px its thin strokes disappear on a dark ground.
-   * So the split is by size rather than by role — serif for anything display-sized,
-   * Space Grotesk for everything a player has to read quickly, numbers included.
+   * The table. Walnut, darkened at the edges so the eye stays on the sheet.
+   * Fixed rather than scrolling, because a table does not move when you
+   * slide a piece of paper up it.
    */
+  /*
+   * The table.
+   *
+   * Three explicit layers rather than a background plus two pseudo-elements.
+   * The wood needs a `filter` to be visible at all — the source photograph is a
+   * very dark walnut and reads as flat brown-black raw — and a filtered
+   * pseudo-element on a negatively-stacked fixed parent disappears behind the
+   * body's own background. Real elements, painted in order, cannot do that.
+   */
+  .table-ground {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-color: var(--table);
+  }
+  .table-ground__wood {
+    position: absolute;
+    inset: 0;
+    /*
+     * `cover`, not a tile. The photograph has its own vignette baked in, so
+     * repeating it lays a grid of dark blobs across the table and the seams are
+     * the first thing you see. One copy, stretched, and its falloff is the
+     * table's falloff.
+     */
+    background: url("/backgrounds/wooden-table.png") center / cover no-repeat;
+    /*
+     * Enough lift for the figure to read, and no more. At brightness(2.4) this
+     * is polished mahogany and it competes with the sheet for attention; the
+     * table is furniture and its whole job is to be the thing you are not
+     * looking at. Desaturated slightly for the same reason.
+     */
+    filter: brightness(1.5) saturate(0.85) contrast(0.96);
+  }
+  .table-ground__vignette {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(135% 105% at 50% 40%, rgba(0, 0, 0, 0) 22%, rgba(6, 3, 1, 0.72) 100%);
+  }
+
+  /*
+   * The sheet.
+   *
+   * This carries THE ONE SHADOW IN THE SYSTEM. Everything else in this
+   * file is forbidden a box-shadow, because shadow-on-a-rounded-rect is
+   * the depth vocabulary the whole design is built to avoid. A sheet of
+   * paper lying on a table genuinely casts one, so this is the single
+   * place the rule is spent — a hairline of lit edge along the top, a
+   * tight contact shadow, and a longer soft cast beneath.
+   */
+  .sheet {
+    position: relative;
+    background-color: var(--paper);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 252, 245, 0.5),
+      0 2px 3px rgba(10, 5, 2, 0.5),
+      0 22px 46px -14px rgba(10, 5, 2, 0.72);
+  }
+
+  /*
+   * Paper fibre. Two layers: a coarse mottle that gives the stock a value
+   * range, and a fine fibre. Both multiply, so they darken the sheet
+   * unevenly the way real stock does rather than laying grey film over it.
+   * `isolation: isolate` is mandatory — without it the multiply reaches
+   * through to the table and the sheet turns muddy at its edges.
+   */
+  .sheet {
+    isolation: isolate;
+  }
+  .sheet::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    mix-blend-mode: multiply;
+    opacity: 0.5;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23f)' opacity='0.5'/%3E%3C/svg%3E");
+  }
+  /* Everything a sheet contains sits above its own fibre. */
+  .sheet > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     TYPE
+     The family rule, one line, greppable: nothing below 15px is ever set
+     in the serif, and every number anywhere is set in the mono.
+     ═══════════════════════════════════════════════════════════════════ */
+
   .type-display {
     font-family: var(--font-display), Georgia, serif;
-    font-size: clamp(2.75rem, 1.6rem + 3.6vw, 4.5rem);
-    font-weight: 600;
-    line-height: 0.94;
-    letter-spacing: -0.035em;
+    font-weight: 500;
+    font-size: clamp(2.5rem, 1.7rem + 3.1vw, 3.75rem);
+    line-height: 1.05;
+    letter-spacing: 0.005em;
   }
   .type-h1 {
     font-family: var(--font-display), Georgia, serif;
-    font-size: clamp(2rem, 1.4rem + 1.9vw, 2.75rem);
-    font-weight: 600;
-    line-height: 1.04;
-    letter-spacing: -0.028em;
+    font-weight: 500;
+    font-size: 2.25rem;
+    line-height: 1.1;
+    letter-spacing: 0.005em;
   }
   .type-h2 {
     font-family: var(--font-display), Georgia, serif;
+    font-weight: 500;
     font-size: 1.5rem;
-    font-weight: 600;
-    line-height: 1.2;
-    letter-spacing: -0.018em;
+    line-height: 1.18;
+    letter-spacing: 0.006em;
   }
   .type-h3 {
-    font-family: var(--font-ui), system-ui, sans-serif;
-    font-size: 1.0625rem;
+    font-family: var(--font-display), Georgia, serif;
     font-weight: 600;
-    line-height: 1.35;
-    letter-spacing: -0.01em;
+    font-size: 1.1875rem;
+    line-height: 1.3;
+    letter-spacing: 0.008em;
   }
   .type-body {
-    font-size: 0.9375rem;
-    line-height: 1.65;
-    /* Roughly 65 characters. Long measures are why the old rule lists read as a wall. */
-    max-width: 62ch;
+    font-family: var(--font-display), Georgia, serif;
+    font-weight: 400;
+    font-size: 1.0625rem;
+    line-height: 1.55;
+    /*
+     * 47ch, not the safe 62. This is the measure of a text block on a card
+     * back. It rags more than a web measure does and that is accepted.
+     */
+    max-width: 47ch;
   }
   .type-small {
-    font-size: 0.8125rem;
-    line-height: 1.55;
+    font-family: var(--font-display), Georgia, serif;
+    font-weight: 400;
+    font-size: 0.9375rem; /* 15px — THE SERIF FLOOR */
+    line-height: 1.5;
   }
+
   /*
-   * Labels. Small caps rather than shouted uppercase: the same job, without the
-   * all-caps texture the old design put on every third element.
+   * The mono register. Real uppercase one step down with open tracking,
+   * never `font-variant-caps: small-caps` — on a family with no `smcp`
+   * table that synthesises scaled capitals at the wrong stroke weight,
+   * which is plainly visible at 12px. The old `.type-label` was doing
+   * exactly that. `font-variant-caps` appears nowhere in this codebase.
    */
   .type-label {
-    font-family: var(--font-ui), system-ui, sans-serif;
-    font-size: 0.75rem;
+    font-family: var(--font-mono), ui-monospace, monospace;
     font-weight: 500;
-    line-height: 1.4;
-    font-variant-caps: all-small-caps;
-    letter-spacing: 0.1em;
-  }
-  /* Kept for the few places that genuinely want a machine label. */
-  .type-micro {
     font-size: 0.6875rem;
+    line-height: 1.2;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+  }
+  .type-micro {
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-weight: 400;
+    font-size: 0.625rem;
+    line-height: 1.2;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+  }
+  .type-num {
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-weight: 500;
+    font-variant-numeric: lining-nums tabular-nums;
+    letter-spacing: 0;
+  }
+  .type-code {
+    font-family: var(--font-mono), ui-monospace, monospace;
     font-weight: 600;
-    line-height: 1.4;
+    font-size: 2rem;
+    letter-spacing: 0.28em;
+    font-variant-numeric: lining-nums tabular-nums;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     CONTROLS
+     Square, ruled, and pressed. No fills that fake light, no shadows.
+     ═══════════════════════════════════════════════════════════════════ */
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+    border-radius: var(--r-0);
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-weight: 500;
+    font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.12em;
+    border: var(--rule) solid var(--ink);
+    background-color: transparent;
+    color: var(--ink);
+    transition:
+      background-color var(--t-ink) linear,
+      color var(--t-ink) linear,
+      transform var(--t-ink) linear;
+  }
+  /*
+   * The press. On a letterpress the ink is pushed INTO the paper, so a
+   * pressed control moves down and the sheet takes the impression — it
+   * does not "lift". The 1px inset ring is the shoulder of the debossed
+   * edge; it is the only inset any control gets.
+   */
+  .btn:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+  .btn:disabled {
+    color: var(--ink-4);
+    border-color: var(--rule-min);
+    cursor: not-allowed;
   }
 
-  .tabular {
-    font-variant-numeric: tabular-nums lining-nums;
+  .btn--key {
+    background-color: var(--ink);
+    color: var(--paper-raised);
+  }
+  /*
+   * A disabled key button is paper knocked out of a lighter ink, not ink-4 on a
+   * full-strength fill. `.btn:disabled` sets `color: var(--ink-4)` at a higher
+   * specificity than `.btn--key`, so without this the label came out at 4.00:1 on
+   * the ink plate — and on this screen the disabled state is the DEFAULT state of
+   * several controls, so that is the reading most players get.
+   */
+  .btn--key:disabled {
+    background-color: var(--ink-4);
+    border-color: var(--ink-4);
+    color: var(--paper-raised);
+  }
+  .btn--key:hover:not(:disabled) {
+    background-color: var(--verm-deep);
+    border-color: var(--verm-deep);
+  }
+
+  .btn--rule:hover:not(:disabled) {
+    background-color: var(--paper-deep);
+  }
+
+  .btn--quiet {
+    border-color: transparent;
+  }
+  .btn--quiet:hover:not(:disabled) {
+    border-color: var(--ink);
   }
 
   /*
-   * The wordmark. A single hue swept across its own lightness range — a gradient
-   * that stays inside one colour reads as a material, two colours reads as a logo.
+   * A link is a word with a rule under it, at the weight of the text. Not
+   * a button wearing a link's clothes and not a colour on its own.
    */
-  .text-ember-gradient {
-    background: linear-gradient(102deg, #ffd9a3 0%, var(--ember-300) 38%, var(--ember-500) 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+  .link {
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--verm-text);
+    border-bottom: var(--rule) solid var(--verm);
+    padding-bottom: 1px;
+    transition: color var(--t-ink) linear, border-color var(--t-ink) linear;
   }
-
-  /* The hairline under a title. */
-  .rule-ember {
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--ember-400), transparent);
+  .link:hover {
+    color: var(--verm-deep);
+    border-bottom-color: var(--verm-deep);
   }
 
   /*
-   * Glass, done properly: the blur, then a bright hairline along the top edge and a
-   * dark one along the bottom, which is what makes a real pane look lit rather than
-   * like a rectangle someone blurred.
+   * Focus. A glowing ring is a dark-UI idiom and has nothing to do with
+   * paper, so focus is a second impression: the key plate printed again,
+   * offset, exactly the way a sheet run through the press twice looks.
    */
-  .glass {
-    background: rgba(20, 18, 16, 0.72);
-    backdrop-filter: blur(14px) saturate(1.2);
-    -webkit-backdrop-filter: blur(14px) saturate(1.2);
-    box-shadow:
-      inset 0 1px 0 rgba(242, 238, 231, 0.07),
-      inset 0 -1px 0 rgba(8, 6, 4, 0.55),
-      var(--shadow-card);
+  :where(a, button, input, [tabindex]):focus-visible {
+    outline: var(--rule) solid var(--ink);
+    outline-offset: 2px;
   }
 
-  /* Skip link — visible the moment it has focus, invisible otherwise. */
+  .field-input {
+    width: 100%;
+    height: 2.75rem;
+    padding: 0 0.75rem;
+    border-radius: var(--r-0);
+    border: var(--rule) solid var(--ink);
+    background-color: var(--paper-raised);
+    color: var(--ink);
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 0.875rem;
+    transition: border-color var(--t-ink) linear, background-color var(--t-ink) linear;
+  }
+  .field-input::placeholder {
+    color: var(--ink-3);
+  }
+  .field-input:focus {
+    outline: var(--rule) solid var(--ink);
+    outline-offset: 2px;
+    border-color: var(--ink);
+  }
+  /*
+   * :user-invalid, not :invalid — a half-typed address is not yet wrong,
+   * and marking it red while somebody is on the third character is the
+   * most common way validation gets in the way of filling a form in.
+   */
+  .field-input:user-invalid {
+    border-color: var(--verm);
+    border-width: var(--rule-heavy);
+  }
+
+  /*
+   * An errata slip. Not a tinted pill — a heavy ruled box with an ochre
+   * bar down the leading edge, which is how a correction is actually set.
+   */
+  .errata {
+    border: var(--rule) solid var(--ink);
+    border-left: var(--rule-heavy) solid var(--ochre);
+    background-color: var(--paper-raised);
+    padding: 0.625rem 0.875rem;
+  }
+
+  /* A status chip is a stamp: ruled box, mono caps, no fill, no radius. */
+  .stamp {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    border: var(--rule) solid var(--ink);
+    padding: 0.125rem 0.4375rem;
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 0.625rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    line-height: 1.4;
+  }
+  .stamp--mine {
+    color: var(--verm-text);
+    border-color: var(--verm);
+  }
+  .stamp--theirs {
+    color: var(--prus);
+    border-color: var(--prus);
+  }
+
+  /*
+   * A letterpress slug: one character, in its own box, with a real gap to
+   * the next one. Used for the room code and nowhere else.
+   */
+  .slug {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: var(--rule) solid var(--ink);
+    background-color: var(--paper-raised);
+    border-radius: var(--r-0);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     OWNERSHIP — four channels, three of them non-colour.
+     Vermillion against prussian measures 1.64:1, so ink is the weakest
+     of the four and can never be the only one carrying the meaning.
+     Hatch direction follows Petra Sancta (1638): gules vertical, azure
+     horizontal. It is orthogonal to both hue and luminance, and it is
+     not an accessibility retrofit bolted onto a historical style — it IS
+     the historical style, and it happens to be the right engineering.
+     ═══════════════════════════════════════════════════════════════════ */
+
+  .hatch-mine {
+    background-image: repeating-linear-gradient(
+      90deg,
+      var(--verm) 0 1.5px,
+      transparent 1.5px 5px
+    );
+  }
+  .hatch-theirs {
+    background-image: repeating-linear-gradient(
+      0deg,
+      var(--prus) 0 1.5px,
+      transparent 1.5px 5px
+    );
+  }
+  @media (prefers-contrast: more) {
+    .hatch-mine {
+      background-image: repeating-linear-gradient(
+        90deg,
+        var(--verm-deep) 0 2px,
+        transparent 2px 5px
+      );
+    }
+    .hatch-theirs {
+      background-image: repeating-linear-gradient(0deg, var(--prus) 0 2px, transparent 2px 5px);
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     THE BOARD
+     ═══════════════════════════════════════════════════════════════════ */
+
+  .cell {
+    background-color: var(--paper-deep);
+    border: var(--rule-hair) solid var(--ink);
+    border-radius: var(--r-0);
+  }
+  /*
+   * A playable cell is not a glowing cell. It shows a ghost impression of
+   * the pips you are about to lay down, at a legal weight — you see what
+   * you are about to place, where it would land, already counted. That is
+   * a stronger affordance than a pulsing light ever was, it is literally
+   * what a proof impression looks like, and it is only possible because
+   * power became a shape. It does not animate: a printed sheet does not
+   * throb, and eight cells breathing forever is the single most
+   * recognisable tic in the stylesheet this replaces.
+   */
+  .cell--playable {
+    border: var(--rule) solid var(--ink);
+    background-color: var(--paper-sunk);
+    cursor: pointer;
+  }
+  .cell--playable:hover {
+    background-color: #e0d3bb;
+  }
+
+  /*
+   * Laid by hand. Every placed card carries a sub-degree rotation and a
+   * pixel or so of offset derived from its board position, so a spread
+   * looks put down rather than snapped to a grid. It is derived, not
+   * random: Math.random would differ between the server render and the
+   * client one and React would tear the tree down over it.
+   */
+  .laid {
+    transform: rotate(var(--lay-rot, 0deg)) translate(var(--lay-x, 0px), var(--lay-y, 0px));
+  }
+
+  /* The margin line. Marginalia, up the left edge of the arena sheet. */
+  .margin-line {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    color: var(--ink-3);
+    user-select: none;
+  }
+
+  /* Visible only when focused. */
   .skip-link {
     position: fixed;
     left: 1rem;
     top: -100px;
     z-index: 60;
-    border-radius: var(--radius-sm);
-    background: var(--ember-400);
-    color: #1d1206;
+    background: var(--ink);
+    color: var(--paper-raised);
     padding: 0.625rem 1rem;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    transition: top 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    transition: top var(--t-move) var(--ease-settle);
   }
   .skip-link:focus {
     top: 1rem;
@@ -319,183 +717,90 @@
 }
 
 @layer utilities {
-  .shadow-card {
-    box-shadow: var(--shadow-card);
-  }
-  .shadow-lift {
-    box-shadow: var(--shadow-lift);
-  }
-  .glow-ember {
-    box-shadow: var(--glow-ember);
-  }
-  .glow-steel {
-    box-shadow: var(--glow-steel);
+  .tabular {
+    font-variant-numeric: lining-nums tabular-nums;
   }
 
   /*
-   * Film grain. A flat vector page on a dark ground shows every banding step in a
-   * gradient; a little noise hides them and gives the ink some tooth.
+   * The plate offsets. Applied to a colour layer only; the key plate
+   * never moves. One offset per element — an element carrying both is
+   * anaglyph, not print.
    */
-  .grain::after {
-    content: "";
-    position: fixed;
-    inset: 0;
-    z-index: 10;
-    pointer-events: none;
-    opacity: 0.05;
-    mix-blend-mode: overlay;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  .plate-verm {
+    transform: translate(var(--plate-verm-x), var(--plate-verm-y));
   }
-
-  /* A cell you are allowed to drop the selected card into. */
-  .cell-valid {
-    box-shadow:
-      inset 0 0 0 1px rgba(217, 142, 67, 0.4),
-      inset 0 0 20px -4px rgba(217, 142, 67, 0.35);
-    animation: breathe 2.4s ease-in-out infinite;
-  }
-  .cell-valid:hover {
-    box-shadow:
-      inset 0 0 0 1px rgba(240, 178, 104, 0.85),
-      inset 0 0 24px -2px rgba(217, 142, 67, 0.45);
-    animation: none;
-  }
-
-  /*
-   * Staggered entry. Nothing mounts all at once; each child arrives a beat after the
-   * one before it. Six steps covers every list on the site.
-   */
-  .stagger > * {
-    opacity: 0;
-    animation: rise-in 520ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-  }
-  .stagger > *:nth-child(1) {
-    animation-delay: 60ms;
-  }
-  .stagger > *:nth-child(2) {
-    animation-delay: 140ms;
-  }
-  .stagger > *:nth-child(3) {
-    animation-delay: 220ms;
-  }
-  .stagger > *:nth-child(4) {
-    animation-delay: 300ms;
-  }
-  .stagger > *:nth-child(5) {
-    animation-delay: 380ms;
-  }
-  .stagger > *:nth-child(6) {
-    animation-delay: 460ms;
+  .plate-prus {
+    transform: translate(var(--plate-prus-x), var(--plate-prus-y));
   }
 }
 
-/* Motion baseline: colour and shadow 150ms, movement 220ms on a decelerating curve. */
-@keyframes rise-in {
-  from {
-    opacity: 0;
-    transform: translate3d(0, 14px, 0);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
+/* ═════════════════════════════════════════════════════════════════════
+   MOTION
+   Two durations and one curve. Paper is either still, or it has been
+   moved by a hand. Nothing eases in place, nothing pulses, nothing loops
+   except the one indicator that means "we are still waiting".
+   ═════════════════════════════════════════════════════════════════════ */
 
-@keyframes breathe {
-  0%,
-  100% {
-    opacity: 0.5;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
-/* The sweep across a skeleton block. Transform only — it never leaves the compositor. */
-@keyframes shimmer {
-  100% {
-    transform: translateX(100%);
-  }
-}
-
-@keyframes star-twinkle {
-  0%,
-  100% {
-    opacity: var(--star-opacity, 0.5);
-  }
-  50% {
-    opacity: calc(var(--star-opacity, 0.5) * 0.3);
-  }
-}
-
-@keyframes modal-in {
-  from {
-    opacity: 0;
-    transform: scale(0.97) translate3d(0, 8px, 0);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@keyframes toast-in {
-  from {
-    opacity: 0;
-    transform: translate3d(0, 10px, 0);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@keyframes score-pop {
+/* A card set down: it arrives slightly proud and settles into the sheet. */
+@keyframes card-settle {
   0% {
-    transform: scale(1.3);
+    transform: rotate(var(--lay-rot, 0deg)) translate(var(--lay-x, 0px), calc(var(--lay-y, 0px) - 7px));
+    opacity: 0.6;
+  }
+  70% {
+    transform: rotate(var(--lay-rot, 0deg)) translate(var(--lay-x, 0px), calc(var(--lay-y, 0px) + 1px));
+    opacity: 1;
   }
   100% {
-    transform: scale(1);
+    transform: rotate(var(--lay-rot, 0deg)) translate(var(--lay-x, 0px), var(--lay-y, 0px));
+    opacity: 1;
   }
 }
 
-@keyframes card-land {
-  0% {
-    box-shadow: inset 0 0 0 1px rgba(240, 178, 104, 0.95), 0 0 30px -4px rgba(217, 142, 67, 0.55);
+/* A score digit is a slug rolling in its stick — it leaves the way the value moved. */
+@keyframes slug-roll-up {
+  from {
+    transform: translateY(100%);
   }
-  100% {
-    box-shadow: inset 0 0 0 1px rgba(240, 178, 104, 0), 0 0 0 rgba(217, 142, 67, 0);
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes slug-roll-down {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
   }
 }
 
-@keyframes drift {
+/* A column changing hands: a fresh pass of the press, from the new leader's side. */
+@keyframes press-wipe {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* The only loop in the system, and only where the answer is "still waiting". */
+@keyframes ink-pulse {
   0%,
   100% {
-    transform: translate3d(0, 0, 0) rotate(var(--drift-rotate, 0deg));
+    opacity: 1;
   }
   50% {
-    transform: translate3d(0, -16px, 0) rotate(calc(var(--drift-rotate, 0deg) + 2.5deg));
+    opacity: 0.35;
   }
 }
 
 /*
- * The arena plate breathing.
- *
- * The values are absolute, not relative, and that is the whole trap: a keyframe that
- * sets `opacity` beats the inline `opacity` on the element, so an element parked at
- * 3.5% animated between 0.45 and 0.8 instead and put the artwork at full strength
- * behind every page. Keep these numbers in step with the plate itself.
+ * Placed LAST and unlayered so it wins over every rule above, including
+ * the per-component animations. An @media block inside @layer components
+ * would lose to a later unlayered declaration; this one cannot.
  */
-@keyframes plate-breathe {
-  0%,
-  100% {
-    opacity: 0.03;
-  }
-  50% {
-    opacity: 0.055;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -504,8 +809,5 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
-  }
-  .stagger > * {
-    opacity: 1;
   }
 }

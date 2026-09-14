@@ -1,39 +1,48 @@
 // src/app/layout.tsx
 import type { Metadata, Viewport } from 'next'
-import { Cormorant_Garamond, Space_Grotesk } from 'next/font/google'
+import { EB_Garamond, IBM_Plex_Mono } from 'next/font/google'
 import './globals.css'
 import { UnifiedAuthProvider } from '@/hooks/useUnifiedAuth'
 import AppBackground from '@/components/layout/AppBackground'
 import { ToastProvider } from '@/components/ui/toast'
 
 /*
- * Two faces, split by size rather than by role.
+ * Two faces, and the split between them is a point of view rather than a
+ * hierarchy.
  *
- * Cormorant Garamond is a high-contrast old-style serif: beautiful at 40px and
- * invisible at 13px, because its thin strokes vanish against a dark ground. So it
- * carries the display sizes only — the wordmark, page titles, the room code — and
- * Space Grotesk carries everything a player has to read at a glance, numbers
- * included. That is the opposite of the previous split, where the serif was also
- * printing the power values on the cards at 14px.
+ * EB Garamond is Duffner and Pardo's revival of Claude Garamont's 16th-century
+ * Parisian punches — a text face, not a display interpretation, so unlike
+ * Cormorant it holds its colour down to 15px on a light ground. It is the
+ * DEFAULT voice here: on a printed sheet, prose is the norm and the interface
+ * is the exception.
  *
- * Space Grotesk over Inter for the same reason the palette lost its second accent:
- * Inter is the face that gets chosen when nobody chooses. Space Grotesk has actual
- * character in its numerals and terminals, which is most of what this interface is.
+ * IBM Plex Mono is the only monospace on Google Fonts with a humanist skeleton
+ * rather than a geometric one, so it does not fight a Garamond, and its slashed
+ * zero and full-serifed 1 are unambiguous at 11px — which is what a room code
+ * read down a phone line needs.
+ *
+ * The anachronism is deliberate. The CARD is the printed artefact; everything
+ * around it — the room code, the tally, the connection state, the margin line —
+ * is the modern apparatus, the pencil annotation in the margin of a proof. Two
+ * registers, on purpose. It collapses into an inconsistency the moment the mono
+ * sets a heading or the serif sets a number, which is why that rule is absolute:
+ * nothing below 15px is set in the serif, and every number anywhere is mono.
  */
-const cormorant = Cormorant_Garamond({
+const garamond = EB_Garamond({
     subsets: ['latin'],
-    weight: ['500', '600', '700'],
+    weight: ['400', '500', '600'],
+    style: ['normal', 'italic'],
     display: 'swap',
     variable: '--font-display',
-    fallback: ['Georgia', 'serif'],
+    fallback: ['Georgia', 'Times New Roman', 'serif'],
 })
 
-const spaceGrotesk = Space_Grotesk({
+const plex = IBM_Plex_Mono({
     subsets: ['latin'],
-    weight: ['400', '500', '600', '700'],
+    weight: ['400', '500', '600'],
     display: 'swap',
-    variable: '--font-ui',
-    fallback: ['system-ui', 'arial'],
+    variable: '--font-mono',
+    fallback: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
 })
 
 const siteUrl = 'https://handoffate.org'
@@ -63,8 +72,9 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-    themeColor: '#0C0B0A',
-    colorScheme: 'dark',
+    /* The table, not the sheet — it is what fills the browser chrome's gutters. */
+    themeColor: '#140C07',
+    colorScheme: 'light',
 }
 
 export default function RootLayout({
@@ -73,23 +83,24 @@ export default function RootLayout({
     children: React.ReactNode
 }) {
     return (
-        <html lang="en" className={`${cormorant.variable} ${spaceGrotesk.variable}`}>
+        <html lang="en" className={`${garamond.variable} ${plex.variable}`}>
         {/*
-          * `grain` puts a fixed noise overlay over the whole document. It is on the
-          * body rather than in AppBackground because it has to sit *over* the content,
-          * not behind it — that is what stops the flat vector surfaces reading as
-          * plastic, and it hides the banding in the background's radial gradients.
+          * No `antialiased`. Subpixel smoothing off is a dark-UI reflex: on a light
+          * ground it thins the strokes, and EB Garamond's hairlines are fine enough.
           */}
-        <body className="grain font-ui antialiased">
+        <body className="font-display">
             <a href="#main" className="skip-link">
                 Skip to content
             </a>
             <AppBackground />
-            <UnifiedAuthProvider>
-                <ToastProvider>
-                    {children}
-                </ToastProvider>
-            </UnifiedAuthProvider>
+            {/* Above the table, which is no longer negatively stacked. */}
+            <div className="relative z-raised">
+                <UnifiedAuthProvider>
+                    <ToastProvider>
+                        {children}
+                    </ToastProvider>
+                </UnifiedAuthProvider>
+            </div>
         </body>
         </html>
     )
