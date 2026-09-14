@@ -36,15 +36,15 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       {children}
       <div
         aria-live="polite"
-        className="pointer-events-none fixed bottom-6 left-1/2 z-[60] flex -translate-x-1/2 flex-col items-center gap-2"
+        className="pointer-events-none fixed bottom-6 left-1/2 z-toast flex -translate-x-1/2 flex-col items-center gap-2"
       >
         {toasts.map((toast) => {
           const Icon = toast.tone === "success" ? Check : toast.tone === "danger" ? CircleAlert : Info;
           return (
             <div
               key={toast.id}
-              className="flex items-center gap-2 rounded-md border border-strong bg-surface-2 px-3.5 py-2.5 text-[13px] text-ink-hi shadow-card"
-              style={{ animation: "toast-in 200ms cubic-bezier(0.2,0.8,0.2,1)" }}
+              className="glass flex items-center gap-2 rounded-md px-3.5 py-2.5 text-[13px] text-ink-hi"
+              style={{ animation: "toast-in 220ms cubic-bezier(0.34,1.56,0.64,1)" }}
             >
               <Icon
                 size={16}
@@ -54,7 +54,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                     ? "text-success"
                     : toast.tone === "danger"
                       ? "text-danger"
-                      : "text-arcane-300"
+                      : "text-steel-300"
                 }
               />
               {toast.message}

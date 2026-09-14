@@ -6,10 +6,10 @@ import { cn } from "@/lib/utils";
 type Tone = "danger" | "success" | "warning" | "info";
 
 const styles: Record<Tone, string> = {
-  danger: "border-danger/30 bg-danger/10 text-danger",
-  success: "border-success/30 bg-success/10 text-success",
-  warning: "border-warning/30 bg-warning/10 text-warning",
-  info: "border-info/30 bg-info/10 text-info",
+  danger: "border-danger/25 bg-danger/[0.08] text-danger",
+  success: "border-success/25 bg-success/[0.08] text-success",
+  warning: "border-warning/25 bg-warning/[0.08] text-warning",
+  info: "border-info/25 bg-info/[0.08] text-info",
 };
 
 const icons: Record<Tone, React.ElementType> = {
@@ -34,7 +34,8 @@ export function InlineAlert({ tone = "danger", className, children, ...props }: 
     <div
       role={tone === "danger" ? "alert" : "status"}
       className={cn(
-        "flex items-start gap-2.5 rounded-md border p-3 text-[13px] leading-relaxed",
+        // A 2px bar down the leading edge, so the tone is legible before the text is.
+        "flex items-start gap-2.5 rounded-md border border-l-2 p-3 text-[13px] leading-relaxed",
         styles[tone],
         className,
       )}

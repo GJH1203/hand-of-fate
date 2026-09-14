@@ -27,7 +27,7 @@ export function CodeInput({
   onChange,
   length = 6,
   autoFocus,
-  "aria-label": ariaLabel = "Battle code",
+  "aria-label": ariaLabel = "Room code",
 }: CodeInputProps) {
   const refs = React.useRef<(HTMLInputElement | null)[]>([]);
 
@@ -106,10 +106,13 @@ export function CodeInput({
           autoFocus={autoFocus && index === 0}
           aria-label={`${ariaLabel}, character ${index + 1} of ${length}`}
           className={cn(
-            "h-16 w-[52px] rounded-md border border-subtle bg-surface-2 text-center",
-            "font-display text-[28px] font-semibold uppercase text-gold-300 tabular",
-            "transition-[border-color,box-shadow] duration-150 caret-arcane-300",
-            "focus:border-arcane-400 focus:outline-none focus:shadow-glow-violet",
+            "h-[68px] w-[54px] rounded-md border border-subtle bg-surface-2/80 text-center",
+            // Space Grotesk, not the display serif: a room code is read out loud and
+            // typed back in, so it wants unambiguous figures, not elegant ones.
+            "font-ui text-[30px] font-semibold uppercase text-ember-300 tabular",
+            "transition-[border-color,box-shadow,transform] duration-200 ease-arcane",
+            "caret-ember-300 hover:border-strong",
+            "focus:-translate-y-0.5 focus:border-ember-400 focus:outline-none focus:shadow-glow-ember",
           )}
         />
       ))}

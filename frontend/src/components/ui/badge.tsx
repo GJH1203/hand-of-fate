@@ -5,21 +5,28 @@ import { cn } from "@/lib/utils";
 
 /*
  * One badge, six tones, one colour formula: the semantic colour for the text, the
- * same colour at 12% behind it, the same colour at 25% around it. Every status
- * pill in the application is this component — there is nothing else to reach for.
+ * same colour at 10% behind it, the same colour at 22% around it.
+ *
+ * Square-ish rather than a pill. Every status chip on the internet is a fully
+ * rounded capsule, and this application has one on nearly every row — a 4px corner
+ * costs nothing and stops the arena top bar looking like a row of cough sweets. The
+ * text is small caps instead of shouted uppercase, which keeps the same compactness
+ * without the ransom-note texture.
  */
 const badgeVariants = cva(
-  "inline-flex h-6 items-center gap-1.5 rounded-full border px-2.5 font-ui text-[11px] font-semibold uppercase leading-none tracking-[0.06em] whitespace-nowrap",
+  "inline-flex h-[22px] items-center gap-1.5 rounded-xs border px-2 font-ui text-[12px] font-medium leading-none tracking-[0.06em] whitespace-nowrap [font-variant-caps:all-small-caps]",
   {
     variants: {
       tone: {
-        neutral: "border-white/15 bg-white/[0.06] text-ink-mid",
-        success: "border-success/25 bg-success/[0.12] text-success",
-        warning: "border-warning/25 bg-warning/[0.12] text-warning",
-        danger: "border-danger/25 bg-danger/[0.12] text-danger",
-        info: "border-info/25 bg-info/[0.12] text-info",
-        gold: "border-gold-400/25 bg-gold-400/[0.12] text-gold-300",
-        arcane: "border-arcane-400/25 bg-arcane-400/[0.12] text-arcane-300",
+        neutral: "border-white/12 bg-white/[0.05] text-ink-mid",
+        success: "border-success/22 bg-success/10 text-success",
+        warning: "border-warning/22 bg-warning/10 text-warning",
+        danger: "border-danger/22 bg-danger/10 text-danger",
+        info: "border-info/22 bg-info/10 text-info",
+        /* Your side of the duel. */
+        ember: "border-ember-400/25 bg-ember-400/10 text-ember-300",
+        /* Their side of the duel. */
+        steel: "border-steel-400/25 bg-steel-400/10 text-steel-300",
       },
     },
     defaultVariants: {
@@ -34,8 +41,8 @@ const dotColors: Record<string, string> = {
   warning: "bg-warning",
   danger: "bg-danger",
   info: "bg-info",
-  gold: "bg-gold-400",
-  arcane: "bg-arcane-400",
+  ember: "bg-ember-400",
+  steel: "bg-steel-400",
 };
 
 export interface BadgeProps

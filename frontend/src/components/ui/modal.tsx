@@ -83,8 +83,8 @@ export function Modal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ backgroundColor: "rgba(6,8,16,0.7)", backdropFilter: "blur(6px)" }}
+      className="fixed inset-0 z-overlay flex items-center justify-center p-4"
+      style={{ backgroundColor: "rgba(6,5,4,0.72)", backdropFilter: "blur(8px)" }}
       onMouseDown={(event) => {
         if (closeOnOverlayClick && event.target === event.currentTarget) onClose();
       }}
@@ -95,11 +95,11 @@ export function Modal({
         aria-modal="true"
         tabIndex={-1}
         className={cn(
-          "relative w-full rounded-lg border border-strong bg-surface-1 shadow-card outline-none",
+          "glass relative w-full rounded-lg outline-none",
           widthClassName,
           className,
         )}
-        style={{ animation: "modal-in 150ms cubic-bezier(0.2,0.8,0.2,1)" }}
+        style={{ animation: "modal-in 220ms cubic-bezier(0.2,0.8,0.2,1)" }}
       >
         {(title || showCloseButton) && (
           <div className="flex items-start justify-between gap-4 px-6 pb-4 pt-5">
@@ -109,7 +109,7 @@ export function Modal({
                 type="button"
                 onClick={onClose}
                 aria-label="Close"
-                className="-mr-2 -mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-ink-low transition-colors duration-150 hover:bg-surface-3 hover:text-ink-hi focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcane-400"
+                className="-mr-2 -mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-ink-low transition-colors duration-200 ease-arcane hover:bg-white/[0.06] hover:text-ink-hi focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ember-400"
               >
                 <X size={18} strokeWidth={1.75} />
               </button>
