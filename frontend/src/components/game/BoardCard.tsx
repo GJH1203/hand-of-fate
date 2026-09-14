@@ -1,5 +1,6 @@
 import React from 'react';
 
+import Pips from './Pips';
 import { cn } from '@/lib/utils';
 import type { Card } from '@/types/game';
 
@@ -7,23 +8,38 @@ interface BoardCardProps {
   card: Card;
   mine: boolean;
   ownerName?: string;
-  /** Half-transparent preview of the card about to be played into an empty cell. */
+  /** Half-strength preview of the card about to be played into an empty cell. */
   ghost?: boolean;
 }
 
 /**
- * A card once it is on the board.
+ * A card once it is on the board. It carries no artwork at all.
  *
- * It is deliberately the same object as the one in your hand — a dark face, the art,
- * a thin metal edge — rather than the bare artwork it used to be. Ownership is the
- * edge colour and nothing else: the blue "YOU" pill and the truncated name plate
- * covered the art, overflowed into the row above, and said in two places what one
- * border says better. The legend in the top bar explains the two colours once.
+ * That sounds like a loss and is the opposite. The raster was measured against
+ * the page at 1.16:1 to 1.23:1 — a placed card and an empty square were the same
+ * value, separated by one hairline — and on paper the same crop is a 13:1 black
+ * rectangle. Reduced to board size it is worse than useless: at 48px the three
+ * cards are indistinguishable scratches. So the artwork stays in the hand, where
+ * it is 128px tall and genuinely good, and the board is set type.
  *
- * Those two colours are ember and steel, warm against cool. They used to be gold and
- * crimson, which failed twice: crimson was also the colour of every error message on
- * the same screen, and gold against crimson is the one pairing that collapses for a
- * red-green colour blind player. Warm against cool survives both.
+ * OWNERSHIP IS FOUR CHANNELS AND ONLY ONE OF THEM IS COLOUR, because vermillion
+ * against prussian measures 1.64:1 and could never have carried it alone:
+ *
+ *   position   your band is at the FOOT, theirs at the HEAD. Survives greyscale,
+ *              every kind of colour blindness, 48px, and a photograph of a
+ *              screen. This is the primary channel and must never be traded away.
+ *   hatch      yours runs vertical, theirs horizontal — Petra Sancta's 1638
+ *              heraldic convention, where gules is vertical and azure is
+ *              horizontal. It is orthogonal to hue and luminance, and it is not
+ *              an accessibility retrofit bolted onto a historical style; it IS
+ *              the historical style, and it happens to be the right engineering.
+ *   rule       yours is printed twice — a keyline plus an inner rule. Theirs is
+ *              a single keyline. Survives forced-colors, where background-image
+ *              is dropped but border-style is not.
+ *   ink        vermillion against prussian. The weakest of the four, and last.
+ *
+ * The band never overlaps the pips, so no amount of plate offset can eat the
+ * ownership signal.
  */
 export default function BoardCard({ card, mine, ownerName, ghost }: BoardCardProps) {
   const label = `${card.name}, power ${card.power}${ownerName ? `, ${ownerName}` : ''}`;
@@ -33,35 +49,41 @@ export default function BoardCard({ card, mine, ownerName, ghost }: BoardCardPro
       title={label}
       aria-label={label}
       className={cn(
-        'relative h-full w-full overflow-hidden rounded-[7px] border bg-surface-0',
-        mine ? 'border-ember-400/85' : 'border-steel-400/85',
-        ghost && 'opacity-45',
+        'relative flex h-full w-full items-center justify-center overflow-hidden bg-paper-raised',
+        'border-rule border-ink rounded-card',
+        ghost && 'opacity-40',
       )}
     >
-      {card.imageUrl && (
-        // Cropped to the illustration. Centring the crop would keep the card's own
-        // printed name and number in frame, which then competes with the sigil below —
-        // two numbers on one card, one of them half cut off.
-        <img
-          src={card.imageUrl}
-          alt=""
-          className="absolute inset-0 h-full w-full object-cover object-[50%_78%]"
+      {/* Yours is printed twice: the inner rule is the second impression. */}
+      {mine && (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-[3px] border border-ink"
         />
       )}
 
-      {/* Darkens the top strip so the power sigil stays readable over any art */}
-      <div className="absolute inset-x-0 top-0 h-1/3 bg-gradient-to-b from-black/60 to-transparent" />
-
+      {/*
+       * The band. Height is a percentage of the cell rather than a pixel value
+       * so it survives the full 48px-to-112px range without a media query, with
+       * a floor so it cannot thin to nothing on the smallest board.
+       */}
       <span
+        aria-hidden
         className={cn(
-          // Space Grotesk, not the display serif: a 14px high-contrast old-style numeral
-          // inside a 22px disc is a smudge, and this is the number the whole game is about.
-          'absolute left-1 top-1 flex h-[22px] w-[22px] items-center justify-center rounded-full font-ui text-[13px] font-bold leading-none tabular',
-          mine ? 'bg-ember-400 text-[#231405]' : 'bg-steel-400 text-[#04161F]',
+          'pointer-events-none absolute inset-x-0 h-[11%] min-h-[6px]',
+          mine ? 'bottom-0 hatch-mine' : 'top-0 hatch-theirs',
         )}
-      >
-        {card.power}
-      </span>
+      />
+
+      <Pips
+        power={card.power}
+        className={cn(
+          // 72% of the cell, nudged clear of the owner's band.
+          'w-[72%] translate-y-[var(--pip-shift)]',
+          mine ? '[--pip-shift:-4%]' : '[--pip-shift:4%]',
+          mine ? 'text-verm' : 'text-prus',
+        )}
+      />
     </div>
   );
 }
