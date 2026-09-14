@@ -1,32 +1,38 @@
 import type { CSSProperties } from 'react'
 
-import Pips from '@/components/game/Pips'
+import Pips, { OwnerMark } from '@/components/game/Pips'
 import { cn } from '@/lib/utils'
 
 /*
- * A finished duel, at a glance.
+ * A finished duel, at a glance — and the altar of the menu page.
  *
- * The rules used to be two bulleted lists side by side, and the one thing they could
- * not do was show what a column being "won" actually looks like. This is the same
- * information as a picture: three columns, the power in each, and the two that went
- * your way.
+ * It is a triptych, which is not a metaphor imposed on the game: the board is three
+ * columns, you win by taking two of the three, and that is the form of every
+ * devotional painting ever made. So it is drawn as one — an arcade of three arched
+ * heads carrying the tallies, and under them fifteen arched niches standing on a
+ * gilded field. Gold is the one large passage in the product and this is where it is
+ * spent, because it is the object the whole page is arranged around.
  *
  * It is also where a new player meets the ownership language before meeting it in a
- * real match, so it has to teach the same four channels the board teaches — band at
- * the FOOT for yours and at the HEAD for theirs, vertical hatch against horizontal,
- * a rule printed twice against one printed once, and only then vermillion against
- * prussian. See BoardCard for why colour is last: the two inks measure 1.64:1
- * against each other and could never have carried ownership alone. The old diagram
- * printed a numeral in a tinted box and taught none of that.
+ * real match, so it teaches the same four channels the board teaches, in the same
+ * order of strength:
+ *
+ *   figure   a rayed disc for Sol, a crescent for Luna. A shape survives greyscale,
+ *            reduction and every form of colour blindness; the metals measure about
+ *            1.25:1 against each other and could never have carried this alone.
+ *   position the mark sits at the FOOT of yours and the HEAD of theirs — in the
+ *            squares and in the column heads above them, so the two agree.
+ *   weight   yours is framed twice, theirs once.
+ *   metal    gold against silver, and it is LAST. See BoardCard.
  *
  * The position is a real legal one, not decoration: five cards each, and every card
  * orthogonally adjacent to another of its owner's, which is the only placement rule
  * in the game.
  *
  * Everything under the board is derived from the board — the column tallies and the
- * sentence in the caption both. The previous caption was written by hand and said
- * one side had taken the left column 8 to 1 while the squares above it added to
- * something else; a fixture and a sentence that can disagree eventually do.
+ * sentence in the caption both. The original caption was written by hand and said one
+ * side had taken the left column 8 to 1 while the squares above it added to something
+ * else; a fixture and a sentence that can disagree eventually do.
  */
 
 type Placed = { power: number; owner: 'me' | 'them' }
@@ -75,7 +81,7 @@ const lost = totals.filter((column) => column.leader === 'them')
 const summary = [
   taken.length > 0 ? `You took ${taken.map(phrase).join(' and ')}.` : null,
   lost.length > 0
-    ? `Two of three ends the duel, so losing ${lost.map(phrase).join(' and ')} cost nothing.`
+    ? `Two columns of three is the match, so losing ${lost.map(phrase).join(' and ')} cost nothing.`
     : null,
 ]
   .filter(Boolean)
@@ -83,8 +89,8 @@ const summary = [
 
 /*
  * One square of the diagram, in the board's own language at a third of its size.
- * The band sits outside the pips at every size, so nothing can eat the ownership
- * signal — the same guarantee BoardCard makes.
+ * The owner's figure sits outside the stars at every size, so the count and the owner
+ * can always both be read — the same guarantee BoardCard makes.
  */
 function Square({ cell, style }: { cell: Placed | null; style?: CSSProperties }) {
   if (!cell) {
@@ -96,24 +102,33 @@ function Square({ cell, style }: { cell: Placed | null; style?: CSSProperties })
   return (
     <div
       style={style}
-      className="relative flex aspect-square items-center justify-center overflow-hidden rounded-card border-rule border-ink bg-paper-raised"
+      className={cn(
+        'relative flex aspect-square items-center justify-center overflow-hidden',
+        'rounded-arch border-rule bg-night-1',
+        mine ? 'border-gold' : 'border-luna-deep',
+      )}
     >
-      {/* Yours is printed twice: the inner rule is the second impression. */}
-      {mine && <span aria-hidden className="pointer-events-none absolute inset-[2px] border border-ink" />}
-
-      <span
-        aria-hidden
-        className={cn(
-          'pointer-events-none absolute inset-x-0 h-[14%] min-h-[4px]',
-          mine ? 'bottom-0 hatch-mine' : 'top-0 hatch-theirs',
-        )}
-      />
+      {/* Framed twice if it is yours: the inner keyline is the second pass. */}
+      {mine && (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-[2px] rounded-arch border border-gold-deep"
+        />
+      )}
 
       <Pips
         power={cell.power}
         className={cn(
-          'w-[64%] translate-y-[var(--pip-shift)]',
-          mine ? 'text-verm [--pip-shift:-5%]' : 'text-prus [--pip-shift:5%]',
+          'w-[58%] translate-y-[var(--pip-shift)]',
+          mine ? '[--pip-shift:-7%] text-gold-lit' : '[--pip-shift:7%] text-luna-lit',
+        )}
+      />
+
+      <OwnerMark
+        mine={mine}
+        className={cn(
+          'pointer-events-none absolute left-1/2 aspect-square h-[15%] max-h-[14px] min-h-[8px] w-auto -translate-x-1/2',
+          mine ? 'bottom-[5%] text-gold' : 'top-[5%] text-luna',
         )}
       />
     </div>
@@ -121,91 +136,133 @@ function Square({ cell, style }: { cell: Placed | null; style?: CSSProperties })
 }
 
 /*
+ * One head of the arcade: a column's tally, in an arch of its own.
+ *
+ * Both totals are always set in their owner's metal, because a total is a fact about
+ * a player and not about who is winning. Whose column it is, is carried by the
+ * leader's figure and by WHICH END OF THE ARCH IT STANDS AT — the foot for Sol, the
+ * apex for Luna, exactly as on the cards below. The three slots are a fixed grid so
+ * the numerals of all three heads sit on one line whichever way the columns went.
+ */
+function Head({ column }: { column: ColumnTotal }) {
+  return (
+    <div
+      className={cn(
+        'grid h-[58px] grid-rows-[13px_auto_13px] items-center justify-items-center gap-[3px] rounded-arch border-rule bg-night-2 px-1 py-[5px]',
+        column.leader === 'me'
+          ? 'border-gold'
+          : column.leader === 'them'
+            ? 'border-luna-deep'
+            : 'border-gold-deep',
+      )}
+    >
+      <span className="flex h-full items-start">
+        {column.leader === 'them' && (
+          <OwnerMark mine={false} className="h-[11px] w-[11px] text-luna" />
+        )}
+      </span>
+
+      <span className="type-num flex items-center text-[15px] leading-none">
+        <span className="text-gold-lit">{column.me}</span>
+        <span aria-hidden className="mx-[4px] text-parchment-3">
+          :
+        </span>
+        <span className="text-luna-lit">{column.them}</span>
+      </span>
+
+      <span className="flex h-full items-end">
+        {column.leader === 'me' && <OwnerMark mine className="h-[11px] w-[11px] text-gold" />}
+      </span>
+    </div>
+  )
+}
+
+/*
+ * One chip of the legend: a card at the size of a thumbnail, so what is being named
+ * is the actual mark in its actual place rather than a swatch of metal. A pair of
+ * colour chips would teach the weakest of the four channels as though it were the
+ * only one.
+ */
+function LegendCard({ mine }: { mine: boolean }) {
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        'relative block h-7 w-[22px] shrink-0 rounded-arch border-rule bg-night-1',
+        mine ? 'border-gold' : 'border-luna-deep',
+      )}
+    >
+      {mine && (
+        <span className="pointer-events-none absolute inset-[2px] rounded-arch border border-gold-deep" />
+      )}
+      <OwnerMark
+        mine={mine}
+        className={cn(
+          'absolute left-1/2 h-2 w-2 -translate-x-1/2',
+          mine ? 'bottom-[3px] text-gold' : 'top-[3px] text-luna',
+        )}
+      />
+    </span>
+  )
+}
+
+/*
  * The board is capped and the caption is not. The squares are aspect-square, so an
  * uncapped board grows to whatever column it is dropped into and fifteen of them
- * become the tallest thing on the page; 220px puts a square at about 66px, which is
- * above the 48px floor the real board is drawn to. The caption keeps the full width
- * of its column, because at the board's width a sentence rags into six lines.
+ * become the tallest thing on the page; 320px puts a square at about 97px, which is
+ * twice the 48px floor the real board is drawn to and reads as an object rather than
+ * as a thumbnail. The caption keeps a measure of its own, because at the board's
+ * width a sentence rags into six lines.
  */
 export default function BoardDiagram({ className }: { className?: string }) {
   return (
-    <figure className={cn('w-full', className)}>
+    <figure className={cn('flex w-full flex-col items-center', className)}>
       {/*
-       * The mat, and the board on it. Marked aria-hidden in one piece: ten squares
-       * each announcing their own power is noise, and the caption below states the
-       * outcome in words, which is what a reader actually needs from a diagram.
+       * Marked aria-hidden in one piece: fifteen squares each announcing their own
+       * power is noise, and the caption below states the outcome in words, which is
+       * what a reader actually needs from a diagram.
        */}
-      <div aria-hidden className="max-w-[220px] border-rule border-ink bg-paper-sunk p-[5px]">
-        <div className="grid grid-cols-3 gap-1">
+      <div aria-hidden className="w-full max-w-[320px]">
+        <div className="grid grid-cols-3 gap-[6px]">
           {totals.map((column) => (
-            <div
-              key={column.name}
-              className="relative overflow-hidden border-rule border-ink bg-paper py-[6px] text-center"
-            >
-              {/*
-               * A won column is marked the way a card is — a band on the winner's
-               * side, at the foot for you and the head for them. The tally and the
-               * squares under it then say the same thing two ways.
-               */}
-              {column.leader && (
-                <span
-                  className={cn(
-                    'pointer-events-none absolute inset-x-0 h-[4px]',
-                    column.leader === 'me' ? 'bottom-0 hatch-mine' : 'top-0 hatch-theirs',
-                  )}
-                />
-              )}
-              <span className="type-num text-[11px] leading-none">
-                <span className={column.leader === 'me' ? 'text-verm-text' : 'text-ink-3'}>
-                  {column.me}
-                </span>
-                <span className="text-ink-3">:</span>
-                <span className={column.leader === 'them' ? 'text-prus' : 'text-ink-3'}>
-                  {column.them}
-                </span>
-              </span>
-            </div>
+            <Head key={column.name} column={column} />
           ))}
         </div>
 
-        <div className="mt-[5px] grid grid-cols-3 gap-1">
-          {COLUMNS.map((column, x) =>
-            column.map((cell, y) => (
-              <Square key={`${x}-${y}`} cell={cell} style={{ gridColumn: x + 1, gridRow: y + 1 }} />
-            )),
-          )}
+        {/*
+         * The gilded field. In an icon the figures stand on uncreated light, and this
+         * is the one large passage of gold in the product — which is what makes the
+         * board the thing the eye goes to on any screen it appears on.
+         */}
+        <div className="gilt mt-[6px] border-rule border-gold-deep p-[6px]">
+          <div className="grid grid-cols-3 gap-[6px]">
+            {COLUMNS.map((column, x) =>
+              column.map((cell, y) => (
+                <Square
+                  key={`${x}-${y}`}
+                  cell={cell}
+                  style={{ gridColumn: x + 1, gridRow: y + 1 }}
+                />
+              )),
+            )}
+          </div>
         </div>
       </div>
 
-      <figcaption className="mt-4">
-        {/*
-         * The legend shows the two bands rather than two ink swatches, because the
-         * band is what actually tells the sides apart — a pair of colour chips would
-         * teach the weakest of the four channels as though it were the only one.
-         */}
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-          <span className="flex items-center gap-2">
-            <span
-              aria-hidden
-              className="relative block h-5 w-4 shrink-0 rounded-card border-rule border-ink bg-paper-raised"
-            >
-              <span className="absolute inset-x-0 bottom-0 h-[4px] hatch-mine" />
-            </span>
-            <span className="type-label text-ink-2">You</span>
+      <figcaption className="mt-7 flex w-full flex-col items-center">
+        <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
+          <span className="flex items-center gap-2.5">
+            <LegendCard mine />
+            <span className="type-label text-parchment-2">Sol · you</span>
           </span>
-          <span className="flex items-center gap-2">
-            <span
-              aria-hidden
-              className="relative block h-5 w-4 shrink-0 rounded-card border-rule border-ink bg-paper-raised"
-            >
-              <span className="absolute inset-x-0 top-0 h-[4px] hatch-theirs" />
-            </span>
-            <span className="type-label text-ink-2">Them</span>
+          <span className="flex items-center gap-2.5">
+            <LegendCard mine={false} />
+            <span className="type-label text-parchment-2">Luna · them</span>
           </span>
         </div>
 
-        <p className="type-small mt-3 text-ink-2">
-          Your cards carry a band at the foot, theirs at the head. {summary}
+        <p className="type-small mt-5 max-w-[52ch] text-center text-parchment-2">
+          Your cards carry the sun at the foot. Theirs carry the moon at the head. {summary}
         </p>
       </figcaption>
     </figure>

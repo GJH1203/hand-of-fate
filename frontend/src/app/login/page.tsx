@@ -14,29 +14,44 @@ import { cn } from '@/lib/utils';
 import GameTutorial from '@/components/tutorial/GameTutorial';
 
 /*
- * The three cards, lying on the table beside the sheet.
+ * The predella: the three cards, laid in a fan under the panel.
  *
- * What was here before was a full-bleed panel of `battle-arena.png` — a glowing
- * indigo rune plate — with the form on a black half beside it. On bone paper that
- * is a lightbox stapled to a printed sheet, and there is no dark plate anywhere in
- * this design except the cards themselves. So the dark plate that stays is the one
- * that earns it: the shipped card faces, uncropped, laid on the walnut. Navy and
- * gold on wood is exactly where they belong, and they state the deck — one, three,
- * five — without a legend.
+ * An altarpiece has a strip of small painted panels along its foot, and that is
+ * exactly the job these do — they state the deck, one, three and five, without a
+ * legend, beneath the thing you actually came here to use.
  *
- * The rotations reuse `.laid`, the same hand-laid device the board uses, so the
- * spread reads as three cards somebody put down rather than three images in a row.
- * Fixed values, not `Math.random`: this renders on the server too.
+ * They are the shipped card faces, whole and uncropped: navy grounds with gold
+ * keylines, serif capitals and big numerals. That gold is this gold, which makes
+ * them the single best-matched asset the design has, and cropping a complete
+ * printed object into a texture would throw away the only reason to show it.
+ *
+ * The fan is MIRRORED about the centre card, because this design is axial. The
+ * previous pass raked all three the same way and slid them under each other; at
+ * that overlap the Thunder card cut "LIGHTNING" mid-letter, which reads as a
+ * clipping bug rather than as a fan, so they now stand clear of one another.
+ *
+ * The rotations are fixed values and not `Math.random`: this renders on the
+ * server too, and React pulls the tree down over a style attribute that differs.
  */
 const SPREAD = [
-  { src: '/gifs/spark.png', rot: '-6.5deg', y: '12px' },
-  { src: '/gifs/lightning.png', rot: '2deg', y: '-8px' },
-  { src: '/gifs/thunder.png', rot: '6.5deg', y: '16px' },
+  { src: '/gifs/spark.png', rot: '-7deg', y: '18px' },
+  { src: '/gifs/lightning.png', rot: '0deg', y: '0px' },
+  { src: '/gifs/thunder.png', rot: '7deg', y: '18px' },
 ];
 
-function CardSpread() {
+function CardFan() {
   return (
-    <div aria-hidden className="hidden shrink-0 items-center lg:flex">
+    /*
+     * The fan is tucked UNDER the panel's lower edge rather than set below it.
+     * Stacked, the panel and a full-height fan are taller than a laptop viewport
+     * and the cards fell off the fold — decoration nobody ever saw. Overlapping
+     * them costs ~90px, and it is also what it would actually look like: three
+     * cards lying on the table with the panel standing on top of them.
+     */
+    <div
+      aria-hidden
+      className="-mt-16 hidden shrink-0 items-start justify-center gap-3 md:flex"
+    >
       {SPREAD.map(({ src, rot, y }) => (
         <Image
           key={src}
@@ -44,13 +59,7 @@ function CardSpread() {
           alt=""
           width={184}
           height={276}
-          /* Whole faces, never cropped: each one is a complete printed object. */
-          /*
-           * The overlap stops short of the longest name. At -mr-10 the Thunder
-           * card cut "LIGHTNING" mid-letter, which reads as a clipping bug
-           * rather than as a fan of cards.
-           */
-          className="laid -mr-6 h-auto w-[144px] select-none last:mr-0 xl:-mr-7 xl:w-[184px]"
+          className="laid h-auto w-[104px] select-none xl:w-[120px]"
           style={{ '--lay-rot': rot, '--lay-y': y } as React.CSSProperties}
         />
       ))}
@@ -59,18 +68,44 @@ function CardSpread() {
 }
 
 /**
- * A sheet on the table, with the keyline a card back is printed with inside it.
+ * The panel: a night board with a gilt frame and a round head.
  *
- * The frame appears only once the sheet has an edge of its own to sit inside:
- * below `sm` the paper runs to all four sides of the screen, and a rule drawn
- * there is a box around the phone rather than around the printing.
+ * The head is why the top padding is as deep as it is. `.panel--arched` cuts the
+ * arch as a share of the panel's own height, so on a tall panel the border
+ * sweeps a long way down at the left and right shoulders — anything set too
+ * close to the top there passes outside the frame. The space it leaves is the
+ * tympanum, and the wordmark standing in it is the point of the shape.
  */
-function SheetFrame({ className, children }: { className?: string; children: React.ReactNode }) {
+function Panel({ className, children }: { className?: string; children: React.ReactNode }) {
   return (
-    <div className={cn('sheet min-h-dvh w-full p-0 sm:min-h-0 sm:p-3', className)}>
-      {/* Border colour comes from the global `* { border-color: var(--ink) }`. */}
-      <div className="border-0 px-7 py-12 sm:border-hair sm:px-11 sm:py-12">{children}</div>
+    <div
+      className={cn(
+        'panel w-full px-6 pb-11 pt-12 text-center sm:px-12 sm:pb-12 sm:pt-14',
+        className,
+      )}
+    >
+      {children}
     </div>
+  );
+}
+
+/**
+ * The wordmark, inscribed, with a nimbus around it.
+ *
+ * The rings are drawn — two concentric gilt rules at `.aureole`, never a blur —
+ * and they take the arch of the panel above them, so the title reads as a figure
+ * standing in a niche rather than as text in a box. That is what an arch is for
+ * here and it is the only place on this screen that earns one.
+ */
+function Wordmark() {
+  return (
+    <h1 className="type-display text-gold-lit">
+      <span className="aureole inline-block rounded-arch px-5 pb-2 pt-4 sm:px-8">
+        Hand of
+        <br />
+        Fate
+      </span>
+    </h1>
   );
 }
 
@@ -78,14 +113,15 @@ function SheetFrame({ className, children }: { className?: string; children: Rea
  * A message that is not a correction: verified, sent, already registered.
  *
  * Deliberately not an `InlineAlert`. There is no success colour in this design and
- * inventing one here would put a third ink on the sheet to say "that worked" —
- * so it is a plain ruled note, and the errata slip stays reserved for errors.
+ * inventing one here would put a third ink on the panel to say "that worked" — so
+ * it is a plain ruled note on a raised ground, and cinnabar stays reserved for the
+ * things a rubric is actually for.
  */
 function Note({ children }: { children: React.ReactNode }) {
   return (
     <p
       role="status"
-      className="border-hair bg-paper-raised px-3.5 py-2.5 font-mono text-[13px] leading-relaxed text-ink-2"
+      className="border-hair border-gold-deep bg-night-2 px-3.5 py-2.5 text-left text-[0.9375rem] leading-relaxed text-parchment-2"
     >
       {children}
     </p>
@@ -103,16 +139,22 @@ interface FormFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
 /**
  * Label, field, and one line underneath — a hint, or an error in its place.
  *
- * All three are mono: a label, a hint and an error are apparatus, and the serif
- * has a 15px floor that none of them clear. The error is set in `--verm-deep`
- * rather than `--verm`, which is the only vermillion that carries small text.
+ * The label is inscriptional: Marcellus capitals with open tracking, which is what
+ * `.type-label` cuts. Everything else here is prose and prose is Spectral.
+ *
+ * THE ERROR IS MARKED IN CINNABAR AND WRITTEN IN PARCHMENT, and that split is the
+ * point. Red in a manuscript is an index rather than an emotion — it tells you
+ * where to look, and the words tell you what is wrong. Setting the sentence itself
+ * in cinnabar would put it at 3.9:1 on the night, which is under the floor for
+ * text this size; the rule down its edge carries the same signal at full strength
+ * and costs the reader nothing.
  */
 function FormField({ id, label, hint, error, ...input }: FormFieldProps) {
   const noteId = error ? `${id}-error` : hint ? `${id}-hint` : undefined;
 
   return (
-    <div>
-      <label htmlFor={id} className="type-label mb-2 block text-ink-2">
+    <div className="text-left">
+      <label htmlFor={id} className="type-label mb-2 block text-parchment-2">
         {label}
       </label>
       <input
@@ -123,12 +165,16 @@ function FormField({ id, label, hint, error, ...input }: FormFieldProps) {
         {...input}
       />
       {error ? (
-        <p id={noteId} role="alert" className="mt-2 font-mono text-[12px] leading-snug text-verm-deep">
+        <p
+          id={noteId}
+          role="alert"
+          className="mt-2 border-l-rule border-l-cinnabar pl-2.5 text-[0.8125rem] leading-snug text-parchment"
+        >
           {error}
         </p>
       ) : (
         hint && (
-          <p id={noteId} className="mt-2 font-mono text-[12px] leading-snug text-ink-3">
+          <p id={noteId} className="mt-2 text-[0.8125rem] leading-snug text-parchment-3">
             {hint}
           </p>
         )
@@ -173,36 +219,40 @@ function UnifiedAuthPageContent() {
     return (
       <main
         id="main"
-        className="mx-auto flex min-h-dvh w-full max-w-[600px] items-center px-0 sm:px-8 sm:py-12"
+        className="mx-auto flex min-h-dvh w-full max-w-[600px] items-center px-4 py-10 sm:px-8 sm:py-14"
       >
-        <SheetFrame>
-          <p className="type-label text-ink-3">Setup</p>
-          <h1 className="type-h1 mt-4 text-ink">Configuration required</h1>
-          <p className="type-body mt-4 text-ink-2">
+        <Panel className="pt-14 sm:pt-16">
+          <p className="type-label text-gold">Setup</p>
+          <h1 className="type-h1 mt-4 text-parchment">Configuration required</h1>
+          <p className="type-body mx-auto mt-5 text-parchment-2">
             Supabase credentials are needed before anyone can sign in.
           </p>
-          {/* The step numbers are numbers, so the marker is set in the mono. */}
-          <ol className="mt-7 list-decimal space-y-3 pl-6 marker:font-mono marker:text-[13px] marker:text-ink-3">
-            <li className="type-small text-ink-2">
+          {/* The steps are read in order, so they are set left and read down the
+              left edge. The markers are numerals and every numeral in this game is
+              Spectral, which is what the list items are already set in. */}
+          <ol className="mx-auto mt-8 max-w-[380px] list-decimal space-y-3 pl-6 text-left marker:text-[0.8125rem] marker:text-gold">
+            <li className="type-small text-parchment-2">
               Create a project at{' '}
               <a
                 href="https://supabase.com"
                 target="_blank"
                 rel="noreferrer"
-                className="text-verm-text underline decoration-verm underline-offset-[3px]"
+                className="text-gold-lit underline decoration-gold-deep underline-offset-[3px]"
               >
                 supabase.com
               </a>
             </li>
-            <li className="type-small text-ink-2">Copy the project URL and the anon key</li>
-            <li className="type-small text-ink-2">
+            <li className="type-small text-parchment-2">Copy the project URL and the anon key</li>
+            <li className="type-small text-parchment-2">
               Put them in{' '}
-              <code className="border-hair bg-paper-raised px-1.5 py-0.5 font-mono text-[13px] text-ink">
+              {/* `font-text` on purpose: the browser sets `code` in a monospace and
+                  this design has two faces, neither of them one. */}
+              <code className="border-hair border-gold-deep bg-night-2 px-1.5 py-0.5 font-text text-[0.9375rem] text-parchment">
                 frontend/.env.local
               </code>
             </li>
           </ol>
-        </SheetFrame>
+        </Panel>
       </main>
     );
   }
@@ -210,9 +260,9 @@ function UnifiedAuthPageContent() {
   /**
    * Checks the form before it goes anywhere.
    *
-   * Returns per-field messages rather than one banner. A single red box at the top
-   * saying "Fill in every field to continue" makes the reader work out which field it
-   * means; a line under the empty one does not.
+   * Returns per-field messages rather than one banner. A single box at the top saying
+   * "Fill in every field to continue" makes the reader work out which field it means;
+   * a line under the empty one does not.
    */
   const validate = (): Record<string, string> => {
     const next: Record<string, string> = {};
@@ -248,8 +298,8 @@ function UnifiedAuthPageContent() {
       const result = await unifiedAuthService.signUp(email, password, username);
 
       if (result.alreadyRegistered) {
-        // Not a failure worth an errata slip — they have an account, they are just on
-        // the wrong form. Send them to the other one with the address kept.
+        // Not a failure worth a rubric — they have an account, they are just on the
+        // wrong form. Send them to the other one with the address kept.
         setIsSignUp(false);
         setPassword('');
         setMessage('That email already has an account. Sign in below.');
@@ -326,35 +376,37 @@ function UnifiedAuthPageContent() {
     return (
       <main
         id="main"
-        className="mx-auto flex min-h-dvh w-full max-w-[600px] items-center px-0 sm:px-8 sm:py-12"
+        className="mx-auto flex min-h-dvh w-full max-w-[560px] items-center px-4 py-10 sm:px-8 sm:py-14"
       >
-        <SheetFrame>
-          <p className="type-label text-verm-text">Verification sent</p>
-          <h1 className="type-h1 mt-4 text-ink">Check your inbox</h1>
-          <p className="type-body mt-4 text-ink-2">A verification link is on its way to</p>
-          {/* The address is data, so it is set in the mono and boxed like a slug. */}
-          <p className="mt-3 border-hair bg-paper-raised px-3.5 py-2.5 font-mono text-[13px] text-ink">
+        <Panel className="pt-14 sm:pt-16">
+          <p className="type-label text-gold">Verification sent</p>
+          <h1 className="type-h1 mt-4 text-parchment">Check your inbox</h1>
+          <p className="type-body mx-auto mt-5 text-parchment-2">
+            A verification link is on its way to
+          </p>
+          {/* The address is data, so it is set apart on a raised ground the way a
+              room code is — read, not written. */}
+          <p className="mx-auto mt-4 max-w-[400px] border-hair border-gold-deep bg-night-2 px-3.5 py-2.5 text-[0.9375rem] text-parchment">
             {verificationEmail}
           </p>
-          <p className="type-body mt-4 text-ink-2">
+          <p className="type-body mx-auto mt-5 text-parchment-2">
             Nothing yet? Look in the spam folder, or send it again.
           </p>
 
           {message && (
-            <div className="mt-6">
+            <div className="mx-auto mt-7 max-w-[400px]">
               <Note>{message}</Note>
             </div>
           )}
-          {error && <InlineAlert className="mt-6">{error}</InlineAlert>}
+          {error && (
+            <InlineAlert className="mx-auto mt-7 max-w-[400px] text-left">{error}</InlineAlert>
+          )}
 
+          {/* The one gilded control on this screen. Gold is light here, not a
+              colour, and spending it twice would spend it on nothing. */}
           <button
             type="button"
-            /*
-             * `disabled:text-paper` is a local repair: the shared `.btn:disabled`
-             * drops the label to --ink-4, which on a key button's ink fill is
-             * 2.4:1. A busy button still has to be readable.
-             */
-            className="btn btn--key mt-8 h-11 w-full px-5 disabled:border-ink disabled:text-paper"
+            className="btn btn--key mx-auto mt-9 h-12 w-full max-w-[400px] px-6"
             onClick={handleResendVerification}
             disabled={isLoading}
           >
@@ -362,7 +414,7 @@ function UnifiedAuthPageContent() {
             {isLoading ? 'Sending…' : 'Send it again'}
           </button>
 
-          <div className="mt-7">
+          <div className="mt-8">
             <button
               type="button"
               className="link"
@@ -377,7 +429,7 @@ function UnifiedAuthPageContent() {
               Back to sign in
             </button>
           </div>
-        </SheetFrame>
+        </Panel>
       </main>
     );
   }
@@ -385,42 +437,59 @@ function UnifiedAuthPageContent() {
   return (
     <>
       {/*
-       * One sheet, off to the left, with the cards on the table beside it. Not a
-       * split screen: a split screen needs both halves to be surfaces, and here
-       * only one of them is. The other half is furniture.
+       * One panel on the centre line, with the deck laid at its foot. Not a split
+       * screen: a split screen has an axis running down the gap between its halves,
+       * and this design puts the axis through the middle of the thing itself.
        */}
       <main
         id="main"
-        className="mx-auto flex min-h-dvh w-full max-w-[1160px] items-center justify-center gap-8 px-0 sm:px-8 sm:py-12 lg:justify-between lg:px-10 xl:gap-14"
+        className="mx-auto flex min-h-dvh w-full max-w-[760px] flex-col items-center justify-center px-4 py-10 sm:px-8 sm:py-14"
       >
-        <SheetFrame className="sm:max-w-[560px]">
+        <Panel className="relative z-raised max-w-[540px]">
           <header>
-            <h1 className="type-display text-ink">
-              Hand of
-              <br />
-              Fate
-            </h1>
-            <hr className="mt-5 border-0 border-t-heavy border-t-ink" />
-            <p className="type-body mt-5 text-ink-2">
+            <Wordmark />
+
+            <div aria-hidden className="mx-auto mt-7 h-[2px] w-24 bg-gold" />
+
+            <p className="type-body mx-auto mt-5 text-parchment-2">
               A real-time duel for two. Fifteen squares, five cards each, and every card
               you lay has to touch one you already own — take the most columns to win.
             </p>
-            <p className="type-label mt-5 text-ink-3">3 columns · 5 rows · about 4 minutes</p>
+
+            {/*
+             * An almanac line. The counts are spelled out rather than set as
+             * numerals because this is Marcellus, and every numeral in this game
+             * belongs to Spectral without exception.
+             */}
+            <p className="type-label interpunct mt-5 flex flex-wrap items-center justify-center text-parchment-3">
+              <span>Three columns</span>
+              <span>Five rows</span>
+              <span>Four minutes</span>
+            </p>
           </header>
 
-          <h2 className="type-h2 mt-12 text-ink">
+          {/*
+           * The heading carries the whole job. There used to be a line under it
+           * saying "Your matches and score are waiting where you left them." — a
+           * sentence with no information in it, sitting directly beneath a
+           * paragraph that had already described the game, on a panel that then
+           * did not fit a laptop viewport. Two descriptions above one form is one
+           * too many.
+           */}
+          <h2 className="type-h2 mt-11 text-parchment">
             {isSignUp ? 'Create an account' : 'Sign in'}
           </h2>
-          <p className="type-small mt-2 text-ink-2">
-            {isSignUp
-              ? 'One name, one address, and you are in the next duel.'
-              : 'Your matches and score are waiting where you left them.'}
-          </p>
 
+          {/*
+           * The ceremony above is centred; the form is a column you read down its
+           * left edge. Centring a 12px label over a 400px field leaves it floating
+           * with nothing to align to, and a centred error is harder to scan than a
+           * left one — so the block is on the axis and its contents are not.
+           */}
           <form
             onSubmit={isSignUp ? handleSignUp : handleSignIn}
             noValidate
-            className="mt-7 max-w-[400px] space-y-5"
+            className="mx-auto mt-8 max-w-[400px] space-y-5"
           >
             {isSignUp && (
               <FormField
@@ -460,15 +529,11 @@ function UnifiedAuthPageContent() {
               error={fieldErrors.password}
             />
 
-            {error && <InlineAlert>{error}</InlineAlert>}
+            {error && <InlineAlert className="text-left">{error}</InlineAlert>}
             {message && <Note>{message}</Note>}
 
-            <button
-              type="submit"
-              /* See the resend button: the shared disabled colour is unreadable on ink. */
-              className="btn btn--key h-11 w-full px-5 disabled:border-ink disabled:text-paper"
-              disabled={isLoading}
-            >
+            {/* The one gilded control on the screen. */}
+            <button type="submit" className="btn btn--key h-12 w-full px-6" disabled={isLoading}>
               {isLoading && <Spinner size={15} />}
               {isLoading
                 ? isSignUp
@@ -480,8 +545,8 @@ function UnifiedAuthPageContent() {
             </button>
           </form>
 
-          <div className="mt-9 flex flex-wrap items-center justify-between gap-x-6 gap-y-4 border-t-hair pt-6">
-            <p className="type-small text-ink-2">
+          <div className="mx-auto mt-10 flex max-w-[400px] flex-wrap items-center justify-center gap-x-7 gap-y-4 border-t-hair border-t-gold-deep pt-7">
+            <p className="type-small text-parchment-2">
               {isSignUp ? 'Already have an account? ' : 'First time here? '}
               <button type="button" className="link" onClick={switchMode}>
                 {isSignUp ? 'Sign in' : 'Make one'}
@@ -496,9 +561,9 @@ function UnifiedAuthPageContent() {
               How to play
             </button>
           </div>
-        </SheetFrame>
+        </Panel>
 
-        <CardSpread />
+        <CardFan />
       </main>
 
       <GameTutorial
@@ -515,8 +580,8 @@ export default function UnifiedAuthPage() {
     <Suspense
       fallback={
         <div className="flex min-h-dvh items-center justify-center p-6">
-          <div className="sheet px-8 py-6">
-            <p className="type-label flex items-center gap-3 text-ink-3">
+          <div className="panel px-8 py-6">
+            <p className="type-label flex items-center gap-3 text-parchment-3">
               <Spinner size={13} />
               Loading
             </p>

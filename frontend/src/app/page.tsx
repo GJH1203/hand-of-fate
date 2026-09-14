@@ -17,12 +17,14 @@ import GuidedTutorial from '@/components/tutorial/GuidedTutorial'
  * Three steps, in the order they happen in a match. The old page had two bulleted
  * lists of three — "Basic Principles" and "Victory Conditions" — which between them
  * restated the same rule twice and left out the only one a new player gets wrong
- * (that you may not place anywhere you like). Numbered, because they are sequential.
+ * (that you may not place anywhere you like). Numbered, because they are sequential;
+ * three of them, set as three panels, because the game is three columns and the page
+ * should say so more than once.
  */
 const STEPS = [
   {
     title: 'Take a square',
-    body: 'You hold five cards. Each is worth 1, 3 or 5 power, and each one you play claims a square on a board three columns wide and five rows deep.',
+    body: 'You hold five cards. Each is worth 1, 3 or 5 power, counted in stars on its face, and each one you play claims a square on a board three columns wide and five rows deep.',
   },
   {
     title: 'Stay next to your own',
@@ -90,14 +92,15 @@ export default function Home() {
 
   if (isLoading) {
     /*
-     * On its own slip of paper. A line of ink centred on the bare table would be
-     * dark-on-dark; nothing in this interface is printed anywhere but a sheet.
+     * In a panel of its own. A line of text centred on the bare firmament would be
+     * one lit thing floating in a night sky, which is a thing this design reserves
+     * for the board.
      */
     return (
       <div className="flex min-h-dvh items-center justify-center px-6">
-        <div className="sheet flex items-center gap-3 px-7 py-5">
-          <Spinner size={16} className="text-ink-3" />
-          <span className="type-label text-ink-2">Checking your session</span>
+        <div className="panel flex items-center gap-3 px-7 py-5">
+          <Spinner size={16} className="text-gold" />
+          <span className="type-label text-parchment-2">Checking your session</span>
         </div>
       </div>
     );
@@ -116,7 +119,6 @@ export default function Home() {
   }
 
   const lifetimeScore = playerData?.lifetimeScore ?? 0;
-  const initial = (user?.username || '?').charAt(0).toUpperCase();
 
   const copyPlayerId = async () => {
     if (!user?.playerId) return;
@@ -130,67 +132,27 @@ export default function Home() {
 
   return (
     /*
-     * Two sheets on the table, with walnut in the margins once there is room for it.
-     * Below `sm` they run to the edges — paper filling the desk is honest, and a
-     * 16px strip of table down each side of a phone is not a margin, it is a seam.
+     * The menu is axial, and that is a reversal. The two designs before this one
+     * broke symmetry deliberately, on the defensive argument that asymmetry is how
+     * you avoid looking generated — a 7/5 hero with a stat plate dropped past the
+     * headline's baseline. The divine is not asymmetric. A temple is axial, an icon
+     * frontal, a tympanum centred, so everything here stands on one centre line and
+     * the board stands on it as the altar.
      */
     <div className="min-h-dvh">
-      <div className="mx-auto w-full max-w-[1140px] px-0 pt-0 sm:px-8 sm:pt-6">
+      <div className="mx-auto w-full max-w-[980px] px-5 sm:px-8">
         {/*
-         * The header is printed at the head of the sheet: bone paper, a heavy rule
-         * under it, and `.sheet`'s own cast falling on whatever slides beneath. It
-         * used to be a translucent bar with the page smeared through it, which is
-         * the one piece of the old vocabulary this design has no answer for at all:
-         * paper is opaque, and a strip of it pinned over a page hides the page.
+         * The apparatus, ruled off at the head of the page rather than floating over
+         * it — the previous header was a translucent bar with the page smeared
+         * through it, and there is no glass anywhere in this system.
+         *
+         * It is symmetric like everything else: your name on the centre line, a
+         * control to either side of it. Three columns, which by now is the joke the
+         * whole interface is built on.
          */}
-        <header className="sticky top-0 z-sticky sm:top-6">
-          <div className="sheet flex h-[70px] items-center justify-between gap-3 border-b-heavy px-4 sm:px-8">
-            <div className="flex min-w-0 items-center gap-3">
-              {/*
-               * A square ruled box rather than a squircle. The initial is a stamp on
-               * the sheet, so it is set in the mono with the rest of the apparatus,
-               * and it is aria-hidden because the name is right beside it.
-               */}
-              <span
-                aria-hidden
-                className="flex h-10 w-10 shrink-0 items-center justify-center border-rule border-ink bg-paper-raised font-mono text-[15px] font-medium text-ink"
-              >
-                {initial}
-              </span>
-
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="truncate text-[17px] leading-tight text-ink">
-                    {user?.username}
-                  </span>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={copyPlayerId}
-                  aria-label="Copy your full player ID"
-                  className="group mt-0.5 flex min-w-0 items-center gap-1.5 font-mono text-[11px] tracking-[0.06em] text-ink-3 transition-colors duration-ink hover:text-ink"
-                >
-                  <span className="truncate tabular">{user?.playerId?.slice(0, 8)}…</span>
-                  {copied ? (
-                    <Check size={12} strokeWidth={2} className="shrink-0 text-ink" />
-                  ) : (
-                    <Copy
-                      size={12}
-                      strokeWidth={1.75}
-                      className="shrink-0 opacity-70 group-hover:opacity-100"
-                    />
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/*
-             * No icons on these two. An icon earns its place when it is the whole
-             * control — the copy button above has no label and needs one — and is
-             * ornament when it sits next to a word that already says it.
-             */}
-            <div className="flex shrink-0 items-center gap-1.5">
+        <header className="border-b-hair border-gold-deep">
+          <div className="grid h-[78px] grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-4">
+            <div className="justify-self-start">
               <button
                 type="button"
                 onClick={() => setShowTutorial(true)}
@@ -198,6 +160,44 @@ export default function Home() {
               >
                 Tutorial
               </button>
+            </div>
+
+            <div className="flex min-w-0 flex-col items-center gap-1.5">
+              {/*
+               * A cartouche is the enclosure this system sets a name in, and you are
+               * Sol, so it is the gilded one. It replaces a squared monogram plate:
+               * the name is already here, and a synthesised initial beside it was
+               * ornament standing in for a portrait nobody has.
+               */}
+              <span className="cartouche cartouche--sol max-w-[52vw] sm:max-w-[300px]">
+                <span className="min-w-0 truncate">{user?.username}</span>
+              </span>
+
+              <button
+                type="button"
+                onClick={copyPlayerId}
+                aria-label="Copy your full player ID"
+                className="group flex min-w-0 max-w-[52vw] items-center gap-1.5 text-[11px] tracking-[0.06em] text-parchment-3 transition-colors duration-lume hover:text-gold-lit sm:max-w-none"
+              >
+                <span className="truncate tabular">{user?.playerId?.slice(0, 8)}…</span>
+                {copied ? (
+                  <Check size={12} strokeWidth={2} className="shrink-0 text-gold-lit" />
+                ) : (
+                  <Copy
+                    size={12}
+                    strokeWidth={1.75}
+                    className="shrink-0 opacity-70 group-hover:opacity-100"
+                  />
+                )}
+              </button>
+            </div>
+
+            {/*
+             * No icons on these two. An icon earns its place when it is the whole
+             * control — the copy button above has no label and needs one — and is
+             * ornament when it sits next to a word that already says it.
+             */}
+            <div className="justify-self-end">
               <button type="button" onClick={logout} className="btn btn--quiet h-9 px-2.5 sm:px-3">
                 Sign out
               </button>
@@ -205,149 +205,153 @@ export default function Home() {
           </div>
         </header>
 
-        <main id="main" className="pb-0 sm:pb-14">
-          {/*
-           * The hero is a 12-column grid split 7/5 rather than a centred stack, and
-           * the plate on the right is pulled down past the headline's baseline so the
-           * two halves interlock instead of sitting in two tidy boxes. Everything in
-           * the left column aligns to one edge; the old page centred five separate
-           * elements and the eye had nowhere to rest.
-           */}
-          <div className="sheet mt-3 px-5 py-12 sm:mt-6 sm:px-10 sm:py-16 lg:px-14 lg:py-20">
-            <section className="grid grid-cols-1 items-start gap-10 lg:grid-cols-12 lg:gap-12">
-              <div className="lg:col-span-7">
-                <p className="type-label text-verm-text">Real-time · one against one</p>
+        <main id="main" className="pt-14 sm:pt-20">
+          <section className="text-center">
+            <p className="type-label interpunct text-gold">
+              <span>Real-time</span>
+              <span>one against one</span>
+            </p>
 
-                <h1 className="type-display mt-5 text-ink">
-                  Three columns.
-                  <br />
-                  {/*
-                   * Vermillion at full strength clears AA only from 24px up, which
-                   * this line is four times over. Anywhere smaller it would have to
-                   * be --verm-text, and there is no smaller vermillion on this page.
-                   */}
-                  <span className="text-verm">Take two.</span>
-                </h1>
-
-                <p className="type-body mt-6 text-ink-2">
-                  Five cards each, fifteen squares, and one rule that decides everything: you can
-                  only build outward from what you already hold. Read the board, starve the column
-                  they want, and take the two that matter.
-                </p>
-
-                <div className="mt-9 flex flex-wrap items-center gap-x-8 gap-y-4">
-                  <Link href="/game" className="btn btn--key h-12 px-6">
-                    Enter the arena
-                  </Link>
-                  <button type="button" onClick={() => setShowTutorial(true)} className="link">
-                    Walk me through a turn
-                  </button>
-                </div>
-
-                <p className="type-small mt-8 text-ink-3">
-                  Campaign mode is not built yet. Online duels are.
-                </p>
-              </div>
-
+            <h1 className="type-display mt-6 text-parchment">
+              Three columns.
+              <br />
               {/*
-               * Offset downward on wide screens so the plate's top edge lands against
-               * the body copy rather than the headline — the overlap is what stops
-               * this reading as a two-column table.
+               * Gold is light, not a colour, so it falls on the line that carries the
+               * whole rule of the game and on nothing else in this block. At display
+               * size --gold-lit measures 11.6:1 on the night; there is no smaller
+               * gold on this page that would have to be reasoned about separately.
                */}
-              <div className="lg:col-span-5 lg:mt-16">
-                <div className="border-rule border-ink bg-paper-raised">
-                  <div className="px-6 pb-6 pt-6 sm:px-7">
-                    <p className="type-label text-ink-3">Power score</p>
-                    {loadingStats ? (
-                      <Skeleton className="mt-3 h-[52px] w-28" />
-                    ) : (
-                      /*
-                       * A number, so it is set in the mono and printed in the key
-                       * plate. It was a 64px semi-bold serif in ember, which broke
-                       * both halves of the type rule at once.
-                       */
-                      <p className="type-num mt-2 text-[56px] leading-none text-ink">
-                        {lifetimeScore}
-                      </p>
-                    )}
-                    <p className="type-small mt-3 max-w-[34ch] text-ink-2">
-                      Earned one duel at a time. It only goes up when you win.
-                    </p>
-                  </div>
+              <span className="text-gold-lit">Take two.</span>
+            </h1>
 
-                  <div className="border-t-rule px-6 pb-7 pt-6 sm:px-7">
-                    <p className="type-label text-ink-3">A finished board</p>
-                    <BoardDiagram className="mt-4" />
-                  </div>
-                </div>
-              </div>
-            </section>
-          </div>
-
-          {/*
-           * The rules get a sheet of their own, so there is a band of table between
-           * them and the hero doing the work a horizontal divider used to do.
-           *
-           * Each step is a number, a hairline and a paragraph — the number carries the
-           * hierarchy, so none of them needs a box or an edge to read as a group. The
-           * numerals are mono and in ink: ochre is the attention colour but it is a
-           * fill and a rule only, and vermillion means "you", which a step number is
-           * not.
-           */}
-          <section
-            aria-labelledby="rules-heading"
-            className="sheet mt-3 px-5 py-12 sm:mt-6 sm:px-10 sm:py-16 lg:px-14 lg:py-20"
-          >
-            <div className="grid grid-cols-1 gap-x-16 gap-y-10 lg:grid-cols-12">
-              <div className="lg:col-span-4">
-                <h2 id="rules-heading" className="type-h1 text-ink">
-                  How a duel goes
-                </h2>
-                <p className="type-small mt-4 max-w-[36ch] text-ink-2">
-                  About four minutes, start to finish. There is no deck to build and nothing to
-                  unlock — every match starts from the same five cards.
-                </p>
-              </div>
-
-              <ol className="lg:col-span-8">
-                {STEPS.map((step, index) => (
-                  <li
-                    key={step.title}
-                    className="grid grid-cols-[auto_1fr] gap-x-6 border-t-hair py-7 first:border-t-0 first:pt-0"
-                  >
-                    <span className="type-num pt-[0.35rem] text-[0.9375rem] tracking-[0.08em] text-ink-3">
-                      {String(index + 1).padStart(2, '0')}
-                    </span>
-                    <div>
-                      <h3 className="type-h3 text-ink">{step.title}</h3>
-                      <p className="type-body mt-2 text-ink-2">{step.body}</p>
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            </div>
+            <p className="type-body mx-auto mt-7 text-parchment-2">
+              Five cards each, fifteen squares, and one rule that decides everything: you can
+              only build outward from what you already hold. Read the board, starve the column
+              they want, and take the two that matter.
+            </p>
 
             {/*
-             * A colophon at the foot of the sheet rather than a footer band of its
-             * own. There is nothing to put in a second bar, and inventing privacy and
-             * terms pages to fill one would be inventing pages.
+             * The one gilded control on the screen. Everything else on this page that
+             * can be clicked is a ruled outline or an underlined line of capitals,
+             * which is what makes this one read as the way in without a single pixel
+             * of it moving.
              */}
-            <div className="mt-14 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-t-heavy pt-6">
-              <p className="type-small text-ink-3">
-                Hand of Fate — a 1v1 card duel at{' '}
-                <a
-                  href="https://handoffate.org"
-                  className="text-ink-2 underline decoration-ink-3 decoration-[1.5px] underline-offset-[3px] transition-colors duration-ink hover:text-ink hover:decoration-ink"
-                >
-                  handoffate.org
-                </a>
-              </p>
+            <div className="mt-11 flex flex-col items-center gap-6 sm:flex-row sm:justify-center sm:gap-10">
+              <Link href="/game" className="btn btn--key h-12 px-8">
+                Enter the arena
+              </Link>
               <button type="button" onClick={() => setShowTutorial(true)} className="link">
-                How to play
+                Walk me through a turn
               </button>
             </div>
+
+            <p className="type-small mt-8 text-parchment-3">
+              Campaign mode is not built yet. Online duels are.
+            </p>
+          </section>
+
+          {/*
+           * The altar. The diagram used to be a 220px ornament in the foot of a
+           * sidebar plate, under the stat it shared a box with; it is the only thing
+           * on the page that shows what winning a column actually looks like, and it
+           * is now the object the page is arranged around.
+           */}
+          <section
+            aria-labelledby="board-heading"
+            className="mt-20 flex flex-col items-center sm:mt-24"
+          >
+            <h2 id="board-heading" className="type-label text-gold">
+              A finished board
+            </h2>
+            <span aria-hidden className="mt-5 block h-px w-16 bg-gold-deep" />
+
+            <BoardDiagram className="mt-9" />
+          </section>
+
+          <section className="mt-20 flex justify-center sm:mt-24">
+            <div className="panel w-full max-w-[420px] px-8 py-10 text-center">
+              <p className="type-label text-parchment-3">Power score</p>
+
+              {loadingStats ? (
+                <Skeleton className="mx-auto mt-4 h-[60px] w-32 bg-night-3" />
+              ) : (
+                /*
+                 * A number, so it is Spectral — an ephemeris sets its tables in the
+                 * text face and not in a second one — and it is gilded, because a
+                 * count of what you have won is the one figure on this page worth any
+                 * of the light.
+                 */
+                <p className="type-num mt-4 text-[60px] leading-none text-gold-lit">
+                  {lifetimeScore}
+                </p>
+              )}
+
+              <p className="type-small mx-auto mt-5 max-w-[34ch] text-parchment-2">
+                Earned one duel at a time. It only goes up when you win.
+              </p>
+            </div>
+          </section>
+
+          {/*
+           * The rules as three panels rather than a numbered list down one side of a
+           * 4/8 grid: three is the number this game is built on, and a row of three
+           * arched-headed panels is the same triptych the board is, said again in
+           * type. Each step is a numeral, a hairline and a paragraph — the numeral
+           * carries the order, so none of them needs a badge.
+           */}
+          <section aria-labelledby="rules-heading" className="mt-20 sm:mt-28">
+            <div className="text-center">
+              <h2 id="rules-heading" className="type-h1 text-parchment">
+                How a duel goes
+              </h2>
+              <p className="type-small mx-auto mt-5 max-w-[46ch] text-parchment-2">
+                About four minutes, start to finish. There is no deck to build and nothing to
+                unlock — every match starts from the same five cards.
+              </p>
+            </div>
+
+            <ol className="mt-10 grid grid-cols-1 gap-5 md:grid-cols-3 md:gap-6">
+              {STEPS.map((step, index) => (
+                <li
+                  key={step.title}
+                  className="panel flex flex-col items-center px-6 pb-9 pt-8 text-center"
+                >
+                  <span className="type-num text-[15px] tracking-[0.16em] text-gold">
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
+                  <span aria-hidden className="mt-4 block h-px w-10 bg-gold-deep" />
+
+                  <h3 className="type-h2 mt-6 text-parchment">{step.title}</h3>
+                  <p className="type-small mt-4 text-parchment-2">{step.body}</p>
+                </li>
+              ))}
+            </ol>
           </section>
         </main>
+
+        {/*
+         * A colophon rather than a footer band. There is nothing to put in a second
+         * bar, and inventing privacy and terms pages to fill one would be inventing
+         * pages.
+         */}
+        <footer className="mt-20 border-t-hair border-gold-deep pb-16 pt-7 text-center sm:mt-28">
+          <p className="type-small text-parchment-3">
+            Hand of Fate — a 1v1 card duel at{' '}
+            <a
+              href="https://handoffate.org"
+              className="text-parchment-2 underline decoration-gold-deep decoration-[1.5px] underline-offset-[3px] transition-colors duration-lume hover:text-gold-lit hover:decoration-gold"
+            >
+              handoffate.org
+            </a>
+          </p>
+          <button
+            type="button"
+            onClick={() => setShowTutorial(true)}
+            className="link mt-6 inline-block"
+          >
+            How to play
+          </button>
+        </footer>
       </div>
     </div>
   )

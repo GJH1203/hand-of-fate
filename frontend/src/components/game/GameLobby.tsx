@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Check, Copy } from 'lucide-react';
 
 import { Modal } from '@/components/ui/modal';
+import { OwnerMark } from './Pips';
 import { useToast } from '@/components/ui/toast';
 import { onlineGameService } from '@/services/onlineGameService';
 import { OnlineMatchInfo } from '@/types/gameMode';
@@ -19,6 +20,20 @@ interface GameLobbyProps {
 /** How often the host asks the server whether anyone has turned up. */
 const POLL_INTERVAL_MS = 5000;
 
+/**
+ * The waiting room.
+ *
+ * Axial, and built around one image: the room code standing as six arched
+ * niches. That is the only thing on this screen anybody does anything with —
+ * read it out, or paste it into a chat window — so it is set the way a
+ * compositor sets six characters that must not be misread: one piece of type per
+ * character, each in its own body, with a real gap to the next. Six run-together
+ * characters get miscopied; six separate niches cannot be.
+ *
+ * The niches are `.slug`, the same class the join screen's code input uses, at
+ * the same size — the thing you read off this screen and the thing you type into
+ * that one have to look like the same object.
+ */
 export default function GameLobby({
   matchInfo,
   currentPlayerId,
@@ -92,82 +107,91 @@ export default function GameLobby({
   return (
     <main
       id="main"
-      className="mx-auto flex min-h-dvh w-full max-w-[620px] flex-col justify-center px-0 sm:px-8 sm:py-12"
+      className="mx-auto flex min-h-dvh w-full max-w-[38rem] flex-col justify-center px-4 py-10 sm:px-8 sm:py-14"
     >
-      <div className="sheet min-h-dvh px-7 py-14 sm:min-h-0 sm:px-12 sm:py-16">
-        <p className="type-label text-verm-text">
+      {/*
+       * The top padding clears the head of the arch: the curve takes about 70px
+       * out of the inner edge of a panel this tall.
+       */}
+      <div className="panel px-6 pb-12 pt-12 text-center sm:px-12 sm:pb-14 sm:pt-14">
+        <p className="type-label text-gold">
           {hasOpponent ? 'Both here' : isHost ? 'Waiting' : 'Joining'}
         </p>
-        <h1 className="type-h1 mt-5 text-ink">
+        <h1 className="type-h1 mt-5 text-parchment">
           {hasOpponent ? 'Your opponent is here' : isHost ? 'Send them the code' : 'Finding the room'}
         </h1>
 
         {/*
-         * The code, set as six slugs.
-         *
-         * It is the one thing on this screen anybody has to do something with — read it
-         * out, or paste it into a chat window — so it is set the way a compositor would
-         * set six characters that must not be misread: one piece of type per character,
-         * in its own body, with a real gap to the next. Six run-together characters get
-         * miscopied; six separate boxes cannot be.
+         * Three rules, the middle one heavier: a centre panel between two wings.
+         * It is the shape of the board — three columns, two of them win it — used
+         * as the device under an inscription, and it is the one ornament on this
+         * screen and the one before it.
          */}
-        <div className="mt-10">
-          <div className="flex items-center justify-between gap-4">
-            <p className="type-label text-ink-3">Room code</p>
-            <button
-              type="button"
-              onClick={copyCode}
-              aria-label="Copy the room code"
-              className="btn btn--quiet h-9 w-9 p-0"
-            >
-              {copiedCode ? (
-                <Check aria-hidden size={17} strokeWidth={2} />
-              ) : (
-                <Copy aria-hidden size={16} strokeWidth={1.75} />
-              )}
-            </button>
-          </div>
+        <span aria-hidden className="mt-6 flex items-center justify-center gap-2">
+          <span className="block h-px w-6 bg-gold-deep" />
+          <span className="block h-[2px] w-10 bg-gold" />
+          <span className="block h-px w-6 bg-gold-deep" />
+        </span>
+
+        <div className="mt-11">
+          <p className="type-micro text-parchment-3">Room code</p>
 
           {/* Read as one string, not as six loose characters. */}
           <span className="sr-only">Room code: {gameCode.split('').join(' ')}</span>
 
-          <div aria-hidden className="mt-3 flex gap-2 sm:gap-2.5">
+          <div
+            aria-hidden
+            className="mx-auto mt-4 flex max-w-[23rem] items-stretch justify-center gap-2 sm:gap-2.5"
+          >
             {gameCode.split('').map((char, index) => (
               <span
                 key={index}
                 className={cn(
-                  'slug h-[3.75rem] flex-1 sm:h-[4.5rem]',
-                  /*
-                   * The fourth slug sits one pixel low, always — not on hover, not
-                   * animated. A stick of type with one piece standing slightly proud
-                   * of its neighbours is what a real setting looks like, and a system
-                   * with no irregularity anywhere in it reads as generated. This is
-                   * deliberate and it is not a bug.
-                   */
-                  index === 3 && 'translate-y-px',
+                  'slug h-[4.25rem] flex-1 sm:h-[5rem]',
                 )}
               >
                 {/*
-                 * `.type-code` carries 0.28em of tracking, which is space added after
+                 * `.type-code` carries 0.3em of tracking, which is space added after
                  * each character — on a single character in a centred box that pushes
                  * the glyph left of centre by exactly that much. The matching left
-                 * padding puts it back.
+                 * padding puts it back. The colour comes from `.slug` itself, which
+                 * sets the lit gold a character standing in a niche is cut in.
                  */}
-                <span className="type-code pl-[0.28em] text-ink">{char}</span>
+                <span className="type-code pl-[0.3em]">{char}</span>
               </span>
             ))}
+          </div>
+
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <button type="button" onClick={copyCode} className="btn h-10 px-4">
+              {copiedCode ? (
+                <Check aria-hidden size={16} strokeWidth={2} />
+              ) : (
+                <Copy aria-hidden size={15} strokeWidth={1.75} />
+              )}
+              Copy code
+            </button>
+            {isHost && !hasOpponent && (
+              <button type="button" onClick={copyLink} className="btn h-10 px-4">
+                Copy invite link
+              </button>
+            )}
           </div>
         </div>
 
         {/*
-         * The seat list: a filled lozenge for a seat taken, a hollow one for a seat
-         * still empty. The hollow one is the only thing on the screen that loops, and
-         * it loops because the honest answer really is "we are still waiting".
+         * The seat list. The mark is the ownership figure the board uses — a rayed
+         * disc for Sol, which is always you, and a crescent for Luna, which is
+         * always the other player — so the pairing you will read on every card is
+         * established here, before a card exists. An empty seat is the moon before
+         * it has risen: the Luna crescent, unlit, and the only thing on the screen
+         * that loops. It loops because the honest answer is "we are still waiting".
          */}
-        <div className="mt-10 border-y-rule border-ink">
-          <Seat role="Host" present status={isHost ? 'You' : 'Seated'} />
+        <div className="mt-11 border-y-rule border-gold-deep">
+          <Seat role="Host" mine={isHost} present status={isHost ? 'You' : 'Seated'} />
           <Seat
             role="Challenger"
+            mine={!isHost}
             present={hasOpponent}
             status={hasOpponent ? (isHost ? 'Seated' : 'You') : 'Waiting'}
             divider
@@ -175,35 +199,31 @@ export default function GameLobby({
         </div>
 
         {hasOpponent ? (
-          <p className="type-label mt-8 text-ink">
+          <p className="type-label mt-9 text-parchment">
             Board opens in{' '}
-            <span className="type-num ml-0.5 text-[15px] text-verm-text">{countdown}</span>
+            <span className="type-num ml-1 text-[1.0625rem] text-gold-lit">{countdown}</span>
           </p>
         ) : (
-          <p className="type-small mt-8 text-ink-2">
+          <p className="type-small mx-auto mt-9 max-w-[44ch] text-parchment-2">
             The board opens by itself the moment they arrive. You can leave this tab open.
           </p>
         )}
 
-        <div className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-4">
-          {isHost && !hasOpponent && (
-            <button type="button" onClick={copyLink} className="btn btn--rule h-11 px-5">
-              Copy invite link
-            </button>
-          )}
-          {!hasOpponent && (
+        {!hasOpponent && (
+          <div className="mt-9 flex justify-center">
             <button type="button" onClick={() => setConfirmAbandon(true)} className="link">
               Stop waiting
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/*
-       * This dialog used to promise that the room closed and the code expired. Nothing
-       * in the backend does either: `cleanupMatch` is written and never called, so the
-       * room's entry outlives the player who left it. The copy now claims only what
-       * leaving actually does, which is take you back to the menu.
+       * This dialog used to promise that the room closed and the code expired.
+       * Nothing in the backend does either: leaving sends LEAVE_MATCH, which
+       * detaches this socket from the match and answers LEAVE_SUCCESS, and
+       * `cleanupMatch` — the method that would empty the room's entry — is written
+       * and never called. So the copy claims only what leaving actually does.
        */}
       <Modal
         open={confirmAbandon}
@@ -211,11 +231,12 @@ export default function GameLobby({
         title="Stop waiting?"
         widthClassName="max-w-sm"
       >
-        <p className="type-small text-ink-2">
-          You go back to the menu and stop waiting for a challenger. Tell whoever you sent the
-          code to, so they are not left waiting on a room you have walked away from.
+        <p className="type-small text-center text-parchment-2">
+          You go back to the menu. This does not close the room or expire the code, so tell
+          whoever you sent it to — otherwise they are left waiting on a room you have walked
+          away from.
         </p>
-        <div className="mt-6 flex justify-end gap-3">
+        <div className="mt-6 flex justify-center gap-3">
           <button
             type="button"
             onClick={() => setConfirmAbandon(false)}
@@ -233,34 +254,47 @@ export default function GameLobby({
 }
 
 interface SeatProps {
-  /** Host or Challenger — the same two words the start screen puts in its gutter. */
+  /** Host or Challenger — the same two words the start screen puts above each action. */
   role: string;
+  /** Whether this seat is yours: Sol if it is, Luna if it is the other player's. */
+  mine: boolean;
   present: boolean;
   /** Who is in it: you, somebody else, or nobody yet. */
   status: string;
   divider?: boolean;
 }
 
-/** One row of the seat list: a mark, the seat, and who is in it. */
-function Seat({ role, present, status, divider }: SeatProps) {
+/** One row of the seat list: the figure, the seat, and who is in it. */
+function Seat({ role, mine, present, status, divider }: SeatProps) {
   return (
     <div
       className={cn(
-        'flex items-center gap-3 py-3.5',
-        divider && 'border-t-hair border-rule-ghost',
+        'flex items-center justify-center gap-3 py-4',
+        divider && 'border-t-hair border-gold-deep',
       )}
     >
-      {present ? (
-        <span aria-hidden className="h-2 w-2 rotate-45 bg-ink" />
-      ) : (
-        <span
-          aria-hidden
-          className="h-2 w-2 rotate-45 border-rule border-ink-3"
-          style={{ animation: 'ink-pulse 1900ms var(--ease-settle) infinite' }}
-        />
-      )}
-      <span className={cn('type-label', present ? 'text-ink' : 'text-ink-3')}>{role}</span>
-      <span className={cn('type-micro ml-auto', present ? 'text-ink-2' : 'text-ink-3')}>
+      <span
+        aria-hidden
+        className={cn(
+          'block h-4 w-4 shrink-0',
+          present ? (mine ? 'text-gold' : 'text-luna') : mine ? 'text-gold-deep' : 'text-luna-deep',
+        )}
+        /* The one loop the system allows, and only while the answer is "nobody yet". */
+        style={present ? undefined : { animation: 'ink-pulse 1900ms ease-in-out infinite' }}
+      >
+        <OwnerMark mine={mine} className="h-full w-full" />
+      </span>
+
+      <span className={cn('type-label', present ? 'text-parchment' : 'text-parchment-3')}>
+        {role}
+      </span>
+
+      <span
+        className={cn(
+          'cartouche',
+          present ? (mine ? 'cartouche--sol' : 'cartouche--luna') : undefined,
+        )}
+      >
         {status}
       </span>
     </div>

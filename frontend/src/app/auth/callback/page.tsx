@@ -75,41 +75,40 @@ export default function AuthCallback() {
   }, [router])
 
   /*
-   * A small sheet, and nothing else on it. This page is a waiting room between
-   * the email and the sign-in form — it has one line of status and no decisions
-   * to offer, so it gets the least paper of any screen in the application.
+   * One small panel on the centre line, and nothing else in the firmament. This
+   * page is a waiting room between the email and the sign-in form — it has one
+   * line of status and no decisions to offer, so it gets the least of any screen
+   * in the application: no wordmark, no gilded control, no deck at its foot.
    */
   return (
     <main
       id="main"
-      className="mx-auto flex min-h-dvh w-full max-w-[520px] items-center px-0 sm:px-8 sm:py-12"
+      className="mx-auto flex min-h-dvh w-full max-w-[520px] items-center px-4 py-10 sm:px-8 sm:py-14"
     >
-      <div className="sheet min-h-dvh w-full p-0 sm:min-h-0 sm:p-3">
-        <div className="border-0 px-7 py-12 sm:border-hair sm:px-10 sm:py-11">
-          <p className="type-label text-ink-3">Account setup</p>
-          <h1 className="type-h2 mt-4 text-ink">
-            {error ? 'Verification failed' : 'Verifying your account'}
-          </h1>
+      <div className="panel w-full px-6 pb-11 pt-12 text-center sm:px-11 sm:pt-12">
+        <p className="type-label text-gold">Account setup</p>
+        <h1 className="type-h2 mt-4 text-parchment">
+          {error ? 'Verification failed' : 'Verifying your account'}
+        </h1>
 
-          {error ? (
-            <InlineAlert className="mt-6">{error}</InlineAlert>
-          ) : (
-            /*
-             * The one loop the design allows, and this is the case it was kept
-             * for: the honest answer here is that we are still waiting.
-             */
-            <div className="mt-6 flex items-start gap-3 border-hair bg-paper-raised px-3.5 py-3">
-              <Spinner size={14} className="mt-[3px] shrink-0 text-ink-3" />
-              <p role="status" className="font-mono text-[13px] leading-relaxed text-ink-2">
-                {message}
-              </p>
-            </div>
-          )}
+        {error ? (
+          <InlineAlert className="mt-7 text-left">{error}</InlineAlert>
+        ) : (
+          /*
+           * The one loop the design allows, and this is the case it was kept for:
+           * the honest answer here is that we are still waiting.
+           */
+          <div className="mt-7 flex items-center justify-center gap-3 border-hair border-gold-deep bg-night-2 px-3.5 py-3">
+            <Spinner size={14} className="shrink-0 text-parchment-3" />
+            <p role="status" className="text-[0.9375rem] leading-relaxed text-parchment-2">
+              {message}
+            </p>
+          </div>
+        )}
 
-          <p className="type-small mt-6 text-ink-3">
-            {error ? 'Taking you back to the sign-in page…' : 'This takes a moment.'}
-          </p>
-        </div>
+        <p className="type-small mt-7 text-parchment-3">
+          {error ? 'Taking you back to the sign-in page…' : 'This takes a moment.'}
+        </p>
       </div>
     </main>
   )
