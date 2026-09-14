@@ -3,310 +3,795 @@
 @tailwind utilities;
 
 /*
- * Arcane Noir — the design system.
+ * THE FIRMAMENT — the design system.
  *
- * Every colour, radius and shadow in the application comes from here. The palette
- * is taken from the card faces: near-black ink blue, gold as the only lead accent,
- * violet demoted from "background" to "interaction feedback".
+ * A gilded triptych standing in a night sky.
+ *
+ *   THE FIRMAMENT  deep night, with a milky band and a few real stars. The page.
+ *   THE PANELS     dark boards with gilt frames, the way an altarpiece is built.
+ *   THE GOLD       reserved. In icon painting gold is not a colour, it is
+ *                  uncreated light — the ground the figures stand on. So it is
+ *                  the board's field and almost nothing else, which is what
+ *                  makes the board the altar of every screen it appears on.
+ *
+ * THREE THINGS SHAPE THIS, AND ALL THREE COME FROM THE GAME RATHER THAN A MOOD.
+ *
+ * 1. THE BOARD IS A TRIPTYCH. Three columns, a centre panel flanked by two
+ *    wings, and you win by taking two of the three. That is the form of every
+ *    devotional painting ever made, and it was sitting in the rules the whole
+ *    time. So the column heads are an ARCADE of three arches, and the arch is
+ *    the shape language of the whole interface — not a square corner, not a
+ *    rounded rectangle. An arch is unmistakably sacred architecture.
+ *
+ * 2. IT IS AXIAL. The two designs before this one broke symmetry deliberately,
+ *    and the reason was defensive: asymmetry is how you avoid looking generated.
+ *    The divine is not asymmetric. A temple is axial, an icon is frontal, a
+ *    tympanum is centred. Committing to the centre line is the harder choice and
+ *    it is the right one here.
+ *
+ * 3. IT IS SOL AGAINST LUNA. Gold against silver — the oldest opposition there
+ *    is, and still warm against cool, so it keeps the one property that matters:
+ *    it survives colour blindness. Ownership is carried first by a SHAPE, a
+ *    rayed disc against a crescent, which is a stronger channel than any hatch.
  */
 
 @layer base {
   :root {
-    /* Surfaces — deep ink blue, darkest at the page, lighter as things stack up */
-    --bg-0: #0a0c16;
-    --bg-1: #111527;
-    --bg-2: #1a1f36;
-    --bg-3: #232946;
+    color-scheme: dark;
 
-    /* Borders and text */
-    --border-subtle: rgba(255, 255, 255, 0.08);
-    --border-strong: rgba(255, 255, 255, 0.16);
-    --text-hi: #edeef5;
-    --text-mid: #a9aec7;
-    --text-low: #767c9e;
+    /* ───────────────────────────────────────────────────────────────
+       THE NIGHT. Four depths, all of them blue rather than black —
+       a true black sky is a printing failure, not a night. These are
+       the indigo of a hand-coloured celestial chart.
+       ─────────────────────────────────────────────────────────────── */
+    --night-0: #080b16; /* the firmament. The page. */
+    --night-1: #0e1326; /* panels */
+    --night-2: #161c33; /* raised: fields, cells, slugs */
+    --night-3: #212943; /* wells and edges */
 
-    /* Arcane gold — the lead accent, borrowed from the card frames */
-    --gold-300: #ebcb7e;
-    --gold-400: #d9ae4e;
-    --gold-500: #b98d2f;
-    --gold-glow: rgba(217, 174, 78, 0.22);
+    /* ───────────────────────────────────────────────────────────────
+       GOLD — the light, and SOL, and therefore you.
+       Four stops because real leaf is not one yellow: it has a lit
+       face, a body, a burnished ground and a recess where the bole
+       shows through. A single flat yellow is the surest way to make
+       gilding look like a casino.
+       ─────────────────────────────────────────────────────────────── */
+    --gold-lit: #f5e3ae; /* highlight, and gold text on night.  11.6:1 on night-1 */
+    --gold: #d4af57; /* the leaf. Rules, marks, frames.      8.4:1 on night-1 */
+    --gold-ground: #c9a63e; /* the gilded field. Carries dark marks only. */
+    --gold-deep: #8f6e28; /* recess, the shadowed side of a frame */
 
-    /* Arcane violet — interaction feedback and accents only, never a background */
-    --violet-300: #a08bf0;
-    --violet-400: #8468e4;
-    --violet-500: #6c4fd1;
-    --violet-glow: rgba(132, 104, 228, 0.3);
+    /* ───────────────────────────────────────────────────────────────
+       SILVER — LUNA, and therefore them. Three stops; the moon has
+       less range than the sun and pretending otherwise is tidying.
+       ─────────────────────────────────────────────────────────────── */
+    --luna-lit: #e8eef9;
+    --luna: #b9c7df; /* 9.9:1 on night-1 */
+    --luna-deep: #6c7d9b;
 
-    /* Semantic */
-    --success: #3dd68c;
-    --danger: #f0716f;
-    --warning: #e7a13b;
-    --info: #56c2e6;
+    /* Lapis. The sacred blue, ground from stone and worth more than
+       gold — so it is spent on almost nothing: one rule, one fill. */
+    --lapis: #3554b8;
 
-    --radius-sm: 6px;
-    --radius-md: 10px;
-    --radius-lg: 14px;
-    --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.45);
-    --glow-gold: 0 0 0 1px rgba(217, 174, 78, 0.4), 0 0 22px rgba(217, 174, 78, 0.16);
-    --glow-violet: 0 0 0 1px rgba(132, 104, 228, 0.45), 0 0 20px rgba(132, 104, 228, 0.2);
+    /* Cinnabar. Rubrication only: a correction, a warning, a chapter
+       mark. Red in a manuscript is not an emotion, it is an index. */
+    --cinnabar: #d4574a;
 
-    /*
-     * shadcn's variables, pointed at the palette above. Components that still read
-     * them (Card, Alert, Tooltip) land in the same world as everything else instead
-     * of rendering the stock light theme on a black page.
-     */
-    --background: 231 42% 6%;
-    --foreground: 232 30% 95%;
-    --card: 230 41% 11%;
-    --card-foreground: 232 30% 95%;
-    --popover: 230 41% 11%;
-    --popover-foreground: 232 30% 95%;
-    --primary: 42 65% 58%;
-    --primary-foreground: 33 62% 6%;
-    --secondary: 231 32% 16%;
-    --secondary-foreground: 232 30% 95%;
-    --muted: 231 32% 16%;
-    --muted-foreground: 231 18% 72%;
-    --accent: 253 71% 68%;
-    --accent-foreground: 232 30% 95%;
-    --destructive: 1 79% 69%;
-    --destructive-foreground: 232 30% 95%;
-    --border: 231 25% 22%;
-    --input: 231 25% 22%;
-    --ring: 253 71% 65%;
-    --radius: 0.625rem;
+    /* ───────────────────────────────────────────────────────────────
+       PARCHMENT — the text. Warm off-white, never pure white: a sheet
+       that white has never existed and the eye knows it.
+       ─────────────────────────────────────────────────────────────── */
+    --parchment: #efe8d6; /* body and headings.        14.6:1 on night-1 */
+    --parchment-2: #bdb8a8; /* secondary                 9.1:1 */
+    --parchment-3: #8c8878; /* tertiary, placeholders    4.9:1 */
+    --parchment-4: #63604f; /* DISABLED ONLY             2.5:1 — never content */
+
+    /* The only text colour permitted on the gilded ground. */
+    --ink-on-gold: #1a1408; /* 7.8:1 on --gold-ground */
+
+    /* ───────────────────────────────────────────────────────────────
+       RULES. Gilt lines, at three weights. Hierarchy is weight, not
+       opacity — a gold rule at 30% is not a quieter gold rule, it is
+       a grey one.
+       ─────────────────────────────────────────────────────────────── */
+    --rule-hair: 1px;
+    --rule: 2px;
+    --rule-heavy: 4px;
+
+    /* ───────────────────────────────────────────────────────────────
+       THE ARCH. Not a corner radius — a semicircular head.
+       THE RULE, and it is narrow on purpose: AN ARCH MARKS A NICHE,
+       something that contains a figure. Panels, board squares, cards,
+       the slugs a room code is set in. It is not a decoration to be
+       sprinkled on controls: an arched button reads as a headstone,
+       and an arch on everything means an arch means nothing.
+       ─────────────────────────────────────────────────────────────── */
+    --arch: 50% 50% 0 0 / 22% 22% 0 0;
+    --arch-deep: 50% 50% 0 0 / 40% 40% 0 0;
+
+    /* ───────────────────────────────────────────────────────────────
+       MOTION. Slow, and there is only one speed for movement. The
+       eternal does not fidget; nothing here springs, bounces or
+       overshoots.
+       ─────────────────────────────────────────────────────────────── */
+    --t-lume: 140ms; /* light and colour */
+    --t-move: 420ms; /* anything that travels. Deliberately slow. */
+    --ease-rise: cubic-bezier(0.16, 0.84, 0.28, 1);
+
+    --z-raised: 10;
+    --z-sticky: 30;
+    --z-overlay: 50;
+    --z-toast: 60;
+
+    /* shadcn's variables, pointed at the night. */
+    --background: 228 47% 6%;
+    --foreground: 44 39% 89%;
+    --card: 230 46% 10%;
+    --card-foreground: 44 39% 89%;
+    --popover: 230 46% 10%;
+    --popover-foreground: 44 39% 89%;
+    --primary: 43 61% 59%;
+    --primary-foreground: 40 62% 6%;
+    --secondary: 228 39% 15%;
+    --secondary-foreground: 44 39% 89%;
+    --muted: 228 39% 15%;
+    --muted-foreground: 44 10% 70%;
+    --accent: 43 61% 59%;
+    --accent-foreground: 40 62% 6%;
+    --destructive: 5 60% 56%;
+    --destructive-foreground: 44 39% 89%;
+    --border: 43 45% 40%;
+    --input: 226 34% 20%;
+    --ring: 43 61% 59%;
+    --radius: 0;
   }
 }
 
 @layer base {
   * {
-    @apply border-border;
+    border-color: var(--gold-deep);
   }
 
   html {
     color-scheme: dark;
+    background-color: var(--night-0);
   }
 
   body {
-    background-color: var(--bg-0);
-    color: var(--text-hi);
-    font-family: var(--font-ui), system-ui, -apple-system, sans-serif;
-    font-size: 0.9375rem; /* 15px body */
-    line-height: 1.55;
+    font-family: var(--font-text), Georgia, "Times New Roman", serif;
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--parchment);
+    background-color: var(--night-0);
+    /*
+     * Forced globally. Spectral defaults to proportional figures, and every
+     * number in this game sits in a column that changes — a tally, a power, a
+     * room code. This project has written the same lesson down four times now.
+     */
+    font-variant-numeric: lining-nums tabular-nums;
     -webkit-font-smoothing: antialiased;
   }
 
   h1,
-  h2 {
+  h2,
+  h3 {
     font-family: var(--font-display), Georgia, serif;
-    font-weight: 700;
-    letter-spacing: 0.01em;
+    font-weight: 400;
   }
 
-  h3,
-  h4,
-  h5,
-  h6 {
-    font-family: var(--font-ui), system-ui, sans-serif;
-    font-weight: 600;
-  }
-
-  /*
-   * The reason the login inputs used to turn into two white plasters: Chrome paints
-   * its own autofill background and the only way to stop it is to cover it with an
-   * inset shadow, then park the transition far enough in the future that it never runs.
-   */
   input:-webkit-autofill,
   input:-webkit-autofill:hover,
   input:-webkit-autofill:focus,
   input:-webkit-autofill:active {
-    -webkit-box-shadow: 0 0 0 1000px var(--bg-2) inset;
-    -webkit-text-fill-color: var(--text-hi);
-    caret-color: var(--text-hi);
+    -webkit-box-shadow: 0 0 0 1000px var(--night-2) inset;
+    -webkit-text-fill-color: var(--parchment);
+    caret-color: var(--gold);
     transition: background-color 9999s ease-in-out 0s;
   }
 
   ::selection {
-    background: rgba(132, 104, 228, 0.35);
-    color: var(--text-hi);
+    background: var(--gold);
+    color: var(--ink-on-gold);
   }
 
   ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+    width: 12px;
   }
   ::-webkit-scrollbar-track {
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: var(--bg-3);
-    border-radius: 999px;
-    border: 3px solid transparent;
+    background: var(--gold-deep);
+    border: 4px solid transparent;
     background-clip: content-box;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(160, 139, 240, 0.5);
+    background: var(--gold);
     background-clip: content-box;
   }
 }
 
 @layer components {
-  /* Type scale. Sizes are fixed rather than fluid — the layouts are desktop-first. */
+  /* ═══════════════════════════════════════════════════════════════════
+     THE FIRMAMENT
+     ═══════════════════════════════════════════════════════════════════ */
+
+  .firmament {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-color: var(--night-0);
+  }
+  /*
+   * The milky band. Two very wide, very faint pools crossing the sky at an
+   * angle, so the ground has somewhere brighter and somewhere deeper. A flat
+   * indigo fill has no depth and no direction; a sky has both.
+   */
+  .firmament__wash {
+    position: absolute;
+    inset: -10%;
+    background:
+      radial-gradient(60% 40% at 22% 18%, rgba(53, 84, 184, 0.22) 0%, transparent 70%),
+      radial-gradient(55% 45% at 82% 76%, rgba(120, 92, 40, 0.2) 0%, transparent 72%),
+      radial-gradient(90% 60% at 50% 50%, rgba(40, 56, 120, 0.16) 0%, transparent 75%);
+    filter: blur(40px);
+  }
+  /* Weighted to the corners, so the centre of the screen is the brightest. */
+  .firmament__vignette {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(120% 100% at 50% 46%, transparent 32%, rgba(3, 4, 10, 0.78) 100%);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     GILDING
+     ═══════════════════════════════════════════════════════════════════ */
+
+  /*
+   * The gilded ground.
+   *
+   * Not a linear gradient with a shine swept across it — that is the "premium
+   * gold button" of every template on the internet. Leaf is a SURFACE: it has
+   * grain from the burnishing tool, tiny cracks where it was laid over bole, and
+   * a sheen that sits off-centre rather than running corner to corner. So this
+   * is a flat ground, an off-centre pool of light, and a noise layer, and the
+   * three of them together read as metal in a way no gradient does.
+   */
+  .gilt {
+    position: relative;
+    background-color: var(--gold-ground);
+    color: var(--ink-on-gold);
+    isolation: isolate;
+  }
+  .gilt::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: radial-gradient(80% 70% at 32% 22%, rgba(255, 244, 208, 0.55) 0%, transparent 62%);
+  }
+  .gilt::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.22;
+    mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.55 0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)'/%3E%3C/svg%3E");
+  }
+  .gilt > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  /*
+   * A panel: a board with a gilt frame. The frame is two rules with a gap, the
+   * way an altarpiece moulding is cut — a single line is a border, two lines
+   * with air between them is a frame.
+   */
+  .panel {
+    position: relative;
+    background-color: var(--night-1);
+    border: var(--rule) solid var(--gold-deep);
+    box-shadow: inset 0 0 0 1px rgba(212, 175, 87, 0.16);
+  }
+  .panel--arched {
+    border-radius: var(--arch);
+  }
+
+  /* An arched niche — the shape everything that frames something takes. */
+  .niche {
+    border-radius: var(--arch);
+  }
+  .niche--deep {
+    border-radius: var(--arch-deep);
+  }
+
+  /*
+   * The aureole. A nimbus of concentric rings, drawn as strokes rather than
+   * blurred as a glow — an icon's halo is a drawn circle of gold, not a light
+   * source, and that is exactly the difference between this and every neon UI.
+   */
+  .aureole {
+    position: relative;
+  }
+  .aureole::before {
+    content: "";
+    position: absolute;
+    inset: -7px;
+    pointer-events: none;
+    border: 1px solid rgba(212, 175, 87, 0.55);
+    border-radius: inherit;
+  }
+  .aureole::after {
+    content: "";
+    position: absolute;
+    inset: -12px;
+    pointer-events: none;
+    border: 1px solid rgba(212, 175, 87, 0.22);
+    border-radius: inherit;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     TYPE
+     Marcellus cuts the inscriptions — Roman capitals, the letterforms of
+     monuments, and it has one weight because carved letters do. Spectral
+     carries everything anybody has to read, including every number.
+     ═══════════════════════════════════════════════════════════════════ */
+
   .type-display {
     font-family: var(--font-display), Georgia, serif;
-    font-size: 2.75rem;
-    font-weight: 700;
-    line-height: 1.1;
-    letter-spacing: 0.04em;
+    font-weight: 400;
+    font-size: clamp(2.5rem, 1.5rem + 3.6vw, 4rem);
+    line-height: 1.06;
+    /* Inscriptional capitals are cut with air between them. */
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
   .type-h1 {
     font-family: var(--font-display), Georgia, serif;
+    font-weight: 400;
     font-size: 2rem;
-    font-weight: 700;
-    line-height: 1.15;
-    letter-spacing: 0.02em;
+    line-height: 1.14;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
   }
   .type-h2 {
     font-family: var(--font-display), Georgia, serif;
+    font-weight: 400;
     font-size: 1.375rem;
-    font-weight: 600;
-    line-height: 1.25;
+    line-height: 1.22;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
   }
   .type-h3 {
-    font-family: var(--font-ui), system-ui, sans-serif;
-    font-size: 1.0625rem;
+    font-family: var(--font-text), Georgia, serif;
     font-weight: 600;
-    line-height: 1.35;
+    font-size: 1.125rem;
+    line-height: 1.32;
+    letter-spacing: 0.01em;
+  }
+  .type-body {
+    font-family: var(--font-text), Georgia, serif;
+    font-weight: 400;
+    font-size: 1.0625rem;
+    line-height: 1.62;
+    max-width: 54ch;
   }
   .type-small {
-    font-size: 0.8125rem;
-    line-height: 1.5;
+    font-family: var(--font-text), Georgia, serif;
+    font-weight: 400;
+    font-size: 0.9375rem;
+    line-height: 1.55;
+  }
+  /*
+   * Labels are small Roman capitals with interpuncts between the words where a
+   * page allows it, the way a lapidary inscription sets them. Real uppercase,
+   * never `font-variant-caps` — a family with no smcp table synthesises small
+   * caps at the wrong stroke weight and it shows at 12px.
+   */
+  .type-label {
+    font-family: var(--font-display), Georgia, serif;
+    font-weight: 400;
+    font-size: 0.75rem;
+    line-height: 1.3;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
   }
   .type-micro {
+    font-family: var(--font-display), Georgia, serif;
+    font-weight: 400;
     font-size: 0.6875rem;
-    font-weight: 600;
-    line-height: 1.4;
+    line-height: 1.3;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.22em;
+  }
+  .type-num {
+    font-family: var(--font-text), Georgia, serif;
+    font-weight: 500;
+    font-variant-numeric: lining-nums tabular-nums;
+    letter-spacing: 0.02em;
+  }
+  .type-code {
+    font-family: var(--font-display), Georgia, serif;
+    font-weight: 400;
+    font-size: 1.75rem;
+    letter-spacing: 0.3em;
+    font-variant-numeric: lining-nums tabular-nums;
   }
 
-  /* Numbers that sit in a column — scores, codes, counters — must not jitter. */
-  .tabular {
-    font-variant-numeric: tabular-nums;
+  /* ═══════════════════════════════════════════════════════════════════
+     CONTROLS — arched, gilt, and lit rather than filled.
+     ═══════════════════════════════════════════════════════════════════ */
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+    font-family: var(--font-display), Georgia, serif;
+    font-weight: 400;
+    font-size: 0.8125rem;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    border: var(--rule) solid var(--gold-deep);
+    border-radius: 0;
+    background-color: transparent;
+    color: var(--gold-lit);
+    transition:
+      background-color var(--t-lume) linear,
+      border-color var(--t-lume) linear,
+      color var(--t-lume) linear;
+  }
+  .btn:hover:not(:disabled) {
+    border-color: var(--gold);
+    background-color: rgba(212, 175, 87, 0.1);
+  }
+  .btn:disabled {
+    color: var(--parchment-4);
+    border-color: #3a3320;
+    cursor: not-allowed;
   }
 
-  /* The one gradient allowed on text, and it stays inside a single hue family. */
-  .text-gold-gradient {
-    background: linear-gradient(105deg, #f3dfa6 0%, var(--gold-400) 45%, #9a742a 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+  /* The one gilded control on a screen. Light, not a fill. */
+  .btn--key {
+    background-color: var(--gold-ground);
+    border-color: var(--gold);
+    color: var(--ink-on-gold);
+  }
+  .btn--key:hover:not(:disabled) {
+    background-color: var(--gold-lit);
+    border-color: var(--gold-lit);
+  }
+  .btn--key:disabled {
+    background-color: #4a4029;
+    border-color: #4a4029;
+    color: var(--parchment-3);
   }
 
-  /* The hairline under a title. */
-  .rule-gold {
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--gold-400), transparent);
+  .btn--quiet {
+    border-color: transparent;
+    color: var(--parchment-2);
+  }
+  .btn--quiet:hover:not(:disabled) {
+    border-color: var(--gold-deep);
+    color: var(--gold-lit);
+  }
+
+  .link {
+    font-family: var(--font-display), Georgia, serif;
+    font-size: 0.8125rem;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--gold-lit);
+    border-bottom: 1px solid var(--gold-deep);
+    padding-bottom: 2px;
+    transition: color var(--t-lume) linear, border-color var(--t-lume) linear;
+  }
+  .link:hover {
+    color: var(--gold);
+    border-bottom-color: var(--gold);
+  }
+
+  /*
+   * Focus is a nimbus, not a browser ring — the same concentric device a
+   * selected card gets, because in this system attention IS a halo.
+   */
+  :where(a, button, input, [tabindex]):focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 3px;
+  }
+  /*
+   * ON THE GILDED FIELD THE FOCUS RING INVERTS, and this is not a refinement —
+   * without it the board cannot be played from a keyboard at all.
+   *
+   * Everything else in this design sits on night, where a gold ring is the
+   * brightest thing available. The fifteen board squares sit on gold, where the
+   * same ring measures 1.12:1 against its own ground: invisible. A player
+   * tabbing across the board would have had no idea where they were.
+   *
+   * So on the board the ring is drawn in the ink that is already reserved for
+   * marks on gold, at 7.8:1, and it is drawn twice — an outline plus a lighter
+   * inner ring — so it reads whether the square under it is bare gold or a dark
+   * card panel.
+   */
+  .gilt :where(a, button, [tabindex]):focus-visible,
+  .board-ground :where(a, button, [tabindex]):focus-visible {
+    outline: 2px solid var(--ink-on-gold);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(245, 227, 174, 0.85);
+  }
+
+  .field-input {
+    width: 100%;
+    height: 2.875rem;
+    padding: 0 0.875rem;
+    border: var(--rule) solid var(--gold-deep);
+    border-radius: 0;
+    background-color: var(--night-2);
+    color: var(--parchment);
+    font-family: var(--font-text), Georgia, serif;
+    font-size: 1rem;
+    transition: border-color var(--t-lume) linear;
+  }
+  .field-input::placeholder {
+    color: var(--parchment-3);
+  }
+  .field-input:focus {
+    border-color: var(--gold);
+    outline: 1px solid var(--gold);
+    outline-offset: 4px;
+  }
+  /* :user-invalid, not :invalid — a half-typed address is not yet wrong. */
+  .field-input:user-invalid {
+    border-color: var(--cinnabar);
+  }
+
+  /*
+   * A rubric. Red in a manuscript is an index, not an emotion — it marks the
+   * place you are meant to look. So a correction is a cinnabar bar and cinnabar
+   * capitals, and it never borrows either player's metal.
+   */
+  .rubric {
+    border: 1px solid var(--gold-deep);
+    border-left: var(--rule-heavy) solid var(--cinnabar);
+    background-color: rgba(212, 87, 74, 0.07);
+    padding: 0.75rem 1rem;
+  }
+
+  /* A cartouche: the small enclosure a name or a state is set in. */
+  .cartouche {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    border: 1px solid var(--gold-deep);
+    padding: 0.1875rem 0.5rem;
+    font-family: var(--font-display), Georgia, serif;
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    line-height: 1.45;
+    color: var(--parchment-2);
+  }
+  .cartouche--sol {
+    color: var(--gold-lit);
+    border-color: var(--gold);
+  }
+  .cartouche--luna {
+    color: var(--luna-lit);
+    border-color: var(--luna-deep);
+  }
+
+  /*
+   * A quiet note: an aside, a hint, a piece of machine detail. One recipe,
+   * because it was being hand-rolled at three different paddings in four files.
+   */
+  .note {
+    border: 1px solid var(--gold-deep);
+    background-color: var(--night-2);
+    padding: 0.625rem 0.875rem;
+    color: var(--parchment-2);
+  }
+  /*
+   * A datum set inline in a sentence — an id, a code, an address. The text face
+   * is baked in because this is nearly always a `<code>`, and a `<code>` picks
+   * up the user agent's monospace unless something stops it. There is no
+   * monospace in this design.
+   */
+  .datum {
+    font-family: var(--font-text), Georgia, serif;
+    border: 1px solid var(--gold-deep);
+    background-color: var(--night-2);
+    padding: 0.0625rem 0.375rem;
+    color: var(--parchment);
+  }
+
+  /*
+   * A correction under a single field. The words stay parchment and the CINNABAR
+   * IS A RULE, not the text: cinnabar on night-2 does not clear AA at 13px, and
+   * red in a manuscript was always an index pointing at the place rather than a
+   * colour the words themselves were written in.
+   */
+  .field-error {
+    border-left: var(--rule) solid var(--cinnabar);
+    padding-left: 0.625rem;
+    color: var(--parchment);
+  }
+
+  /* One character of the room code, in its own arched niche. */
+  .slug {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: var(--rule) solid var(--gold-deep);
+    border-radius: var(--arch);
+    background-color: var(--night-2);
+    color: var(--gold-lit);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     THE BOARD
+     ═══════════════════════════════════════════════════════════════════ */
+
+  /*
+   * The gilded field the fifteen squares stand on. This is the only large
+   * passage of gold in the product, and that is the point: in an icon the
+   * figures stand on uncreated light, and here the eye goes to the board on
+   * every screen it appears on without being told to.
+   */
+  .board-ground {
+    position: relative;
+    border: var(--rule) solid var(--gold-deep);
+    padding: 0.625rem;
+  }
+
+  .cell {
+    background-color: rgba(10, 13, 26, 0.22);
+    border: 1px solid rgba(26, 20, 8, 0.45);
+    border-radius: var(--arch);
+  }
+  /*
+   * A playable square shows a ghost impression of the stars you are about to
+   * lay down — you see what you would place, where, already counted. It does
+   * not pulse: an altarpiece does not blink, and eight squares breathing
+   * forever was the most recognisable tic in the stylesheet two designs ago.
+   */
+  .cell--playable {
+    border-color: rgba(26, 20, 8, 0.8);
+    background-color: rgba(10, 13, 26, 0.06);
+    cursor: pointer;
+  }
+  .cell--playable:hover {
+    background-color: rgba(245, 227, 174, 0.22);
+  }
+
+  /*
+   * Laid by hand. Derived from the square's coordinates, never random: the
+   * server render and the client render have to agree or React tears the tree
+   * down over a mismatched style attribute.
+   */
+  .laid {
+    transform: rotate(var(--lay-rot, 0deg)) translate(var(--lay-x, 0px), var(--lay-y, 0px));
+  }
+
+  /* The inscription that runs up the edge of the arena. */
+  .margin-line {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    color: var(--gold-deep);
+    user-select: none;
+  }
+
+  .skip-link {
+    position: fixed;
+    left: 1rem;
+    top: -100px;
+    z-index: 60;
+    background: var(--gold-ground);
+    color: var(--ink-on-gold);
+    padding: 0.625rem 1rem;
+    font-family: var(--font-display), Georgia, serif;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    transition: top var(--t-move) var(--ease-rise);
+  }
+  .skip-link:focus {
+    top: 1rem;
   }
 }
 
 @layer utilities {
-  .shadow-card {
-    box-shadow: var(--shadow-card);
+  .tabular {
+    font-variant-numeric: lining-nums tabular-nums;
   }
-  .glow-gold {
-    box-shadow: var(--glow-gold);
-  }
-  .glow-violet {
-    box-shadow: var(--glow-violet);
-  }
-
-  /* A cell you are allowed to drop the selected card into. */
-  .cell-valid {
-    box-shadow:
-      inset 0 0 0 1px rgba(132, 104, 228, 0.55),
-      inset 0 0 18px rgba(132, 104, 228, 0.2);
-    animation: breathe 1.6s ease-in-out infinite;
-  }
-  .cell-valid:hover {
-    box-shadow:
-      inset 0 0 0 1px rgba(217, 174, 78, 0.75),
-      inset 0 0 20px rgba(217, 174, 78, 0.22);
-    animation: none;
+  /* Interpuncts, the way a lapidary inscription separates words. */
+  .interpunct > * + *::before {
+    content: "·";
+    margin: 0 0.6em;
+    color: var(--gold-deep);
   }
 }
 
-/* Motion baseline: colour and shadow 150ms, movement 200ms on a decelerating curve. */
-@keyframes breathe {
-  0%,
-  100% {
-    opacity: 0.55;
+/* ═════════════════════════════════════════════════════════════════════
+   MOTION — slow, and none of it springs. The eternal does not fidget.
+   ═════════════════════════════════════════════════════════════════════ */
+
+/* A card set down: it descends and the gold under it takes the light. */
+@keyframes card-settle {
+  0% {
+    transform: rotate(var(--lay-rot, 0deg)) translate(var(--lay-x, 0px), calc(var(--lay-y, 0px) - 10px));
+    opacity: 0;
   }
-  50% {
+  100% {
+    transform: rotate(var(--lay-rot, 0deg)) translate(var(--lay-x, 0px), var(--lay-y, 0px));
     opacity: 1;
   }
 }
 
-@keyframes star-twinkle {
-  0%,
-  100% {
-    opacity: var(--star-opacity, 0.5);
-  }
-  50% {
-    opacity: calc(var(--star-opacity, 0.5) * 0.35);
-  }
-}
-
-@keyframes modal-in {
+/* A tally changing: the old value rises out and the new one rises in. */
+@keyframes slug-roll-up {
   from {
-    opacity: 0;
-    transform: scale(0.97);
+    transform: translateY(100%);
   }
   to {
-    opacity: 1;
-    transform: scale(1);
+    transform: translateY(0);
   }
 }
-
-@keyframes toast-in {
+@keyframes slug-roll-down {
   from {
-    opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(-100%);
   }
   to {
-    opacity: 1;
     transform: translateY(0);
   }
 }
 
-@keyframes score-pop {
-  0% {
-    transform: scale(1.25);
+/* A column changing hands: the gilt rule is drawn again, from the new owner. */
+@keyframes press-wipe {
+  from {
+    transform: scaleX(0);
   }
-  100% {
-    transform: scale(1);
-  }
-}
-
-@keyframes card-land {
-  0% {
-    box-shadow: inset 0 0 0 1px rgba(217, 174, 78, 0.9), 0 0 26px rgba(217, 174, 78, 0.45);
-  }
-  100% {
-    box-shadow: inset 0 0 0 1px rgba(217, 174, 78, 0), 0 0 0 rgba(217, 174, 78, 0);
+  to {
+    transform: scaleX(1);
   }
 }
 
-@keyframes drift {
+/*
+ * There is deliberately no `aureole-breathe`.
+ *
+ * The nimbus of whoever is to move was going to pulse very slowly and never go
+ * out. It was written, it was never used, and it should not be: a halo that
+ * breathes is a glow that has put on a halo's clothes, and a glow is the thing
+ * this whole direction exists to avoid. The system's own rule is that the
+ * eternal does not fidget. The aureole is a drawn ring and it is still.
+ */
+
+/* The one loop that means "we are still waiting". */
+@keyframes ink-pulse {
   0%,
   100% {
-    transform: translateY(0) rotate(0deg);
+    opacity: 1;
   }
   50% {
-    transform: translateY(-14px) rotate(3deg);
+    opacity: 0.35;
   }
 }
 
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/*
+ * Unlayered and last, so it beats every per-component animation above it. An
+ * @media block inside @layer components would lose to a later unlayered rule.
+ */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

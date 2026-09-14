@@ -10,6 +10,16 @@
  * one Thunder (5), and one random card from each hand placed on the middle column
  * before the first turn. It used to invent five card names that exist nowhere in
  * the game, so the first real duel looked unfamiliar.
+ *
+ * Every sentence here is plain text, and it stays plain text: the component sets
+ * the numerals in it on the way to the screen, so nothing in this file has to know
+ * about type. What it does have to be is TRUE about the board the player will
+ * actually see — which is why no line below asks anybody to tell the two sides
+ * apart by their metal. Ownership is read off a FIGURE first, and only once a card
+ * is on the board: a sun at the foot of yours, a moon at the head of theirs. A card
+ * in hand carries neither, because every card in your hand is yours. Gold against
+ * silver measures about 1.25:1, so the metal confirms what the figure has already
+ * said and could never carry it alone.
  */
 
 export type Side = 'you' | 'opponent';
@@ -60,7 +70,7 @@ const THEIR_THIRD = theirs('opp-spark-b', 'Spark', 1);
 const THEIR_FOURTH = theirs('opp-lightning-b', 'Lightning', 3);
 const THEIR_FIFTH = theirs('opp-thunder', 'Thunder', 5);
 
-const YOUR_OPENING = yourDeck[2]; // Lightning, taken by fate before the first turn
+const YOUR_OPENING = yourDeck[2]; // Lightning, taken by the opening before the first turn
 
 const P = {
   yourOpening: [1, 1, YOUR_OPENING] as [number, number, SimCard],
@@ -111,18 +121,18 @@ export interface Step {
 export const STEPS: Step[] = [
   {
     id: 'welcome',
-    title: 'Welcome to the Arena',
-    subtitle: 'Meet your guide',
+    title: 'A duel, one move at a time',
+    subtitle: 'What this is',
     instruction:
-      'Greetings, apprentice. I am the Arcane Master, and I will walk you through a single duel from beginning to end.',
-    tip: 'Press Continue to begin your training.',
+      'This is one whole duel, played out a step at a time. Nothing here is scored and nobody is waiting on you — take as long as you like over each move.',
+    tip: 'Press Continue to begin.',
     grid: emptyGrid(),
     hand: yourDeck,
     actions: ['continue'],
   },
   {
     id: 'board',
-    title: 'Understanding the Battlefield',
+    title: 'The board',
     subtitle: 'Three columns, five rows',
     instruction:
       'This is the board: three columns wide and five rows tall. Neither side owns a half of it — every square is contested.',
@@ -133,22 +143,22 @@ export const STEPS: Step[] = [
   },
   {
     id: 'setup',
-    title: 'The Ritual of Beginning',
-    subtitle: 'Fate deals the first blow',
+    title: 'The opening',
+    subtitle: 'One card from each hand',
     instruction:
-      'Before anyone moves, fate takes one card at random from each hand and places it on the board. Yours was the Lightning; theirs was a Spark.',
-    tip: 'You begin your first turn with four cards, not five. Which one fate takes is never yours to choose.',
+      'Before anyone moves, one card is taken at random from each hand and placed on the board. Yours was a Lightning; theirs was a Spark. Once a card is on the board it carries its owner: yours a sun at the foot, theirs a moon at the head.',
+    tip: 'The sun is gold and the moon silver, but read the figure first — the metal only confirms it. You begin your first turn with four cards, not five, and which one is taken is never yours to choose.',
     grid: gridWith(P.yourOpening, P.theirOpening),
     hand: handAfter(),
     actions: ['continue'],
   },
   {
     id: 'first-placement',
-    title: 'Your First Move',
+    title: 'Your first move',
     subtitle: 'Place beside your own card',
     instruction:
       'A card may only be placed next to a card you already own. Take your second Lightning and set it below the first to build column 2.',
-    tip: 'Pick the Lightning on the right, then click the glowing square.',
+    tip: 'Pick the Lightning, then click the empty square that shows its stars.',
     grid: gridWith(P.yourOpening, P.theirOpening),
     hand: handAfter(),
     actions: ['place'],
@@ -156,7 +166,7 @@ export const STEPS: Step[] = [
   },
   {
     id: 'opponent-response',
-    title: 'Your Opponent Answers',
+    title: 'They answer',
     subtitle: 'Watch the reply',
     instruction: 'They add a Lightning of their own to the same column, and the count moves.',
     tip: 'Column 2 now stands at 6 to 4 in your favour.',
@@ -166,11 +176,11 @@ export const STEPS: Step[] = [
   },
   {
     id: 'expand',
-    title: 'Claiming New Ground',
+    title: 'Claiming new ground',
     subtitle: 'Spend the Thunder well',
     instruction:
       'Column 3 is empty and nobody has claimed it. Place your Thunder beside your first Lightning and take it outright.',
-    tip: 'A five in an empty column is a column won until they can answer it.',
+    tip: 'A 5 in an empty column is a column won until they can answer it.',
     grid: gridWith(P.yourOpening, P.theirOpening, P.yourSecond, P.theirSecond),
     hand: handAfter('you-lightning-b'),
     actions: ['place'],
@@ -178,10 +188,10 @@ export const STEPS: Step[] = [
   },
   {
     id: 'scoring',
-    title: 'How a Column is Won',
-    subtitle: 'Add up the power',
+    title: 'How a column is won',
+    subtitle: 'Count the stars',
     instruction:
-      'Add the power of your cards in a column. The higher total controls it. An equal total controls it for nobody.',
+      'Add up the stars of your cards in a column. The higher total controls it. An equal total controls it for nobody.',
     tip: 'You hold column 2 at 6 to 4 and column 3 at 5 to nothing.',
     grid: gridWith(P.yourOpening, P.theirOpening, P.yourSecond, P.theirSecond, P.yourThunder),
     hand: handAfter('you-lightning-b', 'you-thunder'),
@@ -189,8 +199,8 @@ export const STEPS: Step[] = [
   },
   {
     id: 'contest',
-    title: 'Contesting the Last Column',
-    subtitle: 'Even a one has a job',
+    title: 'Contesting the last column',
+    subtitle: 'Even a 1 has a job',
     instruction:
       'They answered your Thunder with a Spark of their own in column 3. Column 1 is still untouched — put a Spark there and stake a claim before they do.',
     tip: 'Placing next to your own card is also how you deny them room to expand.',
@@ -208,11 +218,11 @@ export const STEPS: Step[] = [
   },
   {
     id: 'passing',
-    title: 'The Art of Passing',
+    title: 'Passing',
     subtitle: 'Doing nothing, deliberately',
     instruction:
       'Sometimes no move is the best move. Passing keeps a card in hand for a turn when it will decide a column.',
-    tip: 'Press Pass Turn to try it.',
+    tip: 'Press Pass turn to try it.',
     grid: gridWith(
       P.yourOpening,
       P.theirOpening,
@@ -228,7 +238,7 @@ export const STEPS: Step[] = [
   },
   {
     id: 'request-win',
-    title: 'Ending It Early',
+    title: 'Ending it early',
     subtitle: 'Ask to count the columns',
     instruction:
       'When you are confident of the count, you may ask to stop and score the board as it stands. Your opponent has to agree.',
@@ -249,7 +259,7 @@ export const STEPS: Step[] = [
   },
   {
     id: 'win-response',
-    title: 'They Refuse',
+    title: 'They refuse',
     subtitle: 'The duel continues',
     instruction:
       'Your opponent declined, so play goes on. A refusal costs you nothing but the turn it took to ask.',
@@ -270,9 +280,9 @@ export const STEPS: Step[] = [
   },
   {
     id: 'final-move',
-    title: 'The Last Card',
+    title: 'The last card',
     subtitle: 'Close it out',
-    instruction: 'Place your final Spark beneath the one you already own and complete your training.',
+    instruction: 'Place your final Spark beneath the one you already own and finish the duel.',
     tip: 'Column 1 is theirs, but columns 2 and 3 are yours — and two is enough.',
     grid: gridWith(
       P.yourOpening,
@@ -291,7 +301,7 @@ export const STEPS: Step[] = [
   },
   {
     id: 'complete',
-    title: 'Mastery Achieved',
+    title: 'That is the whole game',
     subtitle: 'You are ready',
     instruction:
       'Two columns to one. You now know everything the game asks of you — the rest is judgement.',

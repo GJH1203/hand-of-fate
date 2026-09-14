@@ -1,16 +1,18 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, Crown, X } from 'lucide-react';
+import { X } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
+import BoardCard from '@/components/game/BoardCard';
+import Pips, { OwnerMark } from '@/components/game/Pips';
 import { Modal } from '@/components/ui/modal';
+import { layStyle } from '@/lib/game/lay';
 import { cn } from '@/lib/utils';
 
 /*
  * How to Play, in eight steps.
  *
- * The dialog is a fixed 680x600 with three bands — header, scrolling figure and
+ * The dialog is a fixed 680x600 panel with three bands — header, scrolling figure and
  * points, footer — so Previous and Next never move between steps. They used to sit
  * under content of wildly different heights, which meant a second click landed on
  * whatever had slid under the cursor.
@@ -20,12 +22,18 @@ import { cn } from '@/lib/utils';
  * random card from each hand placed on the middle column before the first turn, and
  * a winner decided by who holds more columns — not by holding two of the three,
  * which is only the same thing when no column is tied.
+ *
+ * The figures are drawn with the real board's own pieces — `BoardCard` and `Pips`,
+ * on real `.cell` squares cut into a real gilded field — rather than with
+ * lookalikes. A tutorial that teaches a private visual language teaches the wrong
+ * thing twice: once when it is read, and again in the first duel, when nothing on
+ * screen matches it.
  */
 
 interface GameTutorialProps {
   open: boolean;
   onClose: () => void;
-  /** "Start Playing" in game, "Got it" when nobody is signed in yet. */
+  /** "Start playing" in game, "Got it" when nobody is signed in yet. */
   finishLabel?: string;
 }
 
@@ -33,30 +41,24 @@ const YOU = 'you';
 const OPPONENT = 'opponent';
 type Side = typeof YOU | typeof OPPONENT;
 
-/** A card as it appears on the board, in miniature: gold for yours, crimson for theirs. */
-function MiniCard({ power, name, side }: { power: number; name?: string; side: Side }) {
-  const mine = side === YOU;
-  return (
-    <div
-      className={cn(
-        'relative flex h-full w-full flex-col items-center justify-center rounded-[5px] border bg-surface-0',
-        mine ? 'border-gold-400/70' : 'border-danger/70',
-      )}
-    >
-      <span
-        className={cn(
-          'absolute left-1 top-1 flex h-[18px] w-[18px] items-center justify-center rounded-full font-display text-[11px] font-bold leading-none',
-          mine ? 'bg-gold-400 text-[#1A1206]' : 'bg-danger text-[#2A0B0B]',
-        )}
-      >
-        {power}
+/** The three cards the game actually deals, by power. */
+const CARD_NAME: Record<number, string> = { 1: 'Spark', 3: 'Lightning', 5: 'Thunder' };
+
+/*
+ * Every numeral is set in Spectral, including the ones inside a Roman-capital label
+ * and the ones inside a sentence — the type rule has one face for numbers and no
+ * exceptions. The copy is authored as plain strings so that editing it does not mean
+ * editing markup, and the digits are lifted out of it on the way to the screen.
+ */
+function numerals(text: string) {
+  return text.split(/(\d+)/).map((part, index) =>
+    /^\d+$/.test(part) ? (
+      <span key={index} className="type-num">
+        {part}
       </span>
-      {name && (
-        <span className="px-1 text-center font-display text-[8px] uppercase leading-tight tracking-wide text-ink-mid">
-          {name}
-        </span>
-      )}
-    </div>
+    ) : (
+      <React.Fragment key={index}>{part}</React.Fragment>
+    ),
   );
 }
 
@@ -66,38 +68,92 @@ type BoardCell = { power: number; side: Side } | null;
 function MiniBoard({
   cells,
   highlight = [],
+  ghostPower,
   cellSize = 42,
 }: {
   cells: BoardCell[][];
   /** "row,col" keys drawn as legal placements. */
   highlight?: string[];
+  /** The power of the card being held, drawn as a ghost impression on those squares. */
+  ghostPower?: number;
   cellSize?: number;
 }) {
+  // Three squares and the two 6px gaps between them: the measure the column heads
+  // below the board have to match, whatever the squares are sized at.
+  const measure = cellSize * 3 + 12;
+
   return (
     <div className="flex flex-col items-center gap-2">
-      <div className="grid grid-cols-3 gap-1.5">
-        {cells.map((row, rowIndex) =>
-          row.map((cell, colIndex) => {
-            const key = `${rowIndex},${colIndex}`;
-            return (
-              <div
-                key={key}
-                style={{ width: cellSize, height: cellSize }}
-                className={cn(
-                  'rounded-[6px] border border-subtle bg-surface-1',
-                  highlight.includes(key) && !cell && 'cell-valid border-arcane-400/40',
-                )}
-              >
-                {cell && <MiniCard power={cell.power} side={cell.side} />}
-              </div>
-            );
-          }),
-        )}
+      {/*
+       * The gilded field. It is the only large passage of gold in the product and
+       * the squares are dark niches cut into it — a figure stands on uncreated
+       * light, and a figure of the board that stood on anything else would be a
+       * picture of a different game.
+       */}
+      <div className="gilt border-rule border-gold-deep p-2">
+        <div className="grid grid-cols-3 gap-1.5">
+          {cells.map((row, rowIndex) =>
+            row.map((cell, colIndex) => {
+              const key = `${rowIndex},${colIndex}`;
+              const playable = !cell && highlight.includes(key);
+              return (
+                <div
+                  key={key}
+                  style={{ width: cellSize, height: cellSize }}
+                  className={cn(
+                    'relative cell',
+                    // The figure is a picture of a board, not a board: a legal square
+                    // is drawn as one but takes no pointer, so it cannot offer a hover
+                    // state it would not honour.
+                    playable && 'cell--playable pointer-events-none',
+                  )}
+                >
+                  {cell ? (
+                    /*
+                     * `.laid` gives the card the same fraction of a degree of rotation
+                     * it would have on the real board, derived from this square's
+                     * coordinates. The figure reads as laid out rather than typeset.
+                     */
+                    <span
+                      className="laid absolute inset-0 block"
+                      // The lay is three custom properties; CSSProperties has no room
+                      // for them in its index signature, and `.laid` reads them.
+                      style={layStyle(colIndex, rowIndex) as React.CSSProperties}
+                    >
+                      <BoardCard
+                        card={{
+                          id: key,
+                          name: CARD_NAME[cell.power] ?? 'Card',
+                          power: cell.power,
+                        }}
+                        mine={cell.side === YOU}
+                      />
+                    </span>
+                  ) : (
+                    playable &&
+                    ghostPower !== undefined && (
+                      /*
+                       * The legal-move affordance, in the arena's own terms: a ghost
+                       * impression of the stars you would lay there, in dark marks,
+                       * because the ground under them is gold and gold carries dark
+                       * marks only.
+                       */
+                      <Pips
+                        power={ghostPower}
+                        className="absolute left-1/2 top-1/2 w-[56%] -translate-x-1/2 -translate-y-1/2 text-ink-gold opacity-[0.34]"
+                      />
+                    )
+                  )}
+                </div>
+              );
+            }),
+          )}
+        </div>
       </div>
-      <div className="grid w-full grid-cols-3 gap-1.5">
-        {['Col 1', 'Col 2', 'Col 3'].map((label) => (
-          <span key={label} className="type-micro text-center text-ink-low">
-            {label}
+      <div className="grid grid-cols-3 gap-1.5" style={{ width: measure }}>
+        {[1, 2, 3].map((column) => (
+          <span key={column} className="type-micro text-center text-parchment-3">
+            Col <span className="type-num">{column}</span>
           </span>
         ))}
       </div>
@@ -115,19 +171,70 @@ const openingBoard = (): BoardCell[][] => {
   return board;
 };
 
-/** A hand card at figure size, echoing the real card frame. */
+/**
+ * A card in hand, at figure size — and drawn the way `PlayerHand` draws one, which
+ * is to say with no ownership mark and no inner keyline.
+ *
+ * A card in your hand is not on the board and has nothing to say about whose it is,
+ * because every card in your hand is yours. The inner keyline is the second pass of
+ * a frame that means "this one is Sol's" on the board, and it may not mean anything
+ * else anywhere in the product; the sun means the same thing and would be teaching a
+ * mark the player will never see in their own hand.
+ *
+ * What does carry over is the part that matters: the power counted in stars, which
+ * is the same count on the same card once it is played.
+ */
 function HandCard({ power, name, dimmed }: { power: number; name: string; dimmed?: boolean }) {
   return (
     <div
+      role="img"
+      aria-label={`${name}, power ${power}, yours`}
       className={cn(
-        'flex h-[120px] w-[86px] flex-col items-center justify-center rounded-md border border-gold-400/60 bg-surface-0 shadow-card',
+        'flex h-[124px] w-[86px] flex-col items-center justify-center gap-3',
+        'rounded-arch border-rule border-gold-deep bg-night-1',
         dimmed && 'opacity-35',
       )}
     >
-      <span className="font-display text-[10px] uppercase tracking-[0.14em] text-ink-mid">
-        {name}
+      <Pips power={power} size={38} className="text-gold-lit" />
+      <span className="type-micro text-parchment-2">{name}</span>
+    </div>
+  );
+}
+
+/** A column in the end-of-duel figure: whose it is, said the way the board says it. */
+function ColumnFlag({ column, owner }: { column: number; owner: Side }) {
+  const mine = owner === YOU;
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <div
+        role="img"
+        aria-label={`Column ${column}: ${mine ? 'yours' : 'theirs'}`}
+        className={cn(
+          'relative flex h-16 w-16 items-center justify-center rounded-arch border-rule bg-night-2',
+          mine ? 'border-gold' : 'border-luna-deep',
+        )}
+      >
+        {mine && (
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-[3px] rounded-arch border border-gold-deep"
+          />
+        )}
+        {/* Sun at the foot, moon at the head — the same rhythm the cards keep. */}
+        <OwnerMark
+          mine={mine}
+          className={cn(
+            'pointer-events-none absolute left-1/2 h-[12px] w-[12px] -translate-x-1/2',
+            mine ? 'bottom-[6px] text-gold' : 'top-[7px] text-luna',
+          )}
+        />
+        <span aria-hidden className={cn('type-micro', mine ? 'text-gold-lit' : 'text-luna-lit')}>
+          {mine ? 'You' : 'Them'}
+        </span>
+      </div>
+      <span className="type-micro text-parchment-3">
+        Col <span className="type-num">{column}</span>
       </span>
-      <span className="mt-1 font-display text-3xl font-bold text-gold-300 tabular">{power}</span>
     </div>
   );
 }
@@ -143,21 +250,25 @@ const STEPS: Step[] = [
     title: 'Welcome to Hand of Fate',
     figure: (
       <div className="flex items-end gap-3">
-        <HandCard power={1} name="Spark" />
+        <div className="-rotate-2">
+          <HandCard power={1} name="Spark" />
+        </div>
         <div className="scale-110">
           <HandCard power={5} name="Thunder" />
         </div>
-        <HandCard power={3} name="Lightning" />
+        <div className="rotate-2">
+          <HandCard power={3} name="Lightning" />
+        </div>
       </div>
     ),
     points: [
-      'Two mystics, one board, five cards each.',
+      'Two players, one board, five cards each.',
       'The board is three columns wide and five rows tall.',
       'Win more columns than your opponent and the duel is yours.',
     ],
   },
   {
-    title: 'Your Mystical Deck',
+    title: 'The deck you are dealt',
     figure: (
       <div className="flex items-center gap-2">
         <HandCard power={1} name="Spark" />
@@ -168,22 +279,24 @@ const STEPS: Step[] = [
       </div>
     ),
     points: [
-      'Five cards: two Sparks (1), two Lightnings (3), one Thunder (5).',
+      'Five cards: two Sparks, two Lightnings, one Thunder.',
+      'Power is counted, not printed: 1 star for a Spark, 3 for a Lightning, 5 for a Thunder.',
       'Both players hold exactly the same deck.',
       'Nothing is drawn mid-game — these five are everything you get.',
     ],
   },
   {
-    title: 'The Ritual of Beginning',
+    title: 'The opening',
     figure: <MiniBoard cells={openingBoard()} />,
     points: [
-      'Before the first turn, fate takes one random card from each hand.',
-      'Both land in the middle column — yours in gold, your opponent’s in crimson.',
+      'Before the first turn, one card is taken at random from each hand.',
+      'Both land in the middle column. Yours carries a sun at the foot; theirs a moon at the head.',
+      'The sun is gold and the moon silver, but the figure is what you read — the metal only confirms it.',
       'You start your first turn with the four cards that are left.',
     ],
   },
   {
-    title: 'The Card Fate Took',
+    title: 'The card the opening takes',
     figure: (
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
@@ -194,36 +307,37 @@ const STEPS: Step[] = [
         </div>
         <div className="relative">
           <HandCard power={5} name="Thunder" dimmed />
-          <span className="type-micro absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-ink-low">
+          <span className="type-micro absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-parchment-3">
             On the board
           </span>
         </div>
       </div>
     ),
     points: [
-      'Which card fate takes is random, and it changes the whole plan.',
+      'Which card is taken is random, and it changes the whole plan.',
       'Lose the Thunder and you must win columns by position, not power.',
       'Keep it and you can seize a column late, in a single move.',
     ],
   },
   {
-    title: 'Placing Your Cards',
+    title: 'Placing a card',
     figure: (
       <MiniBoard
         cells={openingBoard()}
         highlight={['2,1', '4,1', '3,0', '3,2']}
+        ghostPower={3}
       />
     ),
     points: [
       'A card may only go next to a card you already own.',
       'Next to means up, down, left or right — never diagonally.',
-      'The legal squares light up the moment you pick a card.',
+      'Pick a card and every legal square shows a faint impression of the stars you would lay there.',
     ],
   },
   {
-    title: 'Controlling a Column',
+    title: 'Winning a column',
     figure: (
-      <div className="flex flex-col items-center gap-3">
+      <div className="flex flex-col items-center gap-4">
         <MiniBoard
           cells={(() => {
             const board = emptyBoard();
@@ -234,53 +348,49 @@ const STEPS: Step[] = [
             return board;
           })()}
         />
-        <div className="flex items-center gap-6 text-sm">
-          <span className="text-gold-300">
-            You <span className="font-display text-lg font-bold tabular">8</span>
+        {/*
+         * The tally sits outside the cartouche on purpose: a cartouche is cut in
+         * Marcellus, and Marcellus never sets a number.
+         */}
+        <div className="flex items-baseline justify-center gap-5">
+          <span className="flex items-baseline gap-2">
+            <span className="cartouche cartouche--sol">
+              <OwnerMark mine className="h-3 w-3 text-gold" />
+              You
+            </span>
+            <span className="type-num text-[19px] text-gold-lit">8</span>
           </span>
-          <span className="type-micro text-ink-low">Column 2</span>
-          <span className="text-danger">
-            Them <span className="font-display text-lg font-bold tabular">6</span>
+          <span className="type-micro text-parchment-3">
+            Col <span className="type-num">2</span>
+          </span>
+          <span className="flex items-baseline gap-2">
+            <span className="cartouche cartouche--luna">
+              <OwnerMark mine={false} className="h-3 w-3 text-luna" />
+              Them
+            </span>
+            <span className="type-num text-[19px] text-luna-lit">6</span>
           </span>
         </div>
       </div>
     ),
     points: [
-      'Add up the power of your cards in a column.',
+      'Add up the stars of your cards in a column.',
       'The higher total controls it; an equal total controls it for nobody.',
-      'The column headers above the board keep the running score.',
+      'The head of each column keeps the running count.',
     ],
   },
   {
-    title: 'Winning the Duel',
+    title: 'Winning the duel',
     figure: (
-      <div className="flex flex-col items-center gap-4">
-        <div className="flex items-end gap-3">
-          {[
-            { label: 'Col 1', owner: 'them' },
-            { label: 'Col 2', owner: 'you' },
-            { label: 'Col 3', owner: 'you' },
-          ].map((column) => (
-            <div key={column.label} className="flex flex-col items-center gap-2">
-              <div
-                className={cn(
-                  'flex h-16 w-16 items-center justify-center rounded-md border',
-                  column.owner === 'you'
-                    ? 'border-gold-400/45 bg-gold-400/10'
-                    : 'border-danger/45 bg-danger/10',
-                )}
-              >
-                {column.owner === 'you' ? (
-                  <Crown size={22} strokeWidth={1.75} className="text-gold-300" />
-                ) : (
-                  <X size={22} strokeWidth={1.75} className="text-danger" />
-                )}
-              </div>
-              <span className="type-micro text-ink-low">{column.label}</span>
-            </div>
-          ))}
+      <div className="flex flex-col items-center gap-5">
+        <div className="flex items-end gap-4">
+          <ColumnFlag column={1} owner={OPPONENT} />
+          <ColumnFlag column={2} owner={YOU} />
+          <ColumnFlag column={3} owner={YOU} />
         </div>
-        <p className="type-micro text-gold-300">You take two columns to one</p>
+        <p className="type-small text-parchment-2">
+          You take two columns to one, and the duel is yours.
+        </p>
       </div>
     ),
     points: [
@@ -290,7 +400,7 @@ const STEPS: Step[] = [
     ],
   },
   {
-    title: 'Strategic Tips',
+    title: 'Tactics',
     figure: (
       <MiniBoard
         cells={(() => {
@@ -303,7 +413,13 @@ const STEPS: Step[] = [
           board[0][0] = { power: 1, side: OPPONENT };
           return board;
         })()}
-        highlight={['4,2', '2,2']}
+        /*
+         * Every legal square, not a chosen two. The ghost impression means "you may
+         * lay a card here" on the real board, so a figure that marks only the two
+         * squares worth taking would teach the mark to mean something it does not.
+         */
+        highlight={['2,0', '2,2', '3,0', '4,1', '4,2']}
+        ghostPower={1}
       />
     ),
     points: [
@@ -317,7 +433,7 @@ const STEPS: Step[] = [
 export default function GameTutorial({
   open,
   onClose,
-  finishLabel = 'Start Playing',
+  finishLabel = 'Start playing',
 }: GameTutorialProps) {
   const [index, setIndex] = useState(0);
 
@@ -337,74 +453,103 @@ export default function GameTutorial({
       closeOnOverlayClick={false}
       showCloseButton={false}
       widthClassName="w-[680px] max-w-full"
-      className="flex h-[600px] max-h-[90dvh] flex-col overflow-hidden"
-      contentClassName="contents"
+      className="panel h-[600px] max-h-[90dvh] overflow-hidden"
+      /*
+       * The three bands are wrapped rather than `display: contents`, so that the
+       * wrapper is a real child of the panel and is lifted above the gilding. A
+       * `contents` box takes no z-index, and everything inside it would print under
+       * the grain instead of on it.
+       */
+      contentClassName="flex h-full min-h-0 flex-col"
     >
       {/* Header — 88px, and it does not move */}
-      <div className="relative flex h-[88px] shrink-0 flex-col justify-center border-b border-subtle px-6">
+      <div className="relative flex h-[88px] shrink-0 flex-col items-center justify-center border-b-rule border-gold-deep px-7 text-center">
         <button
           type="button"
           onClick={onClose}
           aria-label="Close tutorial"
-          className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-md text-ink-low transition-colors duration-150 hover:bg-surface-3 hover:text-ink-hi focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcane-400"
+          className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center border-rule border-transparent text-parchment-2 transition-colors duration-lume hover:border-gold hover:text-gold-lit"
         >
-          <X size={18} strokeWidth={1.75} />
+          <X size={16} strokeWidth={1.75} />
         </button>
 
-        <h2 className="text-gold-gradient font-display text-2xl font-bold leading-tight">
-          {step.title}
-        </h2>
-        <div className="mt-2 flex items-center gap-3">
-          <span className="type-micro text-ink-low">
-            Step {index + 1} of {STEPS.length}
-          </span>
-          <div className="h-[3px] w-40 overflow-hidden rounded-full bg-surface-3">
-            <div
-              className="h-full rounded-full bg-gold-400 transition-[width] duration-200 ease-arcane"
-              style={{ width: `${((index + 1) / STEPS.length) * 100}%` }}
-            />
-          </div>
+        <h2 className="type-h2 text-parchment">{step.title}</h2>
+        {/*
+         * The progress rule, and the header's only piece of progress. A track in the
+         * deepest night with gold laid over as much of it as has been read — no
+         * radius, no gradient faking light, and it travels, so it takes the long
+         * duration.
+         *
+         * The counted form of the same fact — "Step 3 of 8" — is printed once, in the
+         * footer, where it sits between the two controls that change it. It used to
+         * be printed here as well, which said the same thing twice in one dialog and
+         * put the words further from the buttons that move them.
+         */}
+        <div aria-hidden className="mt-3 h-[3px] w-40 bg-night-3">
+          <div
+            className="h-full bg-gold transition-[width] duration-move ease-rise"
+            style={{ width: `${((index + 1) / STEPS.length) * 100}%` }}
+          />
         </div>
       </div>
 
       {/* Content — the only part that scrolls */}
-      <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
-        <div className="flex h-[260px] items-center justify-center">{step.figure}</div>
-        <ul className="mt-5 space-y-2.5">
+      <div className="min-h-0 flex-1 overflow-y-auto px-7 py-6">
+        {/*
+         * A floor, not a fixed height. Every figure gets the same vertical berth so
+         * the points below start in the same place on most steps, but a taller one
+         * pushes rather than overflows — the two tallest used to overlap the rule
+         * above and the first point below. Previous and Next are unaffected either
+         * way: they live in their own band, which is the whole reason for the bands.
+         */}
+        <div className="flex min-h-[260px] items-center justify-center">{step.figure}</div>
+        {/*
+         * The list is centred on the page but its sentences are not centred on each
+         * other: a ragged column of centred lines is harder to read than a ruled one,
+         * and the axis is held by the block rather than by every line in it.
+         */}
+        <ul className="mx-auto mt-6 max-w-[48ch] space-y-3">
           {step.points.map((point) => (
-            <li key={point} className="flex items-start gap-2.5 text-sm text-ink-mid">
-              <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rotate-45 bg-gold-400" />
-              {point}
+            <li key={point} className="type-small flex items-start gap-3 text-parchment-2">
+              <span aria-hidden className="mt-[9px] h-[5px] w-[5px] shrink-0 rotate-45 bg-gold" />
+              <span>{numerals(point)}</span>
             </li>
           ))}
         </ul>
       </div>
 
       {/* Footer — 72px, fixed */}
-      <div className="flex h-[72px] shrink-0 items-center justify-between border-t border-subtle px-6">
+      <div className="flex h-[72px] shrink-0 items-center justify-between border-t-rule border-gold-deep px-7">
         <div className="w-32">
           {!isFirst && (
-            <Button variant="ghost" onClick={() => setIndex(index - 1)}>
-              <ChevronLeft size={16} strokeWidth={1.75} />
+            <button
+              type="button"
+              className="btn btn--quiet h-10 px-4"
+              onClick={() => setIndex(index - 1)}
+            >
               Previous
-            </Button>
+            </button>
           )}
         </div>
 
-        <span className="type-micro text-ink-low">
-          Step {index + 1} of {STEPS.length}
+        <span className="type-micro text-parchment-3">
+          Step <span className="type-num">{index + 1}</span> of{' '}
+          <span className="type-num">{STEPS.length}</span>
         </span>
 
         <div className="flex w-32 justify-end">
           {isLast ? (
-            <Button variant="primary" onClick={onClose}>
+            <button type="button" className="btn btn--key h-10 px-5" onClick={onClose}>
               {finishLabel}
-            </Button>
+            </button>
           ) : (
-            <Button variant="primary" onClick={() => setIndex(index + 1)}>
+            <button
+              type="button"
+              className="btn btn--key h-10 px-5"
+              onClick={() => setIndex(index + 1)}
+            >
               Next
-              <ChevronRight size={16} strokeWidth={1.75} />
-            </Button>
+            </button>
           )}
         </div>
       </div>

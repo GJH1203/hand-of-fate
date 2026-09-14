@@ -15,19 +15,27 @@ interface CodeInputProps {
 const ALLOWED = /[^A-Z0-9]/g;
 
 /**
- * The room code, one character per slot.
+ * The room code, one character per slot — six arched niches in a row.
  *
  * A six-character code pasted into a single text field is a form. Six slots is a
- * game — and it is also the only shape that makes a mistyped character obvious at
- * a glance. Typing advances, backspace retreats, and pasting the whole code (with
- * or without the surrounding link) fills every slot at once.
+ * game, and an arch around each one makes it an arcade: the same three-bay rhythm
+ * the board is built on, which is the one place in this interface where the shape
+ * language and the thing being shown are the same idea. An arch marks a niche —
+ * something that holds a figure — and a character of a code is exactly that.
+ *
+ * Typing advances, backspace retreats, and pasting the whole code (with or without
+ * the surrounding link) fills every slot at once.
+ *
+ * `.type-code` is the only size the code is ever set at. It used to be 44px in the
+ * lobby and 30px here, which meant the thing you read off one screen and typed into
+ * the other did not look like the same object.
  */
 export function CodeInput({
   value,
   onChange,
   length = 6,
   autoFocus,
-  "aria-label": ariaLabel = "Battle code",
+  "aria-label": ariaLabel = "Room code",
 }: CodeInputProps) {
   const refs = React.useRef<(HTMLInputElement | null)[]>([]);
 
@@ -106,10 +114,27 @@ export function CodeInput({
           autoFocus={autoFocus && index === 0}
           aria-label={`${ariaLabel}, character ${index + 1} of ${length}`}
           className={cn(
-            "h-16 w-[52px] rounded-md border border-subtle bg-surface-2 text-center",
-            "font-display text-[28px] font-semibold uppercase text-gold-300 tabular",
-            "transition-[border-color,box-shadow] duration-150 caret-arcane-300",
-            "focus:border-arcane-400 focus:outline-none focus:shadow-glow-violet",
+            // `block`, because `.slug` is written for a flex box and this is an input.
+            // The niche carries the arch, the night-2 fill and the gold-lit letter.
+            "slug block h-16 w-12 text-center caret-gold",
+            // Marcellus, because a room code is read aloud off one screen and typed
+            // into another: these are the inscriptional capitals, and the figures are
+            // lining and tabular so every slot is the same width whatever is in it.
+            "type-code",
+            /*
+             * `.type-code` tracks at 0.3em, which is right for a code set as one run
+             * of characters. Here the gap between the niches is the tracking, and the
+             * trailing 0.3em on a single centred character would push it visibly left
+             * of its box.
+             */
+            "tracking-[0]",
+            /*
+             * Focus takes the rule from the recess to the leaf — the niche lights up
+             * rather than lifting. Border-box sizing and an unchanged width mean
+             * nothing on the page moves. The offset nimbus from globals.css is left
+             * alone on top of it.
+             */
+            "transition-colors duration-lume focus:border-gold",
           )}
         />
       ))}

@@ -21,7 +21,15 @@ interface UnifiedAuthContextType {
     isLoading: boolean;
 }
 
-const UnifiedAuthContext = createContext<UnifiedAuthContextType | undefined>(undefined);
+/*
+ * Exported so a screen can be mounted against a stand-in session — the design
+ * preview route does this, and so would a test of anything that reads the signed-in
+ * player. `useUnifiedAuth` picks up the nearest provider, so wrapping a subtree in
+ * one of these overrides the real session for that subtree only.
+ */
+export const UnifiedAuthContext = createContext<UnifiedAuthContextType | undefined>(undefined);
+
+export type { UnifiedAuthContextType };
 
 export function UnifiedAuthProvider({ children }: { children: ReactNode }) {
     const router = useRouter();

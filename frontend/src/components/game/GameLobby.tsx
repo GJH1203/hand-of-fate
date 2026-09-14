@@ -1,15 +1,14 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
-import { Check, CheckCircle2, Copy, Share2, Shield } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Check, Copy } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
-import { Panel, PanelBody } from '@/components/ui/panel';
-import { Spinner } from '@/components/ui/spinner';
+import { OwnerMark } from './Pips';
 import { useToast } from '@/components/ui/toast';
 import { onlineGameService } from '@/services/onlineGameService';
 import { OnlineMatchInfo } from '@/types/gameMode';
+import { cn } from '@/lib/utils';
 
 interface GameLobbyProps {
   matchInfo: OnlineMatchInfo;
@@ -21,6 +20,20 @@ interface GameLobbyProps {
 /** How often the host asks the server whether anyone has turned up. */
 const POLL_INTERVAL_MS = 5000;
 
+/**
+ * The waiting room.
+ *
+ * Axial, and built around one image: the room code standing as six arched
+ * niches. That is the only thing on this screen anybody does anything with —
+ * read it out, or paste it into a chat window — so it is set the way a
+ * compositor sets six characters that must not be misread: one piece of type per
+ * character, each in its own body, with a real gap to the next. Six run-together
+ * characters get miscopied; six separate niches cannot be.
+ *
+ * The niches are `.slug`, the same class the join screen's code input uses, at
+ * the same size — the thing you read off this screen and the thing you type into
+ * that one have to look like the same object.
+ */
 export default function GameLobby({
   matchInfo,
   currentPlayerId,
@@ -92,114 +105,198 @@ export default function GameLobby({
   };
 
   return (
-    <main className="flex min-h-dvh items-center justify-center px-6 py-10">
-      <Panel className="w-full max-w-[460px]">
-        <PanelBody className="p-7">
-          <h1 className="type-h2 text-center text-ink-hi">
-            {isHost ? 'Summoning Opponent' : 'Entering Arena'}
-          </h1>
-          <p className="type-small mt-1 text-center text-ink-low">Sacred Battle Code</p>
+    <main
+      id="main"
+      className="mx-auto flex min-h-dvh w-full max-w-[38rem] flex-col justify-center px-4 py-10 sm:px-8 sm:py-14"
+    >
+      {/*
+       * The top padding clears the head of the arch: the curve takes about 70px
+       * out of the inner edge of a panel this tall.
+       */}
+      <div className="panel px-6 pb-12 pt-12 text-center sm:px-12 sm:pb-14 sm:pt-14">
+        <p className="type-label text-gold">
+          {hasOpponent ? 'Both here' : isHost ? 'Waiting' : 'Joining'}
+        </p>
+        <h1 className="type-h1 mt-5 text-parchment">
+          {hasOpponent ? 'Your opponent is here' : isHost ? 'Send them the code' : 'Finding the room'}
+        </h1>
+
+        {/*
+         * Three rules, the middle one heavier: a centre panel between two wings.
+         * It is the shape of the board — three columns, two of them win it — used
+         * as the device under an inscription, and it is the one ornament on this
+         * screen and the one before it.
+         */}
+        <span aria-hidden className="mt-6 flex items-center justify-center gap-2">
+          <span className="block h-px w-6 bg-gold-deep" />
+          <span className="block h-[2px] w-10 bg-gold" />
+          <span className="block h-px w-6 bg-gold-deep" />
+        </span>
+
+        <div className="mt-11">
+          <p className="type-micro text-parchment-3">Room code</p>
+
+          {/* Read as one string, not as six loose characters. */}
+          <span className="sr-only">Room code: {gameCode.split('').join(' ')}</span>
 
           <div
-            className="mt-4 flex items-center justify-between gap-3 rounded-lg bg-surface-0 px-5 py-4"
-            style={{ border: '2px solid rgba(217,174,78,0.45)' }}
+            aria-hidden
+            className="mx-auto mt-4 flex max-w-[23rem] items-stretch justify-center gap-2 sm:gap-2.5"
           >
-            <code className="flex-1 text-center font-display text-[40px] font-bold leading-none tracking-[0.25em] text-gold-300 tabular">
-              {gameCode}
-            </code>
-            <button
-              type="button"
-              onClick={copyCode}
-              aria-label="Copy the battle code"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-gold-400 transition-colors duration-150 hover:bg-gold-400/10 hover:text-gold-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcane-400"
-            >
+            {gameCode.split('').map((char, index) => (
+              <span
+                key={index}
+                className={cn(
+                  'slug h-[4.25rem] flex-1 sm:h-[5rem]',
+                )}
+              >
+                {/*
+                 * `.type-code` carries 0.3em of tracking, which is space added after
+                 * each character — on a single character in a centred box that pushes
+                 * the glyph left of centre by exactly that much. The matching left
+                 * padding puts it back. The colour comes from `.slug` itself, which
+                 * sets the lit gold a character standing in a niche is cut in.
+                 */}
+                <span className="type-code pl-[0.3em]">{char}</span>
+              </span>
+            ))}
+          </div>
+
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <button type="button" onClick={copyCode} className="btn h-10 px-4">
               {copiedCode ? (
-                <Check size={18} strokeWidth={1.75} />
+                <Check aria-hidden size={16} strokeWidth={2} />
               ) : (
-                <Copy size={18} strokeWidth={1.75} />
+                <Copy aria-hidden size={15} strokeWidth={1.75} />
               )}
+              Copy code
+            </button>
+            {isHost && !hasOpponent && (
+              <button type="button" onClick={copyLink} className="btn h-10 px-4">
+                Copy invite link
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/*
+         * The seat list. The mark is the ownership figure the board uses — a rayed
+         * disc for Sol, which is always you, and a crescent for Luna, which is
+         * always the other player — so the pairing you will read on every card is
+         * established here, before a card exists. An empty seat is the moon before
+         * it has risen: the Luna crescent, unlit, and the only thing on the screen
+         * that loops. It loops because the honest answer is "we are still waiting".
+         */}
+        <div className="mt-11 border-y-rule border-gold-deep">
+          <Seat role="Host" mine={isHost} present status={isHost ? 'You' : 'Seated'} />
+          <Seat
+            role="Challenger"
+            mine={!isHost}
+            present={hasOpponent}
+            status={hasOpponent ? (isHost ? 'Seated' : 'You') : 'Waiting'}
+            divider
+          />
+        </div>
+
+        {hasOpponent ? (
+          <p className="type-label mt-9 text-parchment">
+            Board opens in{' '}
+            <span className="type-num ml-1 text-[1.0625rem] text-gold-lit">{countdown}</span>
+          </p>
+        ) : (
+          <p className="type-small mx-auto mt-9 max-w-[44ch] text-parchment-2">
+            The board opens by itself the moment they arrive. You can leave this tab open.
+          </p>
+        )}
+
+        {!hasOpponent && (
+          <div className="mt-9 flex justify-center">
+            <button type="button" onClick={() => setConfirmAbandon(true)} className="link">
+              Stop waiting
             </button>
           </div>
+        )}
+      </div>
 
-          <div className="mt-6 space-y-2.5">
-            <div
-              className="flex items-center justify-between rounded-md px-4 py-3"
-              style={{
-                backgroundColor: 'rgba(61,214,140,0.06)',
-                border: '1px solid rgba(61,214,140,0.22)',
-              }}
-            >
-              <span className="flex items-center gap-2.5 text-sm text-ink-hi">
-                <Shield size={16} strokeWidth={1.75} className="text-success" />
-                Champion (Host)
-              </span>
-              <CheckCircle2 size={18} strokeWidth={1.75} className="text-success" />
-            </div>
-
-            <div className="flex items-center justify-between rounded-md border border-subtle bg-surface-2 px-4 py-3">
-              <span className="flex items-center gap-2.5 text-sm text-ink-mid">
-                <Shield size={16} strokeWidth={1.75} className="text-ink-low" />
-                {hasOpponent ? 'Challenger' : 'Waiting for challenger…'}
-              </span>
-              {hasOpponent ? (
-                <CheckCircle2 size={18} strokeWidth={1.75} className="text-success" />
-              ) : (
-                <Spinner size={16} className="text-arcane-300" />
-              )}
-            </div>
-          </div>
-
-          {hasOpponent ? (
-            <p className="mt-6 text-center text-sm text-ink-mid">
-              Battle commencing in{' '}
-              <span className="font-display text-lg font-bold text-gold-300 tabular">
-                {countdown}
-              </span>
-            </p>
-          ) : (
-            <p className="type-small mt-6 text-center text-ink-low">
-              Share the code above. The arena opens the moment they arrive.
-            </p>
-          )}
-
-          <div className="mt-7 space-y-2.5">
-            {isHost && !hasOpponent && (
-              <Button variant="secondary" size="lg" className="w-full" onClick={copyLink}>
-                <Share2 size={18} strokeWidth={1.75} />
-                Share Portal Link
-              </Button>
-            )}
-            <Button
-              variant="danger"
-              size="lg"
-              className="w-full"
-              onClick={() => setConfirmAbandon(true)}
-              disabled={hasOpponent}
-            >
-              {hasOpponent ? 'Portal Opening…' : 'Abandon Match'}
-            </Button>
-          </div>
-        </PanelBody>
-      </Panel>
-
+      {/*
+       * This dialog used to promise that the room closed and the code expired.
+       * Nothing in the backend does either: leaving sends LEAVE_MATCH, which
+       * detaches this socket from the match and answers LEAVE_SUCCESS, and
+       * `cleanupMatch` — the method that would empty the room's entry — is written
+       * and never called. So the copy claims only what leaving actually does.
+       */}
       <Modal
         open={confirmAbandon}
         onClose={() => setConfirmAbandon(false)}
-        title="Abandon this battle?"
+        title="Stop waiting?"
         widthClassName="max-w-sm"
       >
-        <p className="text-sm text-ink-mid">
-          The room will be closed and the sacred code will expire.
+        <p className="type-small text-center text-parchment-2">
+          You go back to the menu. This does not close the room or expire the code, so tell
+          whoever you sent it to — otherwise they are left waiting on a room you have walked
+          away from.
         </p>
-        <div className="mt-6 flex justify-end gap-3">
-          <Button variant="ghost" onClick={() => setConfirmAbandon(false)}>
-            Cancel
-          </Button>
-          <Button variant="danger" onClick={onCancel}>
-            Abandon
-          </Button>
+        <div className="mt-6 flex justify-center gap-3">
+          <button
+            type="button"
+            onClick={() => setConfirmAbandon(false)}
+            className="btn btn--quiet h-10 px-4"
+          >
+            Keep waiting
+          </button>
+          <button type="button" onClick={onCancel} className="btn btn--key h-10 px-5">
+            Stop waiting
+          </button>
         </div>
       </Modal>
     </main>
+  );
+}
+
+interface SeatProps {
+  /** Host or Challenger — the same two words the start screen puts above each action. */
+  role: string;
+  /** Whether this seat is yours: Sol if it is, Luna if it is the other player's. */
+  mine: boolean;
+  present: boolean;
+  /** Who is in it: you, somebody else, or nobody yet. */
+  status: string;
+  divider?: boolean;
+}
+
+/** One row of the seat list: the figure, the seat, and who is in it. */
+function Seat({ role, mine, present, status, divider }: SeatProps) {
+  return (
+    <div
+      className={cn(
+        'flex items-center justify-center gap-3 py-4',
+        divider && 'border-t-hair border-gold-deep',
+      )}
+    >
+      <span
+        aria-hidden
+        className={cn(
+          'block h-4 w-4 shrink-0',
+          present ? (mine ? 'text-gold' : 'text-luna') : mine ? 'text-gold-deep' : 'text-luna-deep',
+        )}
+        /* The one loop the system allows, and only while the answer is "nobody yet". */
+        style={present ? undefined : { animation: 'ink-pulse 1900ms ease-in-out infinite' }}
+      >
+        <OwnerMark mine={mine} className="h-full w-full" />
+      </span>
+
+      <span className={cn('type-label', present ? 'text-parchment' : 'text-parchment-3')}>
+        {role}
+      </span>
+
+      <span
+        className={cn(
+          'cartouche',
+          present ? (mine ? 'cartouche--sol' : 'cartouche--luna') : undefined,
+        )}
+      >
+        {status}
+      </span>
+    </div>
   );
 }

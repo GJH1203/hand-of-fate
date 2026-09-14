@@ -52,3 +52,10 @@ infra/monitoring/prometheus-local.yml
 # later in the file, would re-exclude the template — hence the negation.
 .env*
 !.env.example
+
+# The design-preview route is a scratch harness: it mounts the signed-in screens
+# against a fabricated session so they can be reviewed without Supabase
+# credentials. It is a real Next.js page, so committing it would publish it at
+# /design-preview on the live site, where it would fire requests at the
+# production API under a made-up player id. Ignored so it cannot ship by accident.
+frontend/src/app/design-preview/

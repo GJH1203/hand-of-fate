@@ -1,24 +1,58 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
-import { Check, Globe, KeyRound, RotateCw, Users, Zap } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { ArrowRight } from 'lucide-react';
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { CodeInput } from '@/components/ui/code-input';
-import { InlineAlert } from '@/components/ui/inline-alert';
 import { Modal } from '@/components/ui/modal';
-import { Panel, PanelBody } from '@/components/ui/panel';
 import { GameMode } from '@/types/gameMode';
 import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
 import { onlineGameService, ActiveGame } from '@/services/onlineGameService';
+import { cn } from '@/lib/utils';
 
 interface GameModeSelectionProps {
   onModeSelect: (mode: GameMode, matchId?: string) => void;
 }
 
-const LOCAL_FEATURES = ['Same device gameplay', 'No internet required', 'Perfect for friends & family'];
+/*
+ * THE TRIPTYCH ORNAMENT.
+ *
+ * Three rules, the middle one heavier: a centre panel between two wings. It is
+ * the shape of the board — three columns, and you win by taking two of them —
+ * used as the small mark that separates a title from what follows it, the way a
+ * frontispiece puts a device under its inscription. It is the one ornament on
+ * these two screens, and it carries the same meaning on both.
+ */
+function Triptych() {
+  return (
+    <span aria-hidden className="mt-6 flex items-center justify-center gap-2">
+      <span className="block h-px w-6 bg-gold-deep" />
+      <span className="block h-[2px] w-10 bg-gold" />
+      <span className="block h-px w-6 bg-gold-deep" />
+    </span>
+  );
+}
 
+/**
+ * Starting a duel: open a room, or join one with a code.
+ *
+ * CENTRED, AND THAT IS A REVERSAL. The design before this one hung the whole
+ * screen off a 7rem gutter down the left edge — the label for each block sat in
+ * the margin beside it, and the deliberate asymmetry was the point. This design
+ * is axial: a temple is symmetrical about its centre line, an icon is frontal, a
+ * tympanum is centred. So the gutter is gone and everything stands on the axis,
+ * inside one arched panel.
+ *
+ * The two actions are still two stacked rows rather than two side-by-side cards.
+ * They are a primary action and its alternative, not a pair of equals, and which
+ * one is primary is carried by THE WEIGHT OF ITS RULE — leaf gold against the
+ * recess, with a lit title above the body. It is not framed twice. The inner
+ * keyline is an ownership channel: on the board it means "this card is Sol's" and
+ * it has to mean only that, so spending it here to say "press this one first" is
+ * exactly how it stopped meaning anything. Hovering lights the frame; it does not
+ * fill it. Gold is light here, not a surface colour, and a gilded ground on a
+ * control this size would spend the screen's whole reserve of it.
+ */
 export default function GameModeSelection({ onModeSelect }: GameModeSelectionProps) {
   const { user } = useUnifiedAuth();
   const [showJoin, setShowJoin] = useState(false);
@@ -107,136 +141,233 @@ export default function GameModeSelection({ onModeSelect }: GameModeSelectionPro
   };
 
   return (
-    <main className="flex min-h-dvh items-center justify-center px-6 py-10">
-      <div className="w-full max-w-4xl">
-        <div className="text-center">
-          <h1 className="text-gold-gradient font-display text-4xl font-bold tracking-[0.03em]">
-            Choose Your Path
-          </h1>
-          <div className="rule-gold mx-auto mt-3 w-40" />
-          <p className="mt-3 text-[15px] text-ink-mid">
-            Select your battlefield for mystical card combat
+    <main
+      id="main"
+      className="mx-auto flex min-h-dvh w-full max-w-[44rem] flex-col justify-center px-4 py-10 sm:px-8 sm:py-14"
+    >
+      {/*
+       * One arched panel, and the arch is not decoration: a niche is something
+       * that contains a figure, and this panel contains the whole act of starting
+       * a game. The top padding is what clears the head of the arch — the curve
+       * eats about 70px at the inner edge of a panel this tall.
+       */}
+      <div className="panel px-6 pb-12 pt-12 text-center sm:px-14 sm:pb-14 sm:pt-14">
+        <header>
+          <p className="type-label text-gold">Online</p>
+          <h1 className="type-h1 mt-5 text-parchment">Start a duel</h1>
+          <Triptych />
+          <p className="type-body mx-auto mt-6 text-parchment-2">
+            Open a room and send the code, or type in the one you were sent. Either way the
+            board opens as soon as both of you are there.
           </p>
+        </header>
+
+        {activeGame && (
+          /*
+           * A rubric, not a coloured alert. Red in a manuscript is an index rather
+           * than an emotion — it marks the place you are meant to look — so a
+           * correction is a cinnabar bar and nothing else. Neither player's metal
+           * is ever spent on a message, which is what stops gold meaning both
+           * "you" and "something needs attention" on the same screen.
+           */
+          <div role="status" className="rubric mx-auto mt-10 max-w-[34rem] text-left">
+            <p className="type-small text-parchment-2">
+              <span className="text-parchment">You are already in a duel.</span> Rejoin it, or
+              start something else and give that one up.
+            </p>
+            <button
+              type="button"
+              onClick={handleReconnect}
+              disabled={dispatched}
+              className="btn btn--key mt-4 h-10 px-4"
+            >
+              Rejoin that duel
+            </button>
+          </div>
+        )}
+
+        <div className="mt-10 flex flex-col gap-4">
+          <ActionRow
+            seat="Host"
+            title="Create a room"
+            body="You get a six-character code. Send it to whoever you are playing."
+            primary
+            disabled={dispatched}
+            onClick={startCreate}
+          />
+          <ActionRow
+            seat="Challenger"
+            title="Join with a code"
+            body="Type in the six characters you were sent, and the board opens."
+            disabled={dispatched}
+            onClick={startJoin}
+          />
         </div>
 
-        <div className="mt-8 grid items-stretch gap-5 md:grid-cols-2">
-          <Panel className="relative flex flex-col opacity-45">
-            <Badge tone="neutral" className="absolute right-4 top-4">
-              Coming Soon
-            </Badge>
-            <PanelBody className="flex flex-1 flex-col items-center pt-8 text-center">
-              <Users size={28} strokeWidth={1.75} className="text-ink-mid" />
-              <h2 className="type-h2 mt-4 text-ink-hi">Local Duel</h2>
-              <p className="type-small mt-2 text-ink-mid">
-                Face your opponent in person, sharing the same arena
-              </p>
-              <ul className="mt-5 w-full space-y-2 text-left">
-                {LOCAL_FEATURES.map((feature) => (
-                  <li key={feature} className="flex items-center gap-2 text-[13px] text-ink-low">
-                    <Check size={14} strokeWidth={1.75} className="shrink-0" />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-            </PanelBody>
-          </Panel>
-
-          <Panel className="flex flex-col" style={{ borderColor: 'rgba(217,174,78,0.25)' }}>
-            <PanelBody className="flex flex-1 flex-col items-center pt-8 text-center">
-              <Globe size={28} strokeWidth={1.75} className="text-gold-400" />
-              <h2 className="type-h2 mt-4 text-ink-hi">Global Arena</h2>
-              <p className="type-small mt-2 text-ink-mid">
-                Challenge mystics across realms in real-time duels
-              </p>
-
-              <div className="mt-6 w-full space-y-2.5">
-                {activeGame && (
-                  <>
-                    <InlineAlert tone="warning" className="text-left">
-                      You have a battle in progress
-                    </InlineAlert>
-                    <Button
-                      size="lg"
-                      className="w-full border-0 bg-gradient-to-b from-success to-[#27a86c] text-[#04231A] hover:brightness-[1.07]"
-                      onClick={handleReconnect}
-                    >
-                      <RotateCw size={18} strokeWidth={1.75} />
-                      Reconnect to Battle
-                    </Button>
-                  </>
-                )}
-
-                <Button
-                  variant="primary"
-                  size="lg"
-                  className="w-full"
-                  onClick={startCreate}
-                  disabled={dispatched}
-                >
-                  <Zap size={18} strokeWidth={1.75} />
-                  Create Game
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="lg"
-                  className="w-full"
-                  onClick={startJoin}
-                  disabled={dispatched}
-                >
-                  <KeyRound size={18} strokeWidth={1.75} />
-                  Join with Code
-                </Button>
-                <Button variant="ghost" size="lg" className="w-full" disabled>
-                  Quick Match (Coming Soon)
-                </Button>
-              </div>
-            </PanelBody>
-          </Panel>
-        </div>
+        <p className="type-small mx-auto mt-10 max-w-[34rem] border-t-hair border-gold-deep pt-6 text-parchment-3">
+          Quick match and local same-device duels are not built yet.
+        </p>
       </div>
 
       <Modal
         open={showJoin}
         onClose={() => setShowJoin(false)}
-        title="Join Mystical Battle"
+        title="Join a duel"
         widthClassName="max-w-md"
       >
-        <p className="type-small text-ink-low">
-          Enter the six-character code your opponent shared with you.
+        <p className="type-small text-center text-parchment-2">
+          The six characters your opponent sent you.
         </p>
 
-        <div className="mt-5">
+        <div className="mt-6">
           <CodeInput value={code} onChange={setCode} autoFocus />
         </div>
 
-        <div className="mt-6 flex justify-end gap-3">
-          <Button variant="ghost" onClick={() => setShowJoin(false)}>
-            Back
-          </Button>
-          <Button variant="primary" onClick={submitJoin} disabled={code.length !== 6 || dispatched}>
-            Join Battle
-          </Button>
+        <div className="mt-7 flex justify-center gap-3">
+          <button
+            type="button"
+            onClick={() => setShowJoin(false)}
+            className="btn btn--quiet h-10 px-4"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={submitJoin}
+            disabled={code.length !== 6 || dispatched}
+            className="btn btn--key h-10 px-5"
+          >
+            Join
+          </button>
         </div>
       </Modal>
 
+      {/*
+       * This one is allowed to say the duel cannot be picked up again, because it
+       * is true: `leave-all` marks the player's active game ABANDONED in the
+       * database before it drops the room. The lobby's dialog is the one that must
+       * not make that promise — leaving a room there only closes a socket.
+       */}
       <Modal
         open={pendingAction !== null}
         onClose={() => setPendingAction(null)}
-        title="Abandon your current battle?"
+        title="Give up your current duel?"
         widthClassName="max-w-sm"
       >
-        <p className="text-sm text-ink-mid">
-          You are already in a duel. Starting another one abandons it, and it cannot be resumed.
+        <p className="type-small text-center text-parchment-2">
+          Starting another duel marks the one you are in as abandoned. It cannot be rejoined
+          afterwards.
         </p>
-        <div className="mt-6 flex justify-end gap-3">
-          <Button variant="ghost" onClick={() => setPendingAction(null)}>
+        <div className="mt-6 flex justify-center gap-3">
+          <button
+            type="button"
+            onClick={() => setPendingAction(null)}
+            className="btn btn--quiet h-10 px-4"
+          >
             Cancel
-          </Button>
-          <Button variant="danger" onClick={confirmAbandonAndContinue}>
-            Abandon &amp; continue
-          </Button>
+          </button>
+          <button
+            type="button"
+            onClick={confirmAbandonAndContinue}
+            className="btn btn--key h-10 px-5"
+          >
+            Abandon it
+          </button>
         </div>
       </Modal>
     </main>
+  );
+}
+
+interface ActionRowProps {
+  /** The seat this action puts you in. Sits above the title, and matches the lobby's list. */
+  seat: string;
+  title: string;
+  body: string;
+  /** The one row on the screen whose rule is leaf gold rather than the recess. */
+  primary?: boolean;
+  disabled?: boolean;
+  onClick: () => void;
+}
+
+/**
+ * A full-width row you press: a ruled panel, cut square.
+ *
+ * Square, because an arch marks a niche — something that contains a figure — and
+ * an arched button reads as a headstone. The rule is the whole control: it lights
+ * on hover rather than filling, because light is what gold is in this system and
+ * a fill would put a second gilded ground on a screen that is saving its gold for
+ * the board.
+ *
+ * The arrow is the only icon, and it is here because it says where the row goes,
+ * not because a row wants an ornament. It travels on hover, which is the one kind
+ * of motion this design allows: something that physically moves. It sits on the
+ * centre line below the text on a narrow screen and in the right margin on a wide
+ * one, so it never crowds the words.
+ */
+function ActionRow({ seat, title, body, primary, disabled, onClick }: ActionRowProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        'group relative block w-full border-rule bg-night-2 px-6 py-7 text-center',
+        'transition-colors duration-lume sm:px-14',
+        primary ? 'border-gold' : 'border-gold-deep',
+        /*
+         * Colour is the only thing that changes, and NOTHING MOVES ON PRESS.
+         * This row was the last control in the product still dipping a pixel
+         * under the pointer: the identical gesture came off all five button
+         * variants, because globals.css defines no `:active` for `.btn` and
+         * nothing in this design springs. One control pressing on its own is
+         * worse than none of them doing it, so it now presses the way the rest
+         * of the product presses, which is not at all.
+         */
+        disabled ? 'cursor-not-allowed' : primary ? 'hover:border-gold-lit' : 'hover:border-gold',
+      )}
+    >
+      <span className={cn('type-micro block', disabled ? 'text-parchment-4' : 'text-gold')}>
+        {seat}
+      </span>
+
+      {/*
+       * Both titles are cut in the same inscriptional capitals — Marcellus sets
+       * every title in this system, and a serif subhead on one row and Roman caps
+       * on the other would read as an accident rather than as a hierarchy. What
+       * separates them is the light: the primary title is lit gold, the other is
+       * parchment.
+       */}
+      <span
+        className={cn(
+          'type-h2 mt-3 block',
+          disabled
+            ? 'text-parchment-4'
+            : cn(primary ? 'text-gold-lit' : 'text-parchment', 'group-hover:text-gold-lit'),
+        )}
+      >
+        {title}
+      </span>
+
+      <span
+        className={cn(
+          'type-small mx-auto mt-2 block max-w-[40ch]',
+          disabled ? 'text-parchment-4' : 'text-parchment-2',
+        )}
+      >
+        {body}
+      </span>
+
+      <ArrowRight
+        aria-hidden
+        size={18}
+        strokeWidth={1.5}
+        className={cn(
+          'mx-auto mt-4 block transition-transform duration-move ease-rise',
+          'sm:absolute sm:right-6 sm:top-1/2 sm:mx-0 sm:mt-0 sm:-translate-y-1/2',
+          disabled ? 'text-parchment-4' : 'text-gold group-hover:translate-x-1 group-hover:text-gold-lit',
+        )}
+      />
+    </button>
   );
 }

@@ -1,8 +1,7 @@
-import { Activity, ScrollText, Users } from 'lucide-react';
+import type { ReactNode } from 'react';
 
-import { Badge } from '@/components/ui/badge';
-import { InlineAlert } from '@/components/ui/inline-alert';
-import { Panel, PanelBody, PanelHeader } from '@/components/ui/panel';
+import { OwnerMark } from '../Pips';
+import { BOARD_HEIGHT, BOARD_WIDTH } from '@/lib/game/board';
 import { readableState } from '@/lib/game/matchView';
 import { cn } from '@/lib/utils';
 import type { GameState } from '@/types/game';
@@ -16,7 +15,78 @@ interface MatchSidebarProps {
   error: string | null;
 }
 
-/** Who is playing, where the game stands, and what has happened. The only column that scrolls. */
+const CELLS = BOARD_WIDTH * BOARD_HEIGHT;
+
+/**
+ * A section head: Roman capitals on the axis, over a gilt rule. Centred because
+ * this design is axial, and an inscription over a line is the one place in a
+ * data column where centring is not an affectation.
+ */
+function SlipHead({ children }: { children: ReactNode }) {
+  return (
+    <h2 className="type-label border-b-rule border-gold-deep pb-1.5 text-center text-parchment">
+      {children}
+    </h2>
+  );
+}
+
+/** Label left, figure right, hairline under. Every figure is Spectral and tabular. */
+function TallyRow({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3 border-b-hair border-gold-deep py-1.5">
+      <dt className="type-label text-parchment-3">{label}</dt>
+      <dd className="type-num text-[13px] text-parchment">{value}</dd>
+    </div>
+  );
+}
+
+/**
+ * The player's mark: a small arched niche carrying their initial, built exactly
+ * as one of their cards is — the figure at the foot for Sol and the head for
+ * Luna, framed twice if it is yours, and the metal last. The same four channels
+ * as the board at a twelfth the size, so the row and the pieces it is counting
+ * are read the same way.
+ *
+ * Never a coloured ring. Gold against silver is about 1.25:1; a ring would be
+ * the one channel that cannot be seen.
+ */
+function PlayerMark({ initial, mine }: { initial: string; mine: boolean }) {
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        'relative flex h-8 w-7 shrink-0 items-center justify-center rounded-arch border-rule bg-night-2',
+        mine ? 'border-gold' : 'border-luna-deep',
+      )}
+    >
+      {mine && <span className="absolute inset-[2px] rounded-arch border-hair border-gold-deep" />}
+      <span
+        className={cn(
+          'type-num text-[13px] leading-none',
+          mine ? '-translate-y-[2px] text-gold-lit' : 'translate-y-[2px] text-luna-lit',
+        )}
+      >
+        {initial}
+      </span>
+      <OwnerMark
+        mine={mine}
+        className={cn(
+          'absolute left-1/2 h-2 w-2 -translate-x-1/2',
+          mine ? 'bottom-[2px] text-gold' : 'top-[2px] text-luna',
+        )}
+      />
+    </span>
+  );
+}
+
+/**
+ * Who is playing, where the game stands, and what has happened.
+ *
+ * The narrow panel beside the board: ruled rows, gilt under every section head,
+ * every figure in Spectral. It is the only column that scrolls, so the panel
+ * itself is fixed and the ruling scrolls inside it — otherwise the frame scrolls
+ * away from the top of its own board.
+ */
 export default function MatchSidebar({
   gameState,
   players,
@@ -26,97 +96,102 @@ export default function MatchSidebar({
   error,
 }: MatchSidebarProps) {
   const state = readableState(gameState.state);
+  const onBoard = Object.keys(gameState.board.pieces ?? {}).length;
 
   return (
-    <aside className="min-h-0 space-y-4 overflow-y-auto pr-1">
-      {error && <InlineAlert tone="danger">{error}</InlineAlert>}
+    <aside className="panel flex min-h-0 flex-col overflow-hidden">
+      <div className="min-h-0 overflow-y-auto px-4 py-4">
+        {/*
+         * A rubric, not a red box. Whatever the server or a thrown Error put in
+         * this string, it is a correction to the page — and it cannot be in
+         * either player's metal, because both of those are spoken for on this
+         * screen.
+         */}
+        {error && (
+          <div role="alert" className="rubric type-small mb-5 text-[13px] text-parchment-2">
+            {error}
+          </div>
+        )}
 
-      <Panel>
-        <PanelHeader icon={Users} title="Players" className="px-4 py-3" />
-        <PanelBody className="space-y-2 p-3">
-          {Object.entries(players).map(([playerId, name]) => {
+        <SlipHead>Players</SlipHead>
+        <div className="mb-5">
+          {Object.entries(players).map(([playerId, name], index) => {
             const isMe = playerId === currentPlayerId;
             const isActive = gameState.currentPlayerId === playerId;
             const columns = gameState.scores?.[playerId] ?? 0;
+            const offline = !isMe && !opponentConnected;
 
             return (
               <div
                 key={playerId}
                 className={cn(
-                  'flex items-center gap-2.5 rounded-md border border-subtle bg-surface-2 px-3 py-2',
-                  isActive && 'border-l-[3px] border-l-success',
+                  // The turn marker is a heavy rule down the leading edge in
+                  // that player's metal — the transparent one on the idle row
+                  // keeps both names on the same measure.
+                  'flex items-center gap-2.5 border-l-heavy py-2 pl-2.5',
+                  index > 0 && 'border-t-hair border-t-gold-deep',
+                  isActive
+                    ? isMe
+                      ? 'border-l-gold'
+                      : 'border-l-luna'
+                    : 'border-l-transparent',
                 )}
               >
-                <span
-                  className={cn(
-                    'flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-3 font-display text-sm font-bold ring-2',
-                    isMe ? 'text-gold-300 ring-gold-400/60' : 'text-danger ring-danger/60',
-                  )}
-                >
-                  {name.charAt(0).toUpperCase()}
+                <PlayerMark initial={name.charAt(0).toUpperCase()} mine={isMe} />
+
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-baseline gap-1.5">
+                    <span className="type-small truncate">{name}</span>
+                    {isMe && <span className="type-micro shrink-0 text-parchment-3">You</span>}
+                  </span>
+                  {isActive && <span className="type-micro block text-parchment-3">To move</span>}
                 </span>
-                <span className="flex min-w-0 flex-1 items-center gap-1.5">
-                  <span className="truncate text-sm text-ink-hi">{name}</span>
-                  {isMe && <span className="type-micro text-ink-low">You</span>}
-                  {isActive && (
-                    <span
-                      className="h-2 w-2 shrink-0 rounded-full bg-success"
-                      style={{ animation: 'breathe 1.6s ease-in-out infinite' }}
-                    />
-                  )}
-                </span>
-                {!isMe && !opponentConnected ? (
-                  <Badge tone="danger">Offline</Badge>
+
+                {offline ? (
+                  /* A dropped opponent is a genuine failure, so it earns the red. */
+                  <span className="cartouche shrink-0 border-cinnabar text-cinnabar">Offline</span>
                 ) : (
-                  <Badge tone={isMe ? 'gold' : 'neutral'} className="tabular">
-                    {columns} col{columns === 1 ? '' : 's'}
-                  </Badge>
+                  <span className="shrink-0 text-right">
+                    <span className="type-num block text-[15px] leading-none text-parchment">
+                      {columns}
+                    </span>
+                    <span className="type-micro block text-parchment-3">
+                      column{columns === 1 ? '' : 's'}
+                    </span>
+                  </span>
                 )}
               </div>
             );
           })}
-        </PanelBody>
-      </Panel>
+        </div>
 
-      <Panel>
-        <PanelHeader icon={Activity} title="Game Status" className="px-4 py-3" />
-        <PanelBody className="space-y-2.5 p-4 text-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-ink-mid">State</span>
-            <Badge tone={state.tone}>{state.label}</Badge>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-ink-mid">Cards in hand</span>
-            <span className="tabular text-ink-hi">{gameState.currentPlayerHand.length}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-ink-mid">Cards on board</span>
-            <span className="tabular text-ink-hi">
-              {Object.keys(gameState.board.pieces ?? {}).length}
-            </span>
-          </div>
-        </PanelBody>
-      </Panel>
+        <SlipHead>Where it stands</SlipHead>
+        <dl className="mb-5">
+          <TallyRow label="State" value={<span className="type-label">{state.label}</span>} />
+          <TallyRow label="Cards in hand" value={gameState.currentPlayerHand.length} />
+          {/* Out of fifteen, because a tally says what it is counting against. */}
+          <TallyRow label="Cards on board" value={`${onBoard}/${CELLS}`} />
+        </dl>
 
-      <Panel>
-        <PanelHeader icon={ScrollText} title="Battle Log" className="px-4 py-3" />
-        <PanelBody className="p-4">
-          {battleLog.length === 0 ? (
-            <p className="type-small text-ink-low">No moves yet.</p>
-          ) : (
-            <ul className="space-y-1.5">
-              {battleLog.map((entry, index) => (
-                <li
-                  key={`${entry}-${index}`}
-                  className={cn('type-small', index === 0 ? 'text-ink-mid' : 'text-ink-low')}
-                >
-                  {entry}
-                </li>
-              ))}
-            </ul>
-          )}
-        </PanelBody>
-      </Panel>
+        <SlipHead>Moves</SlipHead>
+        {battleLog.length === 0 ? (
+          <p className="type-small mt-2 text-parchment-3">Nothing played yet.</p>
+        ) : (
+          <ul>
+            {battleLog.map((entry, index) => (
+              <li
+                key={`${entry}-${index}`}
+                className={cn(
+                  'type-small border-b-hair border-gold-deep py-1.5 text-[12px] leading-[1.5]',
+                  index === 0 ? 'text-parchment' : 'text-parchment-2',
+                )}
+              >
+                {entry}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </aside>
   );
 }
