@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 
+import { OwnerMark } from '../Pips';
 import { BOARD_HEIGHT, BOARD_WIDTH } from '@/lib/game/board';
 import { readableState } from '@/lib/game/matchView';
 import { cn } from '@/lib/utils';
@@ -16,39 +17,62 @@ interface MatchSidebarProps {
 
 const CELLS = BOARD_WIDTH * BOARD_HEIGHT;
 
-/** A section head: mono caps over a heavy rule, the way a ledger column is titled. */
+/**
+ * A section head: Roman capitals on the axis, over a gilt rule. Centred because
+ * this design is axial, and an inscription over a line is the one place in a
+ * data column where centring is not an affectation.
+ */
 function SlipHead({ children }: { children: ReactNode }) {
-  return <h2 className="type-label border-b-heavy border-ink pb-1.5">{children}</h2>;
+  return (
+    <h2 className="type-label border-b-rule border-gold-deep pb-1.5 text-center text-parchment">
+      {children}
+    </h2>
+  );
 }
 
-/** Label left, figure right, hairline under. Every figure is mono and tabular. */
+/** Label left, figure right, hairline under. Every figure is Spectral and tabular. */
 function TallyRow({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <div className="flex items-baseline justify-between gap-3 border-b-hair border-ink py-1.5">
-      <dt className="type-label text-ink-3">{label}</dt>
-      <dd className="type-num text-[13px] text-ink">{value}</dd>
+    <div className="flex items-baseline justify-between gap-3 border-b-hair border-gold-deep py-1.5">
+      <dt className="type-label text-parchment-3">{label}</dt>
+      <dd className="type-num text-[13px] text-parchment">{value}</dd>
     </div>
   );
 }
 
 /**
- * The player's mark: a ruled square carrying their initial, banded like one of
- * their cards — at the foot for you, at the head for them, and printed twice if
- * it is yours. The same three channels as the board, at a twelfth the size, so
- * the row and the pieces it is counting are read the same way.
+ * The player's mark: a small arched niche carrying their initial, built exactly
+ * as one of their cards is — the figure at the foot for Sol and the head for
+ * Luna, framed twice if it is yours, and the metal last. The same four channels
+ * as the board at a twelfth the size, so the row and the pieces it is counting
+ * are read the same way.
+ *
+ * Never a coloured ring. Gold against silver is about 1.25:1; a ring would be
+ * the one channel that cannot be seen.
  */
 function PlayerMark({ initial, mine }: { initial: string; mine: boolean }) {
   return (
     <span
       aria-hidden
-      className="relative flex h-8 w-7 shrink-0 items-center justify-center rounded-card border-rule border-ink bg-paper-raised"
+      className={cn(
+        'relative flex h-8 w-7 shrink-0 items-center justify-center rounded-arch border-rule bg-night-2',
+        mine ? 'border-gold' : 'border-luna-deep',
+      )}
     >
-      {mine && <span className="absolute inset-[2px] border border-ink" />}
-      <span className="type-num text-[13px] leading-none">{initial}</span>
+      {mine && <span className="absolute inset-[2px] rounded-arch border-hair border-gold-deep" />}
       <span
         className={cn(
-          'absolute inset-x-0 h-[15%] min-h-[4px]',
-          mine ? 'bottom-0 hatch-mine' : 'top-0 hatch-theirs',
+          'type-num text-[13px] leading-none',
+          mine ? '-translate-y-[2px] text-gold-lit' : 'translate-y-[2px] text-luna-lit',
+        )}
+      >
+        {initial}
+      </span>
+      <OwnerMark
+        mine={mine}
+        className={cn(
+          'absolute left-1/2 h-2 w-2 -translate-x-1/2',
+          mine ? 'bottom-[2px] text-gold' : 'top-[2px] text-luna',
         )}
       />
     </span>
@@ -58,10 +82,10 @@ function PlayerMark({ initial, mine }: { initial: string; mine: boolean }) {
 /**
  * Who is playing, where the game stands, and what has happened.
  *
- * A tally slip: a second, narrower sheet beside the board's, ruled into rows,
- * every figure in the mono. It is the only column that scrolls, so the sheet
- * itself is fixed and the ruling scrolls inside it — otherwise the paper fibre
- * scrolls away from the top of its own sheet.
+ * The narrow panel beside the board: ruled rows, gilt under every section head,
+ * every figure in Spectral. It is the only column that scrolls, so the panel
+ * itself is fixed and the ruling scrolls inside it — otherwise the frame scrolls
+ * away from the top of its own board.
  */
 export default function MatchSidebar({
   gameState,
@@ -75,15 +99,16 @@ export default function MatchSidebar({
   const onBoard = Object.keys(gameState.board.pieces ?? {}).length;
 
   return (
-    <aside className="sheet flex min-h-0 flex-col overflow-hidden">
+    <aside className="panel flex min-h-0 flex-col overflow-hidden">
       <div className="min-h-0 overflow-y-auto px-4 py-4">
         {/*
-         * An errata slip, not a red box. Whatever the server or a thrown Error
-         * put in this string, it is a correction to the sheet — and it cannot be
-         * a player's colour, because both of those are spoken for on this screen.
+         * A rubric, not a red box. Whatever the server or a thrown Error put in
+         * this string, it is a correction to the page — and it cannot be in
+         * either player's metal, because both of those are spoken for on this
+         * screen.
          */}
         {error && (
-          <div role="alert" className="errata type-num mb-5 text-[11px] leading-[1.5]">
+          <div role="alert" className="rubric type-small mb-5 text-[13px] text-parchment-2">
             {error}
           </div>
         )}
@@ -100,15 +125,15 @@ export default function MatchSidebar({
               <div
                 key={playerId}
                 className={cn(
-                  // The turn marker is a rule down the leading edge in that
-                  // player's ink — the transparent one on the idle row keeps both
-                  // names on the same measure.
+                  // The turn marker is a heavy rule down the leading edge in
+                  // that player's metal — the transparent one on the idle row
+                  // keeps both names on the same measure.
                   'flex items-center gap-2.5 border-l-heavy py-2 pl-2.5',
-                  index > 0 && 'border-t-hair border-t-ink',
+                  index > 0 && 'border-t-hair border-t-gold-deep',
                   isActive
                     ? isMe
-                      ? 'border-l-verm'
-                      : 'border-l-prus'
+                      ? 'border-l-gold'
+                      : 'border-l-luna'
                     : 'border-l-transparent',
                 )}
               >
@@ -117,18 +142,21 @@ export default function MatchSidebar({
                 <span className="min-w-0 flex-1">
                   <span className="flex items-baseline gap-1.5">
                     <span className="type-small truncate">{name}</span>
-                    {isMe && <span className="type-micro shrink-0 text-ink-3">You</span>}
+                    {isMe && <span className="type-micro shrink-0 text-parchment-3">You</span>}
                   </span>
-                  {isActive && <span className="type-micro block text-ink-3">To move</span>}
+                  {isActive && <span className="type-micro block text-parchment-3">To move</span>}
                 </span>
 
                 {offline ? (
-                  <span className="stamp shrink-0 border-ochre">Offline</span>
+                  /* A dropped opponent is a genuine failure, so it earns the red. */
+                  <span className="cartouche shrink-0 border-cinnabar text-cinnabar">Offline</span>
                 ) : (
                   <span className="shrink-0 text-right">
-                    <span className="type-num block text-[15px] leading-none">{columns}</span>
-                    <span className="type-micro block text-ink-3">
-                      col{columns === 1 ? '' : 's'}
+                    <span className="type-num block text-[15px] leading-none text-parchment">
+                      {columns}
+                    </span>
+                    <span className="type-micro block text-parchment-3">
+                      column{columns === 1 ? '' : 's'}
                     </span>
                   </span>
                 )}
@@ -147,15 +175,15 @@ export default function MatchSidebar({
 
         <SlipHead>Moves</SlipHead>
         {battleLog.length === 0 ? (
-          <p className="type-small mt-2 text-ink-3">Nothing played yet.</p>
+          <p className="type-small mt-2 text-parchment-3">Nothing played yet.</p>
         ) : (
           <ul>
             {battleLog.map((entry, index) => (
               <li
                 key={`${entry}-${index}`}
                 className={cn(
-                  'type-num border-b-hair border-ink py-1.5 text-[11px] leading-[1.45]',
-                  index === 0 ? 'text-ink' : 'text-ink-3',
+                  'type-small border-b-hair border-gold-deep py-1.5 text-[12px] leading-[1.5]',
+                  index === 0 ? 'text-parchment' : 'text-parchment-2',
                 )}
               >
                 {entry}
