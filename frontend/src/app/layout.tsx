@@ -1,48 +1,46 @@
 // src/app/layout.tsx
 import type { Metadata, Viewport } from 'next'
-import { EB_Garamond, IBM_Plex_Mono } from 'next/font/google'
+import { Marcellus, Spectral } from 'next/font/google'
 import './globals.css'
 import { UnifiedAuthProvider } from '@/hooks/useUnifiedAuth'
 import AppBackground from '@/components/layout/AppBackground'
 import { ToastProvider } from '@/components/ui/toast'
 
 /*
- * Two faces, and the split between them is a point of view rather than a
- * hierarchy.
+ * Two faces, and the division is between the carved and the written.
  *
- * EB Garamond is Duffner and Pardo's revival of Claude Garamont's 16th-century
- * Parisian punches — a text face, not a display interpretation, so unlike
- * Cormorant it holds its colour down to 15px on a light ground. It is the
- * DEFAULT voice here: on a printed sheet, prose is the norm and the interface
- * is the exception.
+ * Marcellus is Roman inscriptional capitals — the letterforms of monuments and
+ * temple architraves, drawn from the same tradition as the Trajan column. It has
+ * ONE weight, and that is not a limitation to work around: carved letters have
+ * one weight, because a chisel does. It sets every title, label and control, in
+ * capitals, with the open tracking a cut inscription is spaced at.
  *
- * IBM Plex Mono is the only monospace on Google Fonts with a humanist skeleton
- * rather than a geometric one, so it does not fight a Garamond, and its slashed
- * zero and full-serifed 1 are unambiguous at 11px — which is what a room code
- * read down a phone line needs.
+ * Spectral is a serif cut for screens rather than for paper, which matters here
+ * because everything sits on a dark ground and a delicate old-style face goes to
+ * grey. It carries all the prose and — absolutely, with no exceptions — every
+ * number in the game. An ephemeris sets its tables in the text face, not in a
+ * second one.
  *
- * The anachronism is deliberate. The CARD is the printed artefact; everything
- * around it — the room code, the tally, the connection state, the margin line —
- * is the modern apparatus, the pencil annotation in the margin of a proof. Two
- * registers, on purpose. It collapses into an inconsistency the moment the mono
- * sets a heading or the serif sets a number, which is why that rule is absolute:
- * nothing below 15px is set in the serif, and every number anywhere is mono.
+ * The previous pass used a monospace for the apparatus, on the argument that the
+ * card was the artefact and everything around it was a modern annotation. That
+ * argument does not survive this direction: there is nothing modern here to
+ * annotate with.
  */
-const garamond = EB_Garamond({
+const marcellus = Marcellus({
     subsets: ['latin'],
-    weight: ['400', '500', '600'],
-    style: ['normal', 'italic'],
+    weight: ['400'],
     display: 'swap',
     variable: '--font-display',
     fallback: ['Georgia', 'Times New Roman', 'serif'],
 })
 
-const plex = IBM_Plex_Mono({
+const spectral = Spectral({
     subsets: ['latin'],
-    weight: ['400', '500', '600'],
+    weight: ['300', '400', '500', '600'],
+    style: ['normal', 'italic'],
     display: 'swap',
-    variable: '--font-mono',
-    fallback: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+    variable: '--font-text',
+    fallback: ['Georgia', 'Times New Roman', 'serif'],
 })
 
 const siteUrl = 'https://handoffate.org'
@@ -73,8 +71,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
     /* The table, not the sheet — it is what fills the browser chrome's gutters. */
-    themeColor: '#140C07',
-    colorScheme: 'light',
+    themeColor: '#080B16',
+    colorScheme: 'dark',
 }
 
 export default function RootLayout({
@@ -83,12 +81,8 @@ export default function RootLayout({
     children: React.ReactNode
 }) {
     return (
-        <html lang="en" className={`${garamond.variable} ${plex.variable}`}>
-        {/*
-          * No `antialiased`. Subpixel smoothing off is a dark-UI reflex: on a light
-          * ground it thins the strokes, and EB Garamond's hairlines are fine enough.
-          */}
-        <body className="font-display">
+        <html lang="en" className={`${marcellus.variable} ${spectral.variable}`}>
+        <body className="font-text">
             <a href="#main" className="skip-link">
                 Skip to content
             </a>

@@ -1,11 +1,11 @@
 import type { Config } from "tailwindcss";
 
 /*
- * "The Table" — mirrored from the CSS custom properties in globals.css.
+ * "The Firmament" — mirrored from the CSS custom properties in globals.css.
  *
  * The literals are duplicated rather than pointed at var(--…) on purpose:
- * Tailwind's opacity modifiers (`bg-paper-sunk/60`) only work on colours it can
- * read the channels of. Hand-written CSS uses the variables; classes use these.
+ * Tailwind's opacity modifiers (`bg-night-2/60`) only work on colours it can read
+ * the channels of. Hand-written CSS uses the variables; classes use these.
  */
 export default {
   darkMode: ["class"],
@@ -17,24 +17,25 @@ export default {
   theme: {
     extend: {
       fontFamily: {
+        /* Marcellus — Roman inscriptional capitals. One weight, because carved
+           letters have one weight. Titles, labels, controls. */
         display: ["var(--font-display)", "Georgia", "serif"],
-        mono: ["var(--font-mono)", "ui-monospace", "monospace"],
+        /* Spectral — a serif cut for screens, and the only thing that sets a
+           number. Body, prose, every tally and every power value. */
+        text: ["var(--font-text)", "Georgia", "serif"],
       },
       colors: {
-        /* The furniture. Three values, because it must never compete with the sheet. */
-        table: { DEFAULT: "#2A1A10", deep: "#140C07", edge: "#0B0603" },
-        /* The stock, at four depths. */
-        paper: { raised: "#F2EBDC", DEFAULT: "#EDE4D2", sunk: "#E8E0CF", deep: "#DCD2BC" },
-        /* The key plate, one lampblack at four densities. */
-        ink: { DEFAULT: "#1A1614", 2: "#48423C", 3: "#645D55", 4: "#7D766B" },
-        /* Plate one — you. */
-        verm: { DEFAULT: "#C4351F", text: "#B1301C", deep: "#7E2214" },
-        /* Plate two — them. One value; a press has one can of each ink. */
-        prus: "#2A4A7A",
-        /* Attention. Fill and rule only, never text. */
-        ochre: "#9A6E23",
-        /* The two legal lighter edges. */
-        rule: { ghost: "#B5AC9C", min: "#8C8271" },
+        night: { 0: "#080B16", DEFAULT: "#0E1326", 1: "#0E1326", 2: "#161C33", 3: "#212943" },
+        /* SOL — the light, and you. */
+        gold: { lit: "#F5E3AE", DEFAULT: "#D4AF57", ground: "#C9A63E", deep: "#8F6E28" },
+        /* LUNA — them. */
+        luna: { lit: "#E8EEF9", DEFAULT: "#B9C7DF", deep: "#6C7D9B" },
+        lapis: "#3554B8",
+        /* Rubrication only. An index, never an emotion. */
+        cinnabar: "#D4574A",
+        parchment: { DEFAULT: "#EFE8D6", 2: "#BDB8A8", 3: "#8C8878", 4: "#63604F" },
+        /* The only colour permitted on the gilded ground. */
+        "ink-gold": "#1A1408",
 
         // shadcn's names, kept so the components that read them still work
         background: "hsl(var(--background))",
@@ -57,39 +58,35 @@ export default {
         ring: "hsl(var(--ring))",
       },
       /*
-       * Every stock radius name maps to 0, so an unthinking `rounded-md` habit
-       * produces a square corner rather than silently reintroducing 11px. The
-       * single exception is the die-cut card edge.
+       * There are no corner radii in this design, there are ARCHES. Every stock
+       * radius name maps to 0 so an unthinking `rounded-md` produces a square
+       * corner rather than silently reintroducing a 6px bubble; `rounded-arch`
+       * is the semicircular head everything that frames something takes.
        */
       borderRadius: {
         none: "0",
         DEFAULT: "0",
-        xs: "0",
         sm: "0",
         md: "0",
         lg: "0",
         xl: "0",
         full: "0",
-        card: "2px",
+        arch: "50% 50% 0 0 / 22% 22% 0 0",
+        "arch-deep": "50% 50% 0 0 / 40% 40% 0 0",
       },
       borderWidth: {
-        hair: "0.75px",
-        rule: "1.5px",
-        heavy: "3px",
+        hair: "1px",
+        rule: "2px",
+        heavy: "4px",
       },
       /*
-       * Deleted entirely. The one shadow in this design is the sheet's cast on
-       * the table, written by hand in `.sheet`. There is no shadow scale
-       * because there is no second shadow.
+       * Deleted. Depth here is a gilt frame and an aureole of drawn rings, never
+       * a blurred drop shadow — an icon's halo is a circle of gold, not a light
+       * source, and that is the whole difference between this and a neon UI.
        */
       boxShadow: {},
-      transitionTimingFunction: {
-        settle: "cubic-bezier(0.2, 0.9, 0.25, 1)",
-      },
-      transitionDuration: {
-        ink: "90ms",
-        move: "260ms",
-      },
+      transitionTimingFunction: { rise: "cubic-bezier(0.16, 0.84, 0.28, 1)" },
+      transitionDuration: { lume: "140ms", move: "420ms" },
       zIndex: { raised: "10", sticky: "30", overlay: "50", toast: "60" },
     },
   },
