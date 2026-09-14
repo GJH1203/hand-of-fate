@@ -1,28 +1,14 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import {
-  Activity,
-  ArrowRight,
-  Award,
-  Crown,
-  Eye,
-  Flag,
-  Sparkles,
-  SkipForward,
-  Trophy,
-  Users,
-} from 'lucide-react';
+import { type CSSProperties, Fragment, useEffect, useMemo, useState } from 'react';
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Panel, PanelBody, PanelHeader } from '@/components/ui/panel';
-import { Spinner } from '@/components/ui/spinner';
+import BoardCard from '@/components/game/BoardCard';
+import Pips from '@/components/game/Pips';
+import { layStyle } from '@/lib/game/lay';
 import { cn } from '@/lib/utils';
 import {
   type ActionKind,
   type SimCard,
-  type Step,
   STEPS,
   columnTotals,
 } from './guidedTutorialScript';
@@ -33,12 +19,36 @@ import {
  * What it teaches is in `guidedTutorialScript.ts`; this drives it. The split is the
  * point — the script is three hundred lines of board positions and sentences, and it
  * used to sit on top of the component that plays it.
+ *
+ * This is the first screen a new player ever sees, so it is drawn with the arena's
+ * own pieces rather than with miniatures of them: `BoardCard` on real `.cell`
+ * squares, the ghost impression of the pips you are about to lay down on the one
+ * legal square, the band at the foot for your cards and at the head for theirs. A
+ * player who finishes this has already read the real board for five minutes.
  */
 
 interface GuidedTutorialProps {
   playerName: string;
   onComplete: () => void;
   onSkip: () => void;
+}
+
+/*
+ * Every numeral is set in the mono, including the ones inside a sentence — the type
+ * rule has no exception for prose. The script is authored as plain text so that
+ * editing what the tutorial says never means editing markup; the digits are lifted
+ * out of it here, on the way to the screen.
+ */
+function numerals(text: string) {
+  return text.split(/(\d+)/).map((part, index) =>
+    /^\d+$/.test(part) ? (
+      <span key={index} className="type-num">
+        {part}
+      </span>
+    ) : (
+      <Fragment key={index}>{part}</Fragment>
+    ),
+  );
 }
 
 export default function GuidedTutorial({ playerName, onComplete, onSkip }: GuidedTutorialProps) {
@@ -67,6 +77,7 @@ export default function GuidedTutorial({ playerName, onComplete, onSkip }: Guide
   }, [step.grid, placed]);
 
   const hand = step.hand.filter((card) => !Object.values(placed).some((c) => c.id === card.id));
+  const selectedCard = hand.find((card) => card.id === selectedCardId) ?? null;
   const totals = columnTotals(grid);
   const columnsWon = totals.filter((t) => t.leader === 'you').length;
   const columnsLost = totals.filter((t) => t.leader === 'opponent').length;
@@ -95,12 +106,12 @@ export default function GuidedTutorial({ playerName, onComplete, onSkip }: Guide
       return;
     }
     if (action === 'pass') {
-      setMessage('Wise. A card held back is a column you can still take.');
+      setMessage('A card held back is a column you can still take.');
       advance(1400);
       return;
     }
     if (action === 'request-win') {
-      setMessage('You have asked to end the duel early. They are considering…');
+      setMessage('You have asked to end the duel early. They are deciding.');
       setIsThinking(true);
       window.setTimeout(() => {
         setIsThinking(false);
@@ -112,233 +123,285 @@ export default function GuidedTutorial({ playerName, onComplete, onSkip }: Guide
   };
 
   return (
-    <div className="min-h-dvh px-6 py-6">
-      <div className="mx-auto max-w-5xl space-y-5">
-        <Panel>
-          <PanelHeader
-            title={step.title}
-            subtitle={`Step ${index + 1} of ${STEPS.length} · ${step.subtitle}`}
-            action={
-              <Button variant="ghost" size="sm" onClick={onSkip}>
-                <SkipForward size={16} strokeWidth={1.75} />
-                Skip
-              </Button>
-            }
-          />
-          <div className="h-[3px] w-full bg-surface-3">
-            <div
-              className="h-full bg-ember-400 transition-[width] duration-200 ease-arcane"
-              style={{ width: `${((index + 1) / STEPS.length) * 100}%` }}
-            />
+    <main id="main" className="mx-auto min-h-dvh w-full max-w-5xl px-0 sm:px-8 sm:py-10">
+      <div className="sheet min-h-dvh sm:min-h-0">
+        {/* The masthead. Title, where you are, and the way out. */}
+        <div className="flex items-start justify-between gap-6 px-6 py-6 sm:px-10 sm:py-8">
+          <div className="min-w-0">
+            <p className="type-label text-verm-text">Guided duel</p>
+            <h1 className="type-h1 mt-2 text-ink">{step.title}</h1>
+            <p className="type-micro mt-2 text-ink-3">
+              Step {index + 1} of {STEPS.length} — {step.subtitle}
+            </p>
           </div>
-        </Panel>
+          <button type="button" className="btn btn--quiet h-9 shrink-0 px-3" onClick={onSkip}>
+            Skip
+          </button>
+        </div>
 
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-          <Panel>
-            <PanelHeader title="Battlefield" />
-            <PanelBody>
-              <div className="mx-auto w-fit">
-                <div className="grid grid-cols-3 gap-2">
-                  {totals.map((total) => (
-                    <div
-                      key={total.col}
+        {/*
+         * The progress rule: a track in the deepest paper with the vermillion plate
+         * laid over as much of it as has been read. It travels, so it takes the long
+         * duration; it does not pulse, because a printed sheet is still.
+         */}
+        <div aria-hidden className="h-[3px] w-full bg-paper-deep">
+          <div
+            className="h-full bg-verm transition-[width] duration-move ease-settle"
+            style={{ width: `${((index + 1) / STEPS.length) * 100}%` }}
+          />
+        </div>
+
+        <div className="grid gap-8 px-6 py-8 sm:px-10 sm:py-10 lg:grid-cols-[auto_minmax(0,1fr)] lg:gap-12">
+          {/* The board. Narrow and fixed; the notes beside it take the rest. */}
+          <section className="mx-auto w-fit lg:mx-0">
+            <h2 className="type-label mb-3 text-ink-3">The board</h2>
+
+            <div className="grid grid-cols-3 gap-2">
+              {totals.map((total) => (
+                <div
+                  key={total.col}
+                  title={
+                    total.leader
+                      ? `Column ${total.col + 1} — ${total.leader === 'you' ? 'yours' : 'theirs'}, ${Math.max(total.mine, total.opponent)} to ${Math.min(total.mine, total.opponent)}`
+                      : `Column ${total.col + 1} — level at ${total.mine}`
+                  }
+                  className="relative flex h-12 w-[72px] flex-col items-center justify-center border-rule border-ink bg-paper-sunk"
+                >
+                  {/*
+                   * The leader's band, in the same place it sits on a card: at the
+                   * foot when the column is yours, at the head when it is theirs. A
+                   * level column has no band at all, which is a third state the ink
+                   * on its own could never have shown.
+                   */}
+                  {total.leader && (
+                    <span
+                      aria-hidden
                       className={cn(
-                        'flex h-11 w-[72px] flex-col items-center justify-center rounded-md border bg-surface-1',
-                        total.leader === 'you' && 'border-ember-400/45',
-                        total.leader === 'opponent' && 'border-steel-400/50',
-                        !total.leader && 'border-subtle',
+                        'pointer-events-none absolute inset-x-0 h-[6px]',
+                        total.leader === 'you' ? 'bottom-0 hatch-mine' : 'top-0 hatch-theirs',
+                      )}
+                    />
+                  )}
+                  <span className="type-micro leading-none text-ink-3">Col {total.col + 1}</span>
+                  <span className="type-num mt-1 flex items-baseline gap-1 text-[15px] leading-none">
+                    <span className={total.leader === 'you' ? 'text-verm-text' : 'text-ink-2'}>
+                      {total.mine}
+                    </span>
+                    <span className="text-ink-3">:</span>
+                    <span className={total.leader === 'opponent' ? 'text-prus' : 'text-ink-2'}>
+                      {total.opponent}
+                    </span>
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-2 grid grid-cols-3 gap-2">
+              {grid.map((row, rowIndex) =>
+                row.map((card, colIndex) => {
+                  const key = `${rowIndex},${colIndex}`;
+                  const isTarget =
+                    !!step.expect &&
+                    step.expect.cell === key &&
+                    selectedCardId === step.expect.cardId &&
+                    !card;
+
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => handleCellClick(rowIndex, colIndex)}
+                      disabled={!isTarget}
+                      aria-label={
+                        card
+                          ? `Column ${colIndex + 1}, row ${rowIndex + 1}: ${card.owner === 'you' ? 'your' : 'their'} ${card.name}, power ${card.power}`
+                          : `Column ${colIndex + 1}, row ${rowIndex + 1}, empty${
+                              isTarget && selectedCard
+                                ? `, playable — would place ${selectedCard.name}, power ${selectedCard.power}`
+                                : ''
+                            }`
+                      }
+                      className={cn(
+                        'group relative h-[72px] w-[72px] cell',
+                        isTarget && 'cell--playable',
+                        !isTarget && 'cursor-default',
                       )}
                     >
-                      <span className="type-micro leading-none text-ink-low">Col {total.col + 1}</span>
-                      <span className="mt-1 flex items-baseline gap-1 font-display text-base font-bold leading-none tabular">
-                        <span className={total.leader === 'you' ? 'text-ember-300' : 'text-ink-mid'}>
-                          {total.mine}
-                        </span>
-                        <span className="text-[11px] font-normal text-ink-low">:</span>
+                      {card ? (
+                        /*
+                         * `.laid` rotates the card a fraction of a degree, derived
+                         * from this square's coordinates, exactly as the real board
+                         * does. The wrapper rotates and the button does not, so the
+                         * hit target stays square to the grid.
+                         */
                         <span
-                          className={total.leader === 'opponent' ? 'text-steel-300' : 'text-ink-mid'}
+                          className="laid absolute inset-0 block"
+                          // The lay is three custom properties; CSSProperties has no
+                          // room for them in its index signature, and `.laid` reads them.
+                          style={layStyle(colIndex, rowIndex) as CSSProperties}
                         >
-                          {total.opponent}
+                          <BoardCard
+                            card={{ id: card.id, name: card.name, power: card.power }}
+                            mine={card.owner === 'you'}
+                          />
                         </span>
-                      </span>
-                    </div>
-                  ))}
-                </div>
+                      ) : (
+                        isTarget &&
+                        selectedCard && (
+                          /*
+                           * The legal-move affordance, and the same one the arena
+                           * uses: a ghost impression of the pips you are about to
+                           * lay down, already counted, where they would land. It
+                           * replaces a pulsing glow — glow does not exist on paper,
+                           * and this teaches the mark the real board will show.
+                           */
+                          <Pips
+                            power={selectedCard.power}
+                            className="absolute left-1/2 top-1/2 w-[64%] -translate-x-1/2 -translate-y-1/2 text-verm opacity-[0.42] transition-opacity duration-ink group-hover:opacity-[0.72]"
+                          />
+                        )
+                      )}
+                    </button>
+                  );
+                }),
+              )}
+            </div>
+          </section>
 
-                <div className="mt-2 grid grid-cols-3 gap-2">
-                  {grid.map((row, rowIndex) =>
-                    row.map((card, colIndex) => {
-                      const key = `${rowIndex},${colIndex}`;
-                      const isTarget =
-                        !!step.expect &&
-                        step.expect.cell === key &&
-                        selectedCardId === step.expect.cardId &&
-                        !card;
+          {/* The notes: what to do, what you are holding, where the count stands. */}
+          <div className="lg:border-l-hair lg:border-rule-ghost lg:pl-12">
+            <section>
+              <h2 className="type-label text-ink-3">What to do</h2>
+              <p aria-live="polite" className="type-body mt-3 text-ink">
+                {numerals(message)}
+              </p>
 
-                      return (
-                        <button
-                          key={key}
-                          type="button"
-                          onClick={() => handleCellClick(rowIndex, colIndex)}
-                          disabled={!isTarget}
-                          aria-label={
-                            card
-                              ? `Column ${colIndex + 1}, row ${rowIndex + 1}: ${card.owner === 'you' ? 'your' : 'their'} ${card.name} ${card.power}`
-                              : `Column ${colIndex + 1}, row ${rowIndex + 1}, empty`
-                          }
-                          className={cn(
-                            'relative h-[72px] w-[72px] overflow-hidden rounded-md border border-subtle bg-surface-1',
-                            'transition-[box-shadow,border-color] duration-150',
-                            isTarget && 'cell-valid cursor-pointer border-ember-400/40',
-                          )}
-                        >
-                          {card && (
-                            <div
-                              className={cn(
-                                'flex h-full w-full flex-col items-center justify-center gap-0.5 rounded-[7px] border bg-surface-0',
-                                card.owner === 'you' ? 'border-ember-400/85' : 'border-steel-400/85',
-                              )}
-                            >
-                              <span
-                                className={cn(
-                                  'absolute left-1 top-1 flex h-[22px] w-[22px] items-center justify-center rounded-full font-display text-[13px] font-bold leading-none tabular',
-                                  card.owner === 'you'
-                                    ? 'bg-ember-400 text-[#231405]'
-                                    : 'bg-steel-400 text-[#04161F]',
-                                )}
-                              >
-                                {card.power}
-                              </span>
-                              <span className="mt-3 font-display text-[9px] uppercase tracking-[0.1em] text-ink-mid">
-                                {card.name}
-                              </span>
-                            </div>
-                          )}
-                        </button>
-                      );
-                    }),
-                  )}
-                </div>
+              {isThinking && (
+                <p className="type-label mt-4 flex items-center gap-2 text-ink-3">
+                  {/*
+                   * The one loop the system allows, and only because the honest
+                   * answer here is that we are still waiting.
+                   */}
+                  <span
+                    aria-hidden
+                    className="inline-block h-[7px] w-[7px] shrink-0 bg-verm"
+                    style={{ animation: 'ink-pulse 1.1s ease-in-out infinite' }}
+                  />
+                  Waiting for their answer
+                </p>
+              )}
+
+              <div className="mt-5 border-l-rule border-rule-ghost pl-4">
+                <p className="type-label text-ink-3">Hint</p>
+                <p className="type-small mt-1.5 text-ink-2">{numerals(step.tip)}</p>
               </div>
-            </PanelBody>
-          </Panel>
+            </section>
 
-          <div className="space-y-5">
-            <Panel style={{ borderColor: 'rgba(217,142,67,0.3)' }}>
-              <PanelHeader title="Arcane Master" />
-              <PanelBody>
-                <div className="flex items-start gap-3">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-2 ring-2 ring-ember-400/40">
-                    {isThinking ? (
-                      <Spinner size={16} className="text-ember-300" />
-                    ) : (
-                      <Sparkles size={18} strokeWidth={1.75} className="text-ember-300" />
-                    )}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-sm text-ink-hi">{message}</p>
-                    <p
-                      className="type-small mt-3 rounded-md border px-3 py-2 text-ember-300"
-                      style={{
-                        borderColor: 'rgba(217,142,67,0.25)',
-                        backgroundColor: 'rgba(217,142,67,0.08)',
-                      }}
-                    >
-                      {step.tip}
-                    </p>
-                  </div>
+            <section className="mt-8">
+              {/*
+               * The one section head on the page set in the serif rather than the
+               * mono label: the hand is the only thing here that belongs to the
+               * person reading, and it is worth saying so in their own name.
+               */}
+              <h2 className="type-h3 truncate text-ink">{playerName}&rsquo;s hand</h2>
+              {hand.length === 0 ? (
+                <p className="type-small mt-3 text-ink-3">Your hand is empty.</p>
+              ) : (
+                <div className="mt-3 flex flex-wrap gap-3">
+                  {hand.map((card) => {
+                    const wanted = step.expect?.cardId === card.id;
+                    const selectable = step.actions.includes('place') && (!step.expect || wanted);
+                    const selected = selectedCardId === card.id;
+                    return (
+                      <button
+                        key={card.id}
+                        type="button"
+                        disabled={!selectable}
+                        onClick={() => setSelectedCardId(selected ? null : card.id)}
+                        aria-pressed={selected}
+                        aria-label={`${card.name}, power ${card.power}`}
+                        className={cn(
+                          'relative flex h-[104px] w-[74px] flex-col items-center justify-center gap-2 pb-2',
+                          'border-rule border-ink rounded-card bg-paper-raised',
+                          'transition-transform duration-move ease-settle',
+                          selectable ? 'hover:-translate-y-1' : 'opacity-40',
+                          // Picked up, and printed a second time around the edge, so
+                          // the state survives without motion and without a glow.
+                          selected &&
+                            '-translate-y-2 outline outline-2 outline-offset-[3px] outline-ink',
+                        )}
+                      >
+                        {/* Yours is printed twice: the inner rule is the second impression. */}
+                        <span
+                          aria-hidden
+                          className="pointer-events-none absolute inset-[3px] border border-ink"
+                        />
+                        <span
+                          aria-hidden
+                          className="pointer-events-none absolute inset-x-0 bottom-0 h-[8px] hatch-mine"
+                        />
+                        <Pips power={card.power} size={32} className="text-verm" />
+                        <span className="type-micro text-ink-2">{card.name}</span>
+                      </button>
+                    );
+                  })}
                 </div>
-              </PanelBody>
-            </Panel>
+              )}
+            </section>
 
-            <Panel>
-              <PanelHeader title={`${playerName}'s Hand`} />
-              <PanelBody className="p-4">
-                {hand.length === 0 ? (
-                  <p className="type-small text-ink-low">Your hand is empty.</p>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {hand.map((card) => {
-                      const wanted = step.expect?.cardId === card.id;
-                      const selectable = step.actions.includes('place') && (!step.expect || wanted);
-                      const selected = selectedCardId === card.id;
-                      return (
-                        <button
-                          key={card.id}
-                          type="button"
-                          disabled={!selectable}
-                          onClick={() => setSelectedCardId(selected ? null : card.id)}
-                          aria-pressed={selected}
-                          className={cn(
-                            'flex h-[104px] w-[74px] flex-col items-center justify-center rounded-md border bg-surface-0 transition-transform duration-200 ease-arcane',
-                            selected
-                              ? '-translate-y-2 border-ember-300 shadow-glow-ember'
-                              : 'border-subtle',
-                            selectable ? 'hover:-translate-y-1' : 'opacity-40',
-                            wanted && !selected && 'border-ember-400/60 glow-ember',
-                          )}
-                        >
-                          <span className="font-display text-[9px] uppercase tracking-[0.12em] text-ink-mid">
-                            {card.name}
-                          </span>
-                          <span className="mt-1 font-display text-2xl font-bold text-ember-300 tabular">
-                            {card.power}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </PanelBody>
-            </Panel>
-
-            <Panel>
-              <PanelHeader title="Standings" />
-              <PanelBody className="flex items-center justify-between p-4 text-sm">
-                <span className="flex items-center gap-2 text-ink-mid">
-                  <Crown size={16} strokeWidth={1.75} className="text-ember-400" />
-                  Columns held
+            <section className="mt-8">
+              <h2 className="type-label text-ink-3">Columns held</h2>
+              <div className="mt-3 flex items-center gap-3">
+                <span className="stamp stamp--mine">
+                  You <span className="type-num">{columnsWon}</span>
                 </span>
-                <span className="flex items-center gap-2">
-                  <Badge tone="ember" className="tabular">
-                    You {columnsWon}
-                  </Badge>
-                  <Badge tone="steel" className="tabular">
-                    Them {columnsLost}
-                  </Badge>
+                <span className="stamp stamp--theirs">
+                  Them <span className="type-num">{columnsLost}</span>
                 </span>
-              </PanelBody>
-            </Panel>
+              </div>
+            </section>
 
-            <div className="flex flex-wrap gap-2">
+            <div className="mt-8 flex flex-wrap gap-3 border-t-hair border-rule-ghost pt-6">
               {step.actions.includes('continue') && (
-                <Button variant="primary" onClick={() => handleAction('continue')}>
+                <button
+                  type="button"
+                  className="btn btn--key h-11 px-5"
+                  onClick={() => handleAction('continue')}
+                >
                   Continue
-                  <ArrowRight size={16} strokeWidth={1.75} />
-                </Button>
+                </button>
               )}
               {step.actions.includes('pass') && (
-                <Button variant="secondary" onClick={() => handleAction('pass')}>
-                  <Flag size={16} strokeWidth={1.75} />
-                  Pass Turn
-                </Button>
+                <button
+                  type="button"
+                  className="btn btn--rule h-11 px-5"
+                  onClick={() => handleAction('pass')}
+                >
+                  Pass turn
+                </button>
               )}
               {step.actions.includes('request-win') && (
-                <Button variant="ghost" onClick={() => handleAction('request-win')}>
-                  <Trophy size={16} strokeWidth={1.75} />
-                  Request Early End
-                </Button>
+                <button
+                  type="button"
+                  className="btn btn--quiet h-11 px-4"
+                  onClick={() => handleAction('request-win')}
+                >
+                  Ask to end early
+                </button>
               )}
               {step.actions.includes('complete') && (
-                <Button variant="primary" onClick={() => handleAction('complete')}>
-                  <Award size={16} strokeWidth={1.75} />
-                  Finish Training
-                </Button>
+                <button
+                  type="button"
+                  className="btn btn--key h-11 px-5"
+                  onClick={() => handleAction('complete')}
+                >
+                  Finish
+                </button>
               )}
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
