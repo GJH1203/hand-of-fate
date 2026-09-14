@@ -1,9 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Handshake, Shield, Trophy } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { cn } from '@/lib/utils';
 import type { ColumnScore } from '@/types/game';
@@ -22,8 +20,8 @@ interface GameResultModalProps {
 }
 
 /*
- * Sentence case, not the shouted capitals the old screen used. A 40px serif saying
- * "Victory" is already loud; setting it in caps as well only makes it harder to read.
+ * Sentence case, not the shouted capitals the old screen used. A 36px serif saying
+ * "You won" is already loud; setting it in caps as well only makes it harder to read.
  */
 const HEADLINES: Record<Outcome, string> = {
   win: 'You won',
@@ -31,11 +29,19 @@ const HEADLINES: Record<Outcome, string> = {
   tie: 'A draw',
 };
 
+/*
+ * The old subhead for a win read "Two columns of three. That is the match." — which
+ * is a claim about the scoreline, and it is false whenever a win is 3–0 or 2–0 with
+ * a column tied. These say only what the rules guarantee.
+ */
 const SUBHEADS: Record<Outcome, string> = {
-  win: 'Two columns of three. That is the match.',
-  loss: 'They took the columns that mattered.',
-  tie: 'Neither of you took enough of the board.',
+  win: 'You took the most columns. The match is yours.',
+  loss: 'They took the most columns.',
+  tie: 'You each took the same number of columns.',
 };
+
+/** Columns are numbered the way the margin line numbers them. */
+const NUMERALS = ['I', 'II', 'III'];
 
 /** How the duel ends. Never `window.alert`, and never a banner you have to scroll to. */
 export default function GameResultModal({
@@ -48,7 +54,24 @@ export default function GameResultModal({
   onReturn,
 }: GameResultModalProps) {
   const theirId = Object.keys(players).find((id) => id !== currentPlayerId);
-  const Icon = outcome === 'win' ? Trophy : outcome === 'tie' ? Handshake : Shield;
+  const theirName = (theirId && players[theirId]) || 'your opponent';
+
+  /*
+   * The verdict is printed on the winner's plate: vermillion if it is yours,
+   * prussian if it is theirs, the key plate alone if neither took it. `--verm`
+   * only clears AA at 24px and up, and `.type-h1` is 36px, so this is the one
+   * place vermillion is allowed to set text at full strength.
+   */
+  const verdictInk =
+    outcome === 'win' ? 'text-verm' : outcome === 'loss' ? 'text-prus' : 'text-ink';
+
+  /*
+   * Theirs at the head, yours at the foot — the same order a card's band uses, so
+   * the tally and the board can never contradict each other.
+   */
+  const tally = Object.entries(players).sort(
+    ([a], [b]) => Number(a === currentPlayerId) - Number(b === currentPlayerId),
+  );
 
   return (
     <Modal
@@ -57,34 +80,31 @@ export default function GameResultModal({
       showCloseButton={false}
       closeOnOverlayClick={false}
       widthClassName="max-w-[480px]"
+      contentClassName="px-8 pb-8 pt-7"
     >
-      <div className="pt-2 text-center">
-        <Icon
-          size={48}
-          strokeWidth={1.5}
-          className={cn(
-            'mx-auto',
-            outcome === 'win' ? 'text-ember-400' : outcome === 'tie' ? 'text-steel-300' : 'text-ink-low',
-          )}
-        />
-        <h2
-          className={cn(
-            'type-h1 mt-4',
-            outcome === 'win' ? 'text-ember-gradient' : 'text-ink-hi',
-          )}
-        >
-          {HEADLINES[outcome]}
-        </h2>
-        <p className="type-small mt-2 text-ink-low">{SUBHEADS[outcome]}</p>
-        <div
-          className={cn(
-            'mx-auto mt-4 h-px w-40',
-            outcome === 'win' ? 'rule-ember' : 'bg-white/10',
-          )}
-        />
-      </div>
+      <p className="type-label text-ink-3">The result</p>
+      <h2 className={cn('type-h1 mt-3', verdictInk)}>{HEADLINES[outcome]}</h2>
 
-      <div className="mt-6 grid grid-cols-3 gap-3">
+      {/*
+       * A draw is not a third colour. It is both plates shown together — two
+       * hairlines, one of each ink, which is exactly what a press would leave.
+       */}
+      {outcome === 'tie' ? (
+        <div aria-hidden className="mt-4">
+          <div className="h-[1.5px] bg-verm" />
+          <div className="mt-[2px] h-[1.5px] bg-prus" />
+        </div>
+      ) : (
+        <div
+          aria-hidden
+          className={cn('mt-4 h-[3px]', outcome === 'win' ? 'bg-verm' : 'bg-prus')}
+        />
+      )}
+
+      <p className="type-body mt-4 text-ink-2">{SUBHEADS[outcome]}</p>
+
+      <p className="type-label mt-8 text-ink-3">Columns</p>
+      <div className="mt-3 grid grid-cols-3 gap-3">
         {[0, 1, 2].map((columnIndex) => {
           const score = columnScores?.[columnIndex];
           const mine = score?.playerScores?.[currentPlayerId] ?? 0;
@@ -96,51 +116,95 @@ export default function GameResultModal({
                 ? 'me'
                 : 'them';
 
+          const spoken =
+            leader === 'me'
+              ? `Column ${columnIndex + 1}: you ${mine}, ${theirName} ${theirs}. You take it.`
+              : leader === 'them'
+                ? `Column ${columnIndex + 1}: you ${mine}, ${theirName} ${theirs}. ${theirName} takes it.`
+                : `Column ${columnIndex + 1}: you ${mine}, ${theirName} ${theirs}. Level, so nobody takes it.`;
+
           return (
+            /*
+             * A column reads the way a card reads. Position first — the winner's
+             * band is at the foot if it is yours and at the head if it is theirs —
+             * then hatch direction, then the doubled rule that only your side
+             * gets, then ink. Four channels, three of them surviving greyscale,
+             * because vermillion against prussian is 1.64:1 and could never carry
+             * this alone. A level column prints both bands.
+             */
             <div
               key={columnIndex}
-              className={cn(
-                'rounded-md border bg-surface-2 py-3 text-center',
-                leader === 'me' && 'border-ember-400/45',
-                leader === 'them' && 'border-steel-400/50',
-                leader === 'none' && 'border-subtle',
-              )}
+              className="relative overflow-hidden border-ink bg-paper-raised px-2 py-3.5 text-center"
+              style={{ borderWidth: 'var(--rule)' }}
             >
-              <div className="type-label text-ink-low">Col {columnIndex + 1}</div>
-              <div className="mt-1 flex items-baseline justify-center gap-1 font-ui text-lg font-bold tabular">
-                <span className={leader === 'me' ? 'text-ember-300' : 'text-ink-mid'}>{mine}</span>
-                <span className="text-[11px] font-normal text-ink-low">:</span>
-                <span className={leader === 'them' ? 'text-steel-300' : 'text-ink-mid'}>{theirs}</span>
+              <span className="sr-only">{spoken}</span>
+
+              <div aria-hidden>
+                {(leader === 'them' || leader === 'none') && (
+                  <span className="pointer-events-none absolute inset-x-0 top-0 h-1.5 hatch-theirs" />
+                )}
+                {(leader === 'me' || leader === 'none') && (
+                  <span className="pointer-events-none absolute inset-x-0 bottom-0 h-1.5 hatch-mine" />
+                )}
+                {leader === 'me' && (
+                  <span className="pointer-events-none absolute inset-[3px] border border-ink" />
+                )}
+
+                <div className="type-micro text-ink-3">Column {NUMERALS[columnIndex]}</div>
+                <div className="mt-2 flex items-baseline justify-center gap-1.5">
+                  <span className="type-num text-[1.375rem] leading-none text-verm-text">
+                    {mine}
+                  </span>
+                  <span className="type-num text-[0.6875rem] leading-none text-ink-3">:</span>
+                  <span className="type-num text-[1.375rem] leading-none text-prus">
+                    {theirs}
+                  </span>
+                </div>
               </div>
             </div>
           );
         })}
       </div>
 
-      <div className="mt-4 space-y-2">
-        {Object.entries(players).map(([playerId, name]) => {
+      <p className="type-label mt-8 text-ink-3">Tally</p>
+      <ul className="mt-2 border-t-rule-ghost" style={{ borderTopWidth: 'var(--rule-hair)' }}>
+        {tally.map(([playerId, name]) => {
           const isMe = playerId === currentPlayerId;
           const won = columnsWon?.[playerId] ?? 0;
+
           return (
-            <div
+            <li
               key={playerId}
-              className="flex items-center justify-between rounded-md border border-subtle bg-surface-2 px-4 py-2.5 text-sm"
+              className="flex items-center justify-between gap-4 border-b-rule-ghost py-2.5"
+              style={{ borderBottomWidth: 'var(--rule-hair)' }}
             >
-              <span className={isMe ? 'text-ember-300' : 'text-ink-mid'}>
-                {name}
-                {isMe && <span className="ml-1.5 text-ink-low">(you)</span>}
+              <span className="flex min-w-0 items-center gap-2.5">
+                {/* The hatch, at swatch size: vertical is yours, horizontal theirs. */}
+                <span
+                  aria-hidden
+                  className={cn(
+                    'h-3.5 w-3.5 shrink-0 border-ink',
+                    isMe ? 'hatch-mine' : 'hatch-theirs',
+                  )}
+                  style={{ borderWidth: 'var(--rule-hair)' }}
+                />
+                <span className="type-small truncate text-ink">{name}</span>
+                {isMe && <span className="type-micro shrink-0 text-ink-3">You</span>}
               </span>
-              <span className="tabular text-ink-hi">
-                {won} column{won === 1 ? '' : 's'}
+              <span className="shrink-0 whitespace-nowrap">
+                <span className="type-num text-[0.9375rem] text-ink">{won}</span>{' '}
+                <span className="type-micro text-ink-3">
+                  {won === 1 ? 'column' : 'columns'}
+                </span>
               </span>
-            </div>
+            </li>
           );
         })}
-      </div>
+      </ul>
 
-      <Button variant="primary" size="lg" className="mt-7 w-full" onClick={onReturn}>
+      <button type="button" className="btn btn--key mt-8 h-11 w-full" onClick={onReturn}>
         Back to the menu
-      </Button>
+      </button>
     </Modal>
   );
 }

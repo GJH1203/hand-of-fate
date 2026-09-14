@@ -1,5 +1,3 @@
-import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
 import PlayerHand from '../PlayerHand';
 import type { Card } from '@/types/game';
 
@@ -20,6 +18,10 @@ interface HandPanelProps {
  *
  * Pinned to `--hand` so the board above can be sized against what is left; the two
  * heights are derived from the same variable and cannot drift apart.
+ *
+ * It is a ruled tray sunk into the sheet rather than another panel: the cards are
+ * on paper-raised, so the tray has to be a step down from the sheet for them to
+ * look like they are lying in it.
  */
 export default function HandPanel({
   cards,
@@ -34,31 +36,51 @@ export default function HandPanel({
 }: HandPanelProps) {
   return (
     <div
-      className="flex flex-col rounded-lg border border-subtle bg-surface-1/70 px-4 py-3"
+      className="flex flex-col border-rule border-ink bg-paper-sunk px-4 py-3"
       style={{ height: 'var(--hand)' }}
     >
       <div className="mb-2 flex items-center justify-between gap-4">
-        <span className="type-label text-ink-low">
-          Your hand · {cards.length} left
+        <span className="flex items-baseline gap-2.5">
+          <span className="type-label text-ink-2">Your hand</span>
+          {/* A count is a number, so it is set in the mono whatever it sits beside. */}
+          <span className="type-num text-[11px] tracking-[0.08em] text-ink-3">
+            {cards.length} left
+          </span>
         </span>
+
         <div className="flex items-center gap-2">
-          <Button variant="secondary" size="sm" onClick={onPass} disabled={!isMyTurn || isFinished}>
+          <button
+            type="button"
+            className="btn btn--rule h-8 px-3"
+            onClick={onPass}
+            disabled={!isMyTurn || isFinished}
+          >
             Pass turn
-          </Button>
+          </button>
+
           {awaitingOpponent ? (
-            <Button variant="ghost" size="sm" disabled>
-              <Spinner size={14} />
-              Waiting on them…
-            </Button>
+            /*
+             * Still a disabled button rather than a label, so the control does not
+             * vanish from the tab order's shape while the answer is outstanding.
+             * The mark loops because this genuinely is a wait on somebody else.
+             */
+            <button type="button" className="btn btn--quiet h-8 px-3" disabled>
+              <span
+                aria-hidden
+                className="h-1.5 w-1.5 shrink-0 bg-ochre"
+                style={{ animation: 'ink-pulse 1.4s ease-in-out infinite' }}
+              />
+              Waiting on them
+            </button>
           ) : (
-            <Button
-              variant="ghost"
-              size="sm"
+            <button
+              type="button"
+              className="btn btn--quiet h-8 px-3"
               onClick={onRequestEarlyEnd}
               disabled={!isMyTurn || isFinished || earlyEndBlocked}
             >
               End early
-            </Button>
+            </button>
           )}
         </div>
       </div>
