@@ -45,11 +45,13 @@ function Triptych() {
  *
  * The two actions are still two stacked rows rather than two side-by-side cards.
  * They are a primary action and its alternative, not a pair of equals, and which
- * one is primary is carried by WEIGHT — the create row is framed twice, a gilt
- * rule and an inner keyline, exactly the way your own cards are framed twice on
- * the board. Hovering lights the frame; it does not fill it. Gold is light here,
- * not a surface colour, and a gilded ground on a control this size would spend
- * the screen's whole reserve of it.
+ * one is primary is carried by THE WEIGHT OF ITS RULE — leaf gold against the
+ * recess, with a lit title above the body. It is not framed twice. The inner
+ * keyline is an ownership channel: on the board it means "this card is Sol's" and
+ * it has to mean only that, so spending it here to say "press this one first" is
+ * exactly how it stopped meaning anything. Hovering lights the frame; it does not
+ * fill it. Gold is light here, not a surface colour, and a gilded ground on a
+ * control this size would spend the screen's whole reserve of it.
  */
 export default function GameModeSelection({ onModeSelect }: GameModeSelectionProps) {
   const { user } = useUnifiedAuth();
@@ -282,7 +284,7 @@ interface ActionRowProps {
   seat: string;
   title: string;
   body: string;
-  /** The one row on the screen that is framed twice. */
+  /** The one row on the screen whose rule is leaf gold rather than the recess. */
   primary?: boolean;
   disabled?: boolean;
   onClick: () => void;
@@ -313,24 +315,18 @@ function ActionRow({ seat, title, body, primary, disabled, onClick }: ActionRowP
         'group relative block w-full border-rule bg-night-2 px-6 py-7 text-center',
         'transition-colors duration-lume sm:px-14',
         primary ? 'border-gold' : 'border-gold-deep',
-        disabled
-          ? 'cursor-not-allowed'
-          : cn('active:translate-y-px', primary ? 'hover:border-gold-lit' : 'hover:border-gold'),
+        /*
+         * Colour is the only thing that changes, and NOTHING MOVES ON PRESS.
+         * This row was the last control in the product still dipping a pixel
+         * under the pointer: the identical gesture came off all five button
+         * variants, because globals.css defines no `:active` for `.btn` and
+         * nothing in this design springs. One control pressing on its own is
+         * worse than none of them doing it, so it now presses the way the rest
+         * of the product presses, which is not at all.
+         */
+        disabled ? 'cursor-not-allowed' : primary ? 'hover:border-gold-lit' : 'hover:border-gold',
       )}
     >
-      {/*
-       * Framed twice, the way your own cards are framed twice on the board: a
-       * gilt rule and an inner keyline. Weight is how this design says "this one
-       * first" — a colour would have to borrow from Sol or Luna, and a fill would
-       * have to borrow the gold.
-       */}
-      {primary && (
-        <span
-          aria-hidden
-          className="pointer-events-none absolute inset-[4px] border border-gold-deep"
-        />
-      )}
-
       <span className={cn('type-micro block', disabled ? 'text-parchment-4' : 'text-gold')}>
         {seat}
       </span>

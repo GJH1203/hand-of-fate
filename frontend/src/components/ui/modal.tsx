@@ -40,6 +40,12 @@ interface ModalProps {
  * corners square, and leaves the two spandrels beside the dome as real space. The
  * close control stands in the right-hand one, which is what a spandrel is for.
  */
+/*
+ * Shared across every Modal on the page — see the counted scroll lock below.
+ */
+let openModalCount = 0;
+let previousBodyOverflow = "";
+
 export function Modal({
   open,
   onClose,
@@ -69,8 +75,26 @@ export function Modal({
     if (!open) return;
 
     const previouslyFocused = document.activeElement as HTMLElement | null;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+
+    /*
+     * The scroll lock is counted, not saved and restored per dialog.
+     *
+     * Each open dialog used to snapshot `document.body.style.overflow` and put it
+     * back on close. With two dialogs open at once — which the arena reaches when
+     * a player has "Leave the duel?" up and the game then finishes underneath it —
+     * the second snapshots the first one's "hidden", and closing them in that
+     * order restores "hidden" to the body permanently. The page is then
+     * unscrollable for the rest of the session with no dialog on screen to
+     * explain it.
+     *
+     * A counter cannot get this wrong: the first dialog locks, the last one out
+     * unlocks, and any order in between is fine.
+     */
+    openModalCount += 1;
+    if (openModalCount === 1) {
+      previousBodyOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+    }
     // Only take focus if the dialog's own content has not already claimed it —
     // otherwise this undoes the autoFocus on the first field.
     if (!panelRef.current?.contains(document.activeElement)) {
@@ -87,7 +111,10 @@ export function Modal({
 
     return () => {
       window.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = previousOverflow;
+      openModalCount -= 1;
+      if (openModalCount === 0) {
+        document.body.style.overflow = previousBodyOverflow;
+      }
       previouslyFocused?.focus?.();
     };
   }, [open]);

@@ -23,9 +23,9 @@ import {
  * This is the first screen a new player ever sees, so it is drawn with the arena's
  * own pieces rather than with miniatures of them: `BoardCard` standing on a real
  * gilded field, the ghost impression of the stars you are about to lay down on the
- * one legal square, a sun at the foot of your cards and a moon at the head of
- * theirs. A player who finishes this has already read the real board for five
- * minutes.
+ * one legal square, and — once a card is on the board — a sun at the foot of yours
+ * and a moon at the head of theirs. A player who finishes this has already read the
+ * real board for five minutes.
  *
  * It is laid out on the centre line, and the order down that line is the arena's
  * own: what to do, then the board, then the hand you are holding. Nothing sits in a
@@ -161,7 +161,14 @@ export default function GuidedTutorial({ playerName, onComplete, onSkip }: Guide
             <span aria-hidden className="mx-2 text-gold-deep">
               ·
             </span>
-            {step.subtitle}
+            {/*
+             * Through `numerals` like every other line of script prose on this
+             * screen: this is a `.type-micro`, which is Marcellus, and a subtitle
+             * such as "Even a 1 has a job" would otherwise set its digit in the
+             * inscriptional face. Marcellus cuts titles and labels and never a
+             * number.
+             */}
+            {numerals(step.subtitle)}
           </p>
         </div>
 
@@ -242,20 +249,19 @@ export default function GuidedTutorial({ playerName, onComplete, onSkip }: Guide
                     <span className="type-micro leading-none text-parchment-3">
                       Col <span className="type-num">{total.col + 1}</span>
                     </span>
+                    {/*
+                     * Both totals are always set in their owner's metal, exactly as
+                     * the arena's column heads and the home diagram set them: a
+                     * total is a fact about a player, not about who is winning.
+                     * Dimming the trailing side said the opposite — that a number
+                     * matters less because it is behind — and the lead is already
+                     * carried by the leader's figure and by which end of the head it
+                     * stands at.
+                     */}
                     <span className="type-num flex items-baseline gap-1 text-[15px] leading-none">
-                      <span
-                        className={total.leader === 'you' ? 'text-gold-lit' : 'text-parchment-2'}
-                      >
-                        {total.mine}
-                      </span>
+                      <span className="text-gold-lit">{total.mine}</span>
                       <span className="text-parchment-3">:</span>
-                      <span
-                        className={
-                          total.leader === 'opponent' ? 'text-luna-lit' : 'text-parchment-2'
-                        }
-                      >
-                        {total.opponent}
-                      </span>
+                      <span className="text-luna-lit">{total.opponent}</span>
                     </span>
                   </span>
 
@@ -399,9 +405,19 @@ export default function GuidedTutorial({ playerName, onComplete, onSkip }: Guide
                       onClick={() => setSelectedCardId(selected ? null : card.id)}
                       aria-pressed={selected}
                       aria-label={`${card.name}, power ${card.power}, yours`}
+                      /*
+                       * Drawn the way `PlayerHand` draws a held card: one gilt
+                       * frame, the stars, the name. No ownership mark and no inner
+                       * keyline — a card in your hand is not on the board and has
+                       * nothing to say about whose it is, because every card here is
+                       * yours. The keyline is the second pass of the frame that
+                       * means "this one is Sol's" on the board, and it may not mean
+                       * anything else anywhere. Being chosen is said by the nimbus
+                       * and the rise instead, which is where it belongs.
+                       */
                       className={cn(
-                        'relative flex h-[106px] w-[74px] flex-col items-center justify-center gap-2 pb-3',
-                        'rounded-arch border-rule border-gold bg-night-1',
+                        'relative flex h-[106px] w-[74px] flex-col items-center justify-center gap-2',
+                        'rounded-arch border-rule border-gold-deep bg-night-1',
                         'transition-transform duration-move ease-rise',
                         selectable ? 'hover:-translate-y-1' : 'opacity-40',
                         // Picked up, and haloed: in this system attention is a
@@ -409,18 +425,8 @@ export default function GuidedTutorial({ playerName, onComplete, onSkip }: Guide
                         selected && 'aureole -translate-y-2',
                       )}
                     >
-                      {/* Framed twice, the way your own cards are framed on the board. */}
-                      <span
-                        aria-hidden
-                        className="pointer-events-none absolute inset-[3px] rounded-arch border border-gold-deep"
-                      />
                       <Pips power={card.power} size={30} className="text-gold-lit" />
                       <span className="type-micro text-parchment-2">{card.name}</span>
-                      {/* The sun, at the foot, where it will still be on the board. */}
-                      <OwnerMark
-                        mine
-                        className="pointer-events-none absolute bottom-[6px] left-1/2 h-[10px] w-[10px] -translate-x-1/2 text-gold"
-                      />
                     </button>
                   );
                 })}

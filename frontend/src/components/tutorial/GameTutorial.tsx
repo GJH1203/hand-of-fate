@@ -153,7 +153,7 @@ function MiniBoard({
       <div className="grid grid-cols-3 gap-1.5" style={{ width: measure }}>
         {[1, 2, 3].map((column) => (
           <span key={column} className="type-micro text-center text-parchment-3">
-            {numerals(`Column ${column}`)}
+            Col <span className="type-num">{column}</span>
           </span>
         ))}
       </div>
@@ -172,11 +172,17 @@ const openingBoard = (): BoardCell[][] => {
 };
 
 /**
- * A card in hand, at figure size.
+ * A card in hand, at figure size — and drawn the way `PlayerHand` draws one, which
+ * is to say with no ownership mark and no inner keyline.
  *
- * It carries the marks a placed card carries — the sun at the foot, the inner
- * keyline, the power counted in stars — so the first card a new player ever sees is
- * the one they will have to recognise on the board a minute later.
+ * A card in your hand is not on the board and has nothing to say about whose it is,
+ * because every card in your hand is yours. The inner keyline is the second pass of
+ * a frame that means "this one is Sol's" on the board, and it may not mean anything
+ * else anywhere in the product; the sun means the same thing and would be teaching a
+ * mark the player will never see in their own hand.
+ *
+ * What does carry over is the part that matters: the power counted in stars, which
+ * is the same count on the same card once it is played.
  */
 function HandCard({ power, name, dimmed }: { power: number; name: string; dimmed?: boolean }) {
   return (
@@ -184,23 +190,13 @@ function HandCard({ power, name, dimmed }: { power: number; name: string; dimmed
       role="img"
       aria-label={`${name}, power ${power}, yours`}
       className={cn(
-        'relative flex h-[124px] w-[86px] flex-col items-center justify-center gap-3 pb-3',
-        'rounded-arch border-rule border-gold bg-night-1',
+        'flex h-[124px] w-[86px] flex-col items-center justify-center gap-3',
+        'rounded-arch border-rule border-gold-deep bg-night-1',
         dimmed && 'opacity-35',
       )}
     >
-      {/* Framed twice, because it is yours: the inner keyline is the second pass. */}
-      <span
-        aria-hidden
-        className="pointer-events-none absolute inset-[3px] rounded-arch border border-gold-deep"
-      />
       <Pips power={power} size={38} className="text-gold-lit" />
       <span className="type-micro text-parchment-2">{name}</span>
-      {/* The sun, at the foot, where it will still be once the card is played. */}
-      <OwnerMark
-        mine
-        className="pointer-events-none absolute bottom-[7px] left-1/2 h-[11px] w-[11px] -translate-x-1/2 text-gold"
-      />
     </div>
   );
 }
@@ -236,7 +232,9 @@ function ColumnFlag({ column, owner }: { column: number; owner: Side }) {
           {mine ? 'You' : 'Them'}
         </span>
       </div>
-      <span className="type-micro text-parchment-3">{numerals(`Column ${column}`)}</span>
+      <span className="type-micro text-parchment-3">
+        Col <span className="type-num">{column}</span>
+      </span>
     </div>
   );
 }
@@ -362,7 +360,9 @@ const STEPS: Step[] = [
             </span>
             <span className="type-num text-[19px] text-gold-lit">8</span>
           </span>
-          <span className="type-micro text-parchment-3">{numerals('Column 2')}</span>
+          <span className="type-micro text-parchment-3">
+            Col <span className="type-num">2</span>
+          </span>
           <span className="flex items-baseline gap-2">
             <span className="cartouche cartouche--luna">
               <OwnerMark mine={false} className="h-3 w-3 text-luna" />
@@ -474,22 +474,22 @@ export default function GameTutorial({
         </button>
 
         <h2 className="type-h2 text-parchment">{step.title}</h2>
-        <div className="mt-2 flex items-center justify-center gap-4">
-          <span className="type-micro text-parchment-3">
-            Step <span className="type-num">{index + 1}</span> of{' '}
-            <span className="type-num">{STEPS.length}</span>
-          </span>
-          {/*
-           * The progress rule. A track in the deepest night with gold laid over as
-           * much of it as has been read — no radius, no gradient faking light, and
-           * it travels, so it takes the long duration.
-           */}
-          <div aria-hidden className="h-[3px] w-40 bg-night-3">
-            <div
-              className="h-full bg-gold transition-[width] duration-move ease-rise"
-              style={{ width: `${((index + 1) / STEPS.length) * 100}%` }}
-            />
-          </div>
+        {/*
+         * The progress rule, and the header's only piece of progress. A track in the
+         * deepest night with gold laid over as much of it as has been read — no
+         * radius, no gradient faking light, and it travels, so it takes the long
+         * duration.
+         *
+         * The counted form of the same fact — "Step 3 of 8" — is printed once, in the
+         * footer, where it sits between the two controls that change it. It used to
+         * be printed here as well, which said the same thing twice in one dialog and
+         * put the words further from the buttons that move them.
+         */}
+        <div aria-hidden className="mt-3 h-[3px] w-40 bg-night-3">
+          <div
+            className="h-full bg-gold transition-[width] duration-move ease-rise"
+            style={{ width: `${((index + 1) / STEPS.length) * 100}%` }}
+          />
         </div>
       </div>
 

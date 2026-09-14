@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 
 import Pips from './Pips';
 import { cn } from '@/lib/utils';
@@ -22,6 +23,13 @@ import type { Card as GameCard } from '@/types/game';
  *
  * Every card in the hand is yours, so nothing here carries an ownership mark.
  * The frames are gilt throughout and Sol's stars count the power.
+ *
+ * A CHOSEN CARD IS MARKED THREE WAYS AND NONE OF THEM IS A SECOND FRAME: it rises
+ * off the table, it takes an aureole, and its name slug is gilded. It used to be
+ * framed twice as well, borrowing the inner keyline from the board — but there the
+ * keyline is an ownership channel and means "this card is Sol's", which is the one
+ * thing it has to go on meaning. Three channels for selection is already one more
+ * than this needed.
  */
 
 interface PlayerHandProps {
@@ -128,9 +136,21 @@ export default function PlayerHand({
                 )}
               >
                 {card.imageUrl && (
-                  <img
+                  /*
+                   * next/image, not a bare <img>, and this is a payload decision
+                   * rather than a stylistic one: the three card faces are 2.1,
+                   * 2.5 and 2.6 MB of PNG, so a raw tag pulled 7.2 MB down to
+                   * draw them at 92x128. Next resizes and re-encodes them at
+                   * build time and serves whichever of those a browser can take.
+                   * The sign-in screen was already doing this; the arena, where
+                   * it matters far more, was not.
+                   */
+                  <Image
                     src={card.imageUrl}
                     alt=""
+                    width={184}
+                    height={256}
+                    sizes="128px"
                     className="absolute inset-0 h-full w-full object-cover"
                   />
                 )}
@@ -167,18 +187,6 @@ export default function PlayerHand({
                 >
                   {card.name}
                 </span>
-
-                {/*
-                 * Framed twice when it is chosen — the same second pass that
-                 * marks a card on the board as yours, which is what this card is
-                 * a move away from becoming.
-                 */}
-                {selected && (
-                  <span
-                    aria-hidden
-                    className="pointer-events-none absolute inset-[3px] rounded-arch border border-gold-deep"
-                  />
-                )}
               </span>
             </span>
           </button>

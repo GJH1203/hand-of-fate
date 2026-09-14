@@ -115,14 +115,12 @@ function Wordmark() {
  * Deliberately not an `InlineAlert`. There is no success colour in this design and
  * inventing one here would put a third ink on the panel to say "that worked" — so
  * it is a plain ruled note on a raised ground, and cinnabar stays reserved for the
- * things a rubric is actually for.
+ * things a rubric is actually for. That surface is `.note`: this page was drawing
+ * it by hand in three places at two paddings, which is two paddings too many.
  */
 function Note({ children }: { children: React.ReactNode }) {
   return (
-    <p
-      role="status"
-      className="border-hair border-gold-deep bg-night-2 px-3.5 py-2.5 text-left text-[0.9375rem] leading-relaxed text-parchment-2"
-    >
+    <p role="status" className="note type-small text-left">
       {children}
     </p>
   );
@@ -142,12 +140,13 @@ interface FormFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
  * The label is inscriptional: Marcellus capitals with open tracking, which is what
  * `.type-label` cuts. Everything else here is prose and prose is Spectral.
  *
- * THE ERROR IS MARKED IN CINNABAR AND WRITTEN IN PARCHMENT, and that split is the
- * point. Red in a manuscript is an index rather than an emotion — it tells you
- * where to look, and the words tell you what is wrong. Setting the sentence itself
- * in cinnabar would put it at 3.9:1 on the night, which is under the floor for
- * text this size; the rule down its edge carries the same signal at full strength
- * and costs the reader nothing.
+ * THE ERROR IS MARKED IN CINNABAR AND WRITTEN IN PARCHMENT — and that split is now
+ * `.field-error` rather than a rule drawn by hand here. Red in a manuscript is an
+ * index rather than an emotion: it tells you where to look, and the words tell you
+ * what is wrong. Setting the sentence itself in cinnabar would put it at 3.9:1 on
+ * the night, which is under the floor for text this size. The reasoning is kept
+ * with the class, because the shared recipe is what stops this line and the one
+ * `Field` draws from disagreeing about what a correction looks like.
  */
 function FormField({ id, label, hint, error, ...input }: FormFieldProps) {
   const noteId = error ? `${id}-error` : hint ? `${id}-hint` : undefined;
@@ -165,11 +164,7 @@ function FormField({ id, label, hint, error, ...input }: FormFieldProps) {
         {...input}
       />
       {error ? (
-        <p
-          id={noteId}
-          role="alert"
-          className="mt-2 border-l-rule border-l-cinnabar pl-2.5 text-[0.8125rem] leading-snug text-parchment"
-        >
+        <p id={noteId} role="alert" className="field-error mt-2 text-[0.8125rem] leading-snug">
           {error}
         </p>
       ) : (
@@ -245,11 +240,10 @@ function UnifiedAuthPageContent() {
             <li className="type-small text-parchment-2">Copy the project URL and the anon key</li>
             <li className="type-small text-parchment-2">
               Put them in{' '}
-              {/* `font-text` on purpose: the browser sets `code` in a monospace and
-                  this design has two faces, neither of them one. */}
-              <code className="border-hair border-gold-deep bg-night-2 px-1.5 py-0.5 font-text text-[0.9375rem] text-parchment">
-                frontend/.env.local
-              </code>
+              {/* `.datum`: a path set inline in a sentence. The text face is baked
+                  into the class, because a `code` otherwise picks up the user
+                  agent's monospace and this design has two faces, neither one. */}
+              <code className="datum text-[0.9375rem]">frontend/.env.local</code>
             </li>
           </ol>
         </Panel>
@@ -386,7 +380,7 @@ function UnifiedAuthPageContent() {
           </p>
           {/* The address is data, so it is set apart on a raised ground the way a
               room code is — read, not written. */}
-          <p className="mx-auto mt-4 max-w-[400px] border-hair border-gold-deep bg-night-2 px-3.5 py-2.5 text-[0.9375rem] text-parchment">
+          <p className="note type-small mx-auto mt-4 max-w-[400px] text-parchment">
             {verificationEmail}
           </p>
           <p className="type-body mx-auto mt-5 text-parchment-2">

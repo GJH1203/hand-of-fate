@@ -15,10 +15,11 @@
  * the numerals in it on the way to the screen, so nothing in this file has to know
  * about type. What it does have to be is TRUE about the board the player will
  * actually see — which is why no line below asks anybody to tell the two sides
- * apart by their metal. Ownership is read off a FIGURE first: a sun at the foot of
- * your cards, a moon at the head of theirs. Gold against silver measures about
- * 1.25:1, so the metal confirms what the figure has already said and could never
- * carry it alone.
+ * apart by their metal. Ownership is read off a FIGURE first, and only once a card
+ * is on the board: a sun at the foot of yours, a moon at the head of theirs. A card
+ * in hand carries neither, because every card in your hand is yours. Gold against
+ * silver measures about 1.25:1, so the metal confirms what the figure has already
+ * said and could never carry it alone.
  */
 
 export type Side = 'you' | 'opponent';
@@ -145,7 +146,7 @@ export const STEPS: Step[] = [
     title: 'The opening',
     subtitle: 'One card from each hand',
     instruction:
-      'Before anyone moves, one card is taken at random from each hand and placed on the board. Yours was a Lightning; theirs was a Spark. Your cards carry a sun at the foot; theirs carry a moon at the head.',
+      'Before anyone moves, one card is taken at random from each hand and placed on the board. Yours was a Lightning; theirs was a Spark. Once a card is on the board it carries its owner: yours a sun at the foot, theirs a moon at the head.',
     tip: 'The sun is gold and the moon silver, but read the figure first — the metal only confirms it. You begin your first turn with four cards, not five, and which one is taken is never yours to choose.',
     grid: gridWith(P.yourOpening, P.theirOpening),
     hand: handAfter(),

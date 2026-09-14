@@ -72,8 +72,17 @@ export default function BoardGrid({
        *
        * z-raised because the board is a later sibling and would otherwise print
        * over the strip's lower half.
+       *
+       * The frame and the 10px inset are `.board-ground`'s, which is what keeps
+       * the strip and the field below it the same measure by construction
+       * rather than by two numbers that have to be kept in step by hand. The
+       * ground's top and bottom edges are dropped here, and that is the one
+       * override: a second rule and two more paddings would make the strip 24px
+       * taller than the 44px `--headers` reserves for it in OnlineGameBoard, and
+       * would carry its lower edge 12px further down over the first row's
+       * crescents — the exact collision the -23px is measured to stop short of.
        */}
-      <div className="gilt relative z-raised mx-auto -mb-[23px] border-x-rule border-gold-deep px-2.5">
+      <div className="gilt board-ground relative z-raised mx-auto -mb-[23px] border-y-0 py-0">
         <div className="grid grid-cols-3 gap-2" style={width}>
           {Array.from({ length: BOARD_WIDTH }, (_, column) => (
             /*
@@ -110,12 +119,14 @@ export default function BoardGrid({
          * and the field are the same measure to the pixel, so there is no seam
          * for the eye to find.
          *
-         * The geometry here is load-bearing. 2px of frame and 10px of padding is
-         * the 12px the arcade's -23px is measured against, and the block's height
-         * has to stay five cells, four gaps and that 12px twice over — the cell
-         * size is derived from exactly that sum in OnlineGameBoard.
+         * The geometry here is load-bearing, and it is `.board-ground`'s whole:
+         * 2px of frame and 10px of padding is the 12px the arcade's -23px is
+         * measured against, and the block's height has to stay five cells, four
+         * gaps and that 12px twice over — the cell size is derived from exactly
+         * that sum in OnlineGameBoard. Nothing is overridden; the board is the
+         * field the ground was written for.
          */}
-        <div className="gilt border-rule border-gold-deep p-2.5">
+        <div className="gilt board-ground">
           <div className="grid grid-cols-3 gap-2" style={width}>
             {Array.from({ length: BOARD_HEIGHT }, (_, y) =>
               Array.from({ length: BOARD_WIDTH }, (_, x) => {

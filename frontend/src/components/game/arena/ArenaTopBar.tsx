@@ -72,22 +72,45 @@ export default function ArenaTopBar({
         {/*
          * The legend. Stated here, once, rather than on all fifteen squares —
          * which is what lets a card on the board carry no name plate at all.
-         * The swatches are hidden from the accessibility tree and each one is
-         * given in words instead, because a shape is the whole point of them and
-         * a shape does not read aloud.
+         *
+         * It names Sol and Luna in the visible text. The home page and both
+         * tutorials teach the duel in those two words, and this is the only
+         * legend anybody reads during an actual game — the last place in the
+         * product that can afford to say "you" and a bare name and leave the
+         * vocabulary behind. The name each one belongs to is set beside it with
+         * an interpunct, the way a lapidary inscription separates words.
+         *
+         * The swatch is hidden from the accessibility tree, because a SHAPE is
+         * the whole point of it and a shape does not read aloud. The sr-only
+         * line beside it describes that shape and nothing else, so the two
+         * names are not announced twice over.
          */}
         <div className="flex min-w-0 items-center gap-4 border-l-hair border-gold-deep pl-4">
           <span className="flex items-center gap-2">
             <MarkSwatch mine />
-            <span className="type-label text-gold-lit">You</span>
-            <span className="sr-only">Sol. Your cards carry a gold sun at the foot.</span>
+            <span className="type-label interpunct flex items-baseline text-gold-lit">
+              <span>Sol</span>
+              <span>you</span>
+            </span>
+            <span className="sr-only">A gold sun at the foot of your cards.</span>
           </span>
           <span className="flex min-w-0 items-center gap-2">
             <MarkSwatch mine={false} />
-            <span className="type-label max-w-[12ch] truncate text-luna">{opponentName}</span>
-            <span className="sr-only">
-              Luna. Their cards carry a silver moon at the head.
+            <span className="type-label interpunct flex min-w-0 items-baseline text-luna">
+              <span className="shrink-0">Luna</span>
+              {/*
+               * The name sits one level further in than the interpunct's second
+               * child. The separator is drawn as that child's ::before, so on
+               * the truncating span itself it would be the first character
+               * inside the box the ellipsis cuts from — the dot and its two
+               * margins would spend a fifth of the twelve characters the name
+               * is allowed. Nested, it is a sibling of the ellipsis instead.
+               */}
+              <span className="flex min-w-0 items-baseline">
+                <span className="max-w-[12ch] truncate">{opponentName}</span>
+              </span>
             </span>
+            <span className="sr-only">A silver crescent at the head of their cards.</span>
           </span>
         </div>
       </div>

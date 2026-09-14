@@ -62,6 +62,14 @@ interface FieldProps {
  * The label is a lapidary one: Marcellus capitals at 12px with open tracking, which
  * is the apparatus around the field rather than its text. The line underneath is
  * Spectral, because it is a sentence and sentences are set in the reading face.
+ *
+ * THE ERROR IS `.field-error`, and that is the whole of the treatment: a cinnabar
+ * rule down its edge with the words left in parchment. This used to set the
+ * sentence itself in cinnabar, which is under the contrast floor at this size on
+ * the night — and it disagreed with the login page, which had already worked the
+ * same problem out and drawn the rule by hand. One recipe, kept in globals.css
+ * with the reasoning, so the two cannot drift apart again. `.rubric` stays for a
+ * block-level correction; this is the line under a single field.
  */
 function Field({ label, htmlFor, hint, error, children }: FieldProps) {
   return (
@@ -74,7 +82,7 @@ function Field({ label, htmlFor, hint, error, children }: FieldProps) {
         <p
           id={`${htmlFor}-error`}
           role="alert"
-          className="mt-2 text-[13px] leading-[1.45] text-cinnabar"
+          className="field-error mt-2 text-[13px] leading-[1.45]"
         >
           {error}
         </p>
