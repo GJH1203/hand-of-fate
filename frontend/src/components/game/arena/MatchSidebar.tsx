@@ -1,5 +1,3 @@
-import { Activity, ScrollText, Users } from 'lucide-react';
-
 import { Badge } from '@/components/ui/badge';
 import { InlineAlert } from '@/components/ui/inline-alert';
 import { Panel, PanelBody, PanelHeader } from '@/components/ui/panel';
@@ -32,7 +30,7 @@ export default function MatchSidebar({
       {error && <InlineAlert tone="danger">{error}</InlineAlert>}
 
       <Panel>
-        <PanelHeader icon={Users} title="Players" className="px-4 py-3" />
+        <PanelHeader title="Players" className="px-4 pb-2 pt-3.5" />
         <PanelBody className="space-y-2 p-3">
           {Object.entries(players).map(([playerId, name]) => {
             const isMe = playerId === currentPlayerId;
@@ -43,14 +41,16 @@ export default function MatchSidebar({
               <div
                 key={playerId}
                 className={cn(
-                  'flex items-center gap-2.5 rounded-md border border-subtle bg-surface-2 px-3 py-2',
+                  'flex items-center gap-2.5 rounded-md border border-subtle bg-surface-2/70 px-3 py-2 transition-colors duration-200',
                   isActive && 'border-l-[3px] border-l-success',
                 )}
               >
                 <span
                   className={cn(
-                    'flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-3 font-display text-sm font-bold ring-2',
-                    isMe ? 'text-gold-300 ring-gold-400/60' : 'text-danger ring-danger/60',
+                    // A squircle, not a circle. Every avatar on the internet is a
+                    // circle; a 9px corner reads as a token on a board instead.
+                    'flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] bg-surface-3 font-ui text-[13px] font-bold ring-2',
+                    isMe ? 'text-ember-300 ring-ember-400/60' : 'text-steel-300 ring-steel-400/60',
                   )}
                 >
                   {name.charAt(0).toUpperCase()}
@@ -68,7 +68,7 @@ export default function MatchSidebar({
                 {!isMe && !opponentConnected ? (
                   <Badge tone="danger">Offline</Badge>
                 ) : (
-                  <Badge tone={isMe ? 'gold' : 'neutral'} className="tabular">
+                  <Badge tone={isMe ? 'ember' : 'steel'} className="tabular">
                     {columns} col{columns === 1 ? '' : 's'}
                   </Badge>
                 )}
@@ -79,7 +79,7 @@ export default function MatchSidebar({
       </Panel>
 
       <Panel>
-        <PanelHeader icon={Activity} title="Game Status" className="px-4 py-3" />
+        <PanelHeader title="Where it stands" className="px-4 pb-2 pt-3.5" />
         <PanelBody className="space-y-2.5 p-4 text-sm">
           <div className="flex items-center justify-between">
             <span className="text-ink-mid">State</span>
@@ -99,10 +99,10 @@ export default function MatchSidebar({
       </Panel>
 
       <Panel>
-        <PanelHeader icon={ScrollText} title="Battle Log" className="px-4 py-3" />
+        <PanelHeader title="Moves" className="px-4 pb-2 pt-3.5" />
         <PanelBody className="p-4">
           {battleLog.length === 0 ? (
-            <p className="type-small text-ink-low">No moves yet.</p>
+            <p className="type-small text-ink-low">Nothing played yet.</p>
           ) : (
             <ul className="space-y-1.5">
               {battleLog.map((entry, index) => (

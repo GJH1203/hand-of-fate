@@ -16,8 +16,8 @@ interface ColumnIndicatorProps {
  * The strip above a column: whose it is, and by how much.
  *
  * It is one row tall and the same width as the column, because the board and the
- * hand have to share the viewport with it. The leader is the strip's colour — gold
- * for you, crimson for them — which is the same language the cards on the board use.
+ * hand have to share the viewport with it. The leader is the strip's colour — ember
+ * for you, steel for them — which is the same language the cards on the board use.
  */
 export default function ColumnIndicator({
     columnIndex,
@@ -65,20 +65,20 @@ export default function ColumnIndicator({
                     : `Column ${columnIndex + 1} — level at ${mine}`
             }
             className={cn(
-                'flex h-11 flex-col items-center justify-center rounded-md border bg-surface-1',
-                leader === 'me' && 'border-gold-400/45',
-                leader === 'them' && 'border-danger/45',
+                'flex h-11 flex-col items-center justify-center rounded-md border bg-surface-1/80 transition-colors duration-200 ease-arcane',
+                leader === 'me' && 'border-ember-400/50',
+                leader === 'them' && 'border-steel-400/50',
                 leader === 'none' && 'border-subtle',
             )}
         >
-            <span className="type-micro leading-none text-ink-low">Col {columnIndex + 1}</span>
+            <span className="type-label leading-none text-ink-low">Col {columnIndex + 1}</span>
             <span
-                className="mt-1 flex items-baseline gap-1 font-display text-base font-bold leading-none tabular"
+                className="mt-0.5 flex items-baseline gap-1 font-ui text-[15px] font-bold leading-none tabular"
                 style={bumping ? { animation: 'score-pop 300ms ease-out' } : undefined}
             >
-                <span className={leader === 'me' ? 'text-gold-300' : 'text-ink-mid'}>{mine}</span>
+                <span className={leader === 'me' ? 'text-ember-300' : 'text-ink-mid'}>{mine}</span>
                 <span className="text-[11px] font-normal text-ink-low">:</span>
-                <span className={leader === 'them' ? 'text-danger' : 'text-ink-mid'}>{theirs}</span>
+                <span className={leader === 'them' ? 'text-steel-300' : 'text-ink-mid'}>{theirs}</span>
             </span>
         </div>
     );

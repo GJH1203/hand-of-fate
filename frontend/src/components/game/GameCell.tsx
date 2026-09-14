@@ -55,7 +55,7 @@ export default function GameCell({
       className={cn(
         'group relative aspect-square w-full overflow-hidden rounded-md border border-subtle bg-surface-1',
         'transition-[box-shadow,border-color] duration-150',
-        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcane-400',
+        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ember-400',
         playable ? 'cell-valid cursor-pointer' : 'cursor-default',
         !card && !playable && 'disabled:cursor-default',
       )}

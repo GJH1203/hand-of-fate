@@ -26,7 +26,7 @@ export default function PlayerHand({
     if (!Array.isArray(cards) || cards.length === 0) {
         return (
             <div className={cn('flex h-[128px] items-center justify-center', className)}>
-                <p className="type-small text-ink-low">No cards left in hand</p>
+                <p className="type-small text-ink-low">Your hand is empty.</p>
             </div>
         );
     }
@@ -51,11 +51,13 @@ export default function PlayerHand({
                         title={`${card.name} · ${card.power}`}
                         className={cn(
                             'relative h-[128px] w-[92px] shrink-0 overflow-hidden rounded-md border bg-surface-0',
-                            'transition-transform duration-200 ease-arcane',
-                            'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcane-400',
+                            // Spring easing, so a card picked up overshoots by a hair and
+                            // settles — the difference between a card and a div that moved.
+                            'transition-[transform,border-color,box-shadow] duration-300 ease-spring',
+                            'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ember-400',
                             selected
-                                ? '-translate-y-3 border-gold-300 shadow-glow-gold'
-                                : 'border-subtle hover:-translate-y-2',
+                                ? '-translate-y-4 border-ember-300 shadow-glow-ember'
+                                : 'border-subtle hover:-translate-y-2 hover:border-strong',
                         )}
                     >
                         {card.imageUrl ? (
@@ -66,10 +68,8 @@ export default function PlayerHand({
                             />
                         ) : (
                             <div className="flex h-full w-full flex-col items-center justify-center gap-1">
-                                <span className="font-display text-[10px] uppercase tracking-[0.14em] text-ink-mid">
-                                    {card.name}
-                                </span>
-                                <span className="font-display text-3xl font-bold text-gold-300 tabular">
+                                <span className="type-label text-ink-mid">{card.name}</span>
+                                <span className="text-3xl font-bold text-ember-300 tabular">
                                     {card.power}
                                 </span>
                             </div>

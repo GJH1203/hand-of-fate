@@ -116,7 +116,6 @@ export default function GuidedTutorial({ playerName, onComplete, onSkip }: Guide
       <div className="mx-auto max-w-5xl space-y-5">
         <Panel>
           <PanelHeader
-            icon={Sparkles}
             title={step.title}
             subtitle={`Step ${index + 1} of ${STEPS.length} · ${step.subtitle}`}
             action={
@@ -128,7 +127,7 @@ export default function GuidedTutorial({ playerName, onComplete, onSkip }: Guide
           />
           <div className="h-[3px] w-full bg-surface-3">
             <div
-              className="h-full bg-gold-400 transition-[width] duration-200 ease-arcane"
+              className="h-full bg-ember-400 transition-[width] duration-200 ease-arcane"
               style={{ width: `${((index + 1) / STEPS.length) * 100}%` }}
             />
           </div>
@@ -136,7 +135,7 @@ export default function GuidedTutorial({ playerName, onComplete, onSkip }: Guide
 
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           <Panel>
-            <PanelHeader icon={Eye} title="Battlefield" />
+            <PanelHeader title="Battlefield" />
             <PanelBody>
               <div className="mx-auto w-fit">
                 <div className="grid grid-cols-3 gap-2">
@@ -145,19 +144,19 @@ export default function GuidedTutorial({ playerName, onComplete, onSkip }: Guide
                       key={total.col}
                       className={cn(
                         'flex h-11 w-[72px] flex-col items-center justify-center rounded-md border bg-surface-1',
-                        total.leader === 'you' && 'border-gold-400/45',
-                        total.leader === 'opponent' && 'border-danger/45',
+                        total.leader === 'you' && 'border-ember-400/45',
+                        total.leader === 'opponent' && 'border-steel-400/50',
                         !total.leader && 'border-subtle',
                       )}
                     >
                       <span className="type-micro leading-none text-ink-low">Col {total.col + 1}</span>
                       <span className="mt-1 flex items-baseline gap-1 font-display text-base font-bold leading-none tabular">
-                        <span className={total.leader === 'you' ? 'text-gold-300' : 'text-ink-mid'}>
+                        <span className={total.leader === 'you' ? 'text-ember-300' : 'text-ink-mid'}>
                           {total.mine}
                         </span>
                         <span className="text-[11px] font-normal text-ink-low">:</span>
                         <span
-                          className={total.leader === 'opponent' ? 'text-danger' : 'text-ink-mid'}
+                          className={total.leader === 'opponent' ? 'text-steel-300' : 'text-ink-mid'}
                         >
                           {total.opponent}
                         </span>
@@ -190,22 +189,22 @@ export default function GuidedTutorial({ playerName, onComplete, onSkip }: Guide
                           className={cn(
                             'relative h-[72px] w-[72px] overflow-hidden rounded-md border border-subtle bg-surface-1',
                             'transition-[box-shadow,border-color] duration-150',
-                            isTarget && 'cell-valid cursor-pointer border-arcane-400/40',
+                            isTarget && 'cell-valid cursor-pointer border-ember-400/40',
                           )}
                         >
                           {card && (
                             <div
                               className={cn(
                                 'flex h-full w-full flex-col items-center justify-center gap-0.5 rounded-[7px] border bg-surface-0',
-                                card.owner === 'you' ? 'border-gold-400/80' : 'border-danger/70',
+                                card.owner === 'you' ? 'border-ember-400/85' : 'border-steel-400/85',
                               )}
                             >
                               <span
                                 className={cn(
                                   'absolute left-1 top-1 flex h-[22px] w-[22px] items-center justify-center rounded-full font-display text-[13px] font-bold leading-none tabular',
                                   card.owner === 'you'
-                                    ? 'bg-gold-400 text-[#1A1206]'
-                                    : 'bg-danger text-white',
+                                    ? 'bg-ember-400 text-[#231405]'
+                                    : 'bg-steel-400 text-[#04161F]',
                                 )}
                               >
                                 {card.power}
@@ -225,24 +224,24 @@ export default function GuidedTutorial({ playerName, onComplete, onSkip }: Guide
           </Panel>
 
           <div className="space-y-5">
-            <Panel style={{ borderColor: 'rgba(217,174,78,0.3)' }}>
-              <PanelHeader icon={Sparkles} title="Arcane Master" />
+            <Panel style={{ borderColor: 'rgba(217,142,67,0.3)' }}>
+              <PanelHeader title="Arcane Master" />
               <PanelBody>
                 <div className="flex items-start gap-3">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-2 ring-2 ring-gold-400/40">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-2 ring-2 ring-ember-400/40">
                     {isThinking ? (
-                      <Spinner size={16} className="text-gold-300" />
+                      <Spinner size={16} className="text-ember-300" />
                     ) : (
-                      <Sparkles size={18} strokeWidth={1.75} className="text-gold-300" />
+                      <Sparkles size={18} strokeWidth={1.75} className="text-ember-300" />
                     )}
                   </span>
                   <div className="min-w-0">
                     <p className="text-sm text-ink-hi">{message}</p>
                     <p
-                      className="type-small mt-3 rounded-md border px-3 py-2 text-gold-300"
+                      className="type-small mt-3 rounded-md border px-3 py-2 text-ember-300"
                       style={{
-                        borderColor: 'rgba(217,174,78,0.25)',
-                        backgroundColor: 'rgba(217,174,78,0.08)',
+                        borderColor: 'rgba(217,142,67,0.25)',
+                        backgroundColor: 'rgba(217,142,67,0.08)',
                       }}
                     >
                       {step.tip}
@@ -253,7 +252,7 @@ export default function GuidedTutorial({ playerName, onComplete, onSkip }: Guide
             </Panel>
 
             <Panel>
-              <PanelHeader icon={Users} title={`${playerName}'s Hand`} />
+              <PanelHeader title={`${playerName}'s Hand`} />
               <PanelBody className="p-4">
                 {hand.length === 0 ? (
                   <p className="type-small text-ink-low">Your hand is empty.</p>
@@ -273,16 +272,16 @@ export default function GuidedTutorial({ playerName, onComplete, onSkip }: Guide
                           className={cn(
                             'flex h-[104px] w-[74px] flex-col items-center justify-center rounded-md border bg-surface-0 transition-transform duration-200 ease-arcane',
                             selected
-                              ? '-translate-y-2 border-gold-300 shadow-glow-gold'
+                              ? '-translate-y-2 border-ember-300 shadow-glow-ember'
                               : 'border-subtle',
                             selectable ? 'hover:-translate-y-1' : 'opacity-40',
-                            wanted && !selected && 'border-arcane-400/60 glow-violet',
+                            wanted && !selected && 'border-ember-400/60 glow-ember',
                           )}
                         >
                           <span className="font-display text-[9px] uppercase tracking-[0.12em] text-ink-mid">
                             {card.name}
                           </span>
-                          <span className="mt-1 font-display text-2xl font-bold text-gold-300 tabular">
+                          <span className="mt-1 font-display text-2xl font-bold text-ember-300 tabular">
                             {card.power}
                           </span>
                         </button>
@@ -294,17 +293,17 @@ export default function GuidedTutorial({ playerName, onComplete, onSkip }: Guide
             </Panel>
 
             <Panel>
-              <PanelHeader icon={Activity} title="Standings" />
+              <PanelHeader title="Standings" />
               <PanelBody className="flex items-center justify-between p-4 text-sm">
                 <span className="flex items-center gap-2 text-ink-mid">
-                  <Crown size={16} strokeWidth={1.75} className="text-gold-400" />
+                  <Crown size={16} strokeWidth={1.75} className="text-ember-400" />
                   Columns held
                 </span>
                 <span className="flex items-center gap-2">
-                  <Badge tone="gold" className="tabular">
+                  <Badge tone="ember" className="tabular">
                     You {columnsWon}
                   </Badge>
-                  <Badge tone="danger" className="tabular">
+                  <Badge tone="steel" className="tabular">
                     Them {columnsLost}
                   </Badge>
                 </span>

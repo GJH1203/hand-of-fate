@@ -21,10 +21,20 @@ interface GameResultModalProps {
   onReturn: () => void;
 }
 
+/*
+ * Sentence case, not the shouted capitals the old screen used. A 40px serif saying
+ * "Victory" is already loud; setting it in caps as well only makes it harder to read.
+ */
 const HEADLINES: Record<Outcome, string> = {
-  win: 'VICTORY',
-  loss: 'DEFEAT',
-  tie: 'STALEMATE',
+  win: 'You won',
+  loss: 'You lost',
+  tie: 'A draw',
+};
+
+const SUBHEADS: Record<Outcome, string> = {
+  win: 'Two columns of three. That is the match.',
+  loss: 'They took the columns that mattered.',
+  tie: 'Neither of you took enough of the board.',
 };
 
 /** How the duel ends. Never `window.alert`, and never a banner you have to scroll to. */
@@ -54,21 +64,22 @@ export default function GameResultModal({
           strokeWidth={1.5}
           className={cn(
             'mx-auto',
-            outcome === 'win' ? 'text-gold-400' : outcome === 'tie' ? 'text-info' : 'text-ink-low',
+            outcome === 'win' ? 'text-ember-400' : outcome === 'tie' ? 'text-steel-300' : 'text-ink-low',
           )}
         />
         <h2
           className={cn(
-            'mt-4 font-display text-[40px] font-bold leading-none tracking-[0.06em]',
-            outcome === 'win' ? 'text-gold-gradient' : 'text-ink-mid',
+            'type-h1 mt-4',
+            outcome === 'win' ? 'text-ember-gradient' : 'text-ink-hi',
           )}
         >
           {HEADLINES[outcome]}
         </h2>
+        <p className="type-small mt-2 text-ink-low">{SUBHEADS[outcome]}</p>
         <div
           className={cn(
             'mx-auto mt-4 h-px w-40',
-            outcome === 'win' ? 'rule-gold' : 'bg-white/10',
+            outcome === 'win' ? 'rule-ember' : 'bg-white/10',
           )}
         />
       </div>
@@ -90,16 +101,16 @@ export default function GameResultModal({
               key={columnIndex}
               className={cn(
                 'rounded-md border bg-surface-2 py-3 text-center',
-                leader === 'me' && 'border-gold-400/45',
-                leader === 'them' && 'border-danger/45',
+                leader === 'me' && 'border-ember-400/45',
+                leader === 'them' && 'border-steel-400/50',
                 leader === 'none' && 'border-subtle',
               )}
             >
-              <div className="type-micro text-ink-low">Col {columnIndex + 1}</div>
-              <div className="mt-1.5 flex items-baseline justify-center gap-1 font-display text-lg font-bold tabular">
-                <span className={leader === 'me' ? 'text-gold-300' : 'text-ink-mid'}>{mine}</span>
+              <div className="type-label text-ink-low">Col {columnIndex + 1}</div>
+              <div className="mt-1 flex items-baseline justify-center gap-1 font-ui text-lg font-bold tabular">
+                <span className={leader === 'me' ? 'text-ember-300' : 'text-ink-mid'}>{mine}</span>
                 <span className="text-[11px] font-normal text-ink-low">:</span>
-                <span className={leader === 'them' ? 'text-danger' : 'text-ink-mid'}>{theirs}</span>
+                <span className={leader === 'them' ? 'text-steel-300' : 'text-ink-mid'}>{theirs}</span>
               </div>
             </div>
           );
@@ -115,7 +126,7 @@ export default function GameResultModal({
               key={playerId}
               className="flex items-center justify-between rounded-md border border-subtle bg-surface-2 px-4 py-2.5 text-sm"
             >
-              <span className={isMe ? 'text-gold-300' : 'text-ink-mid'}>
+              <span className={isMe ? 'text-ember-300' : 'text-ink-mid'}>
                 {name}
                 {isMe && <span className="ml-1.5 text-ink-low">(you)</span>}
               </span>
@@ -127,8 +138,8 @@ export default function GameResultModal({
         })}
       </div>
 
-      <Button variant="secondary" size="lg" className="mt-6 w-full" onClick={onReturn}>
-        Return to Menu
+      <Button variant="primary" size="lg" className="mt-7 w-full" onClick={onReturn}>
+        Back to the menu
       </Button>
     </Modal>
   );

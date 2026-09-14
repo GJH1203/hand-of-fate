@@ -19,6 +19,11 @@ interface BoardCardProps {
  * edge colour and nothing else: the blue "YOU" pill and the truncated name plate
  * covered the art, overflowed into the row above, and said in two places what one
  * border says better. The legend in the top bar explains the two colours once.
+ *
+ * Those two colours are ember and steel, warm against cool. They used to be gold and
+ * crimson, which failed twice: crimson was also the colour of every error message on
+ * the same screen, and gold against crimson is the one pairing that collapses for a
+ * red-green colour blind player. Warm against cool survives both.
  */
 export default function BoardCard({ card, mine, ownerName, ghost }: BoardCardProps) {
   const label = `${card.name}, power ${card.power}${ownerName ? `, ${ownerName}` : ''}`;
@@ -29,7 +34,7 @@ export default function BoardCard({ card, mine, ownerName, ghost }: BoardCardPro
       aria-label={label}
       className={cn(
         'relative h-full w-full overflow-hidden rounded-[7px] border bg-surface-0',
-        mine ? 'border-gold-400/80' : 'border-danger/70',
+        mine ? 'border-ember-400/85' : 'border-steel-400/85',
         ghost && 'opacity-45',
       )}
     >
@@ -49,8 +54,10 @@ export default function BoardCard({ card, mine, ownerName, ghost }: BoardCardPro
 
       <span
         className={cn(
-          'absolute left-1 top-1 flex h-[22px] w-[22px] items-center justify-center rounded-full font-display text-[14px] font-bold leading-none tabular',
-          mine ? 'bg-gold-400 text-[#1A1206]' : 'bg-danger text-white',
+          // Space Grotesk, not the display serif: a 14px high-contrast old-style numeral
+          // inside a 22px disc is a smudge, and this is the number the whole game is about.
+          'absolute left-1 top-1 flex h-[22px] w-[22px] items-center justify-center rounded-full font-ui text-[13px] font-bold leading-none tabular',
+          mine ? 'bg-ember-400 text-[#231405]' : 'bg-steel-400 text-[#04161F]',
         )}
       >
         {card.power}

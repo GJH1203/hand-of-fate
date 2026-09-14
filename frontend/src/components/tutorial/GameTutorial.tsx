@@ -33,20 +33,20 @@ const YOU = 'you';
 const OPPONENT = 'opponent';
 type Side = typeof YOU | typeof OPPONENT;
 
-/** A card as it appears on the board, in miniature: gold for yours, crimson for theirs. */
+/** A card as it appears on the board, in miniature: ember for yours, steel for theirs. */
 function MiniCard({ power, name, side }: { power: number; name?: string; side: Side }) {
   const mine = side === YOU;
   return (
     <div
       className={cn(
         'relative flex h-full w-full flex-col items-center justify-center rounded-[5px] border bg-surface-0',
-        mine ? 'border-gold-400/70' : 'border-danger/70',
+        mine ? 'border-ember-400/75' : 'border-steel-400/75',
       )}
     >
       <span
         className={cn(
           'absolute left-1 top-1 flex h-[18px] w-[18px] items-center justify-center rounded-full font-display text-[11px] font-bold leading-none',
-          mine ? 'bg-gold-400 text-[#1A1206]' : 'bg-danger text-[#2A0B0B]',
+          mine ? 'bg-ember-400 text-[#231405]' : 'bg-steel-400 text-[#04161F]',
         )}
       >
         {power}
@@ -85,7 +85,7 @@ function MiniBoard({
                 style={{ width: cellSize, height: cellSize }}
                 className={cn(
                   'rounded-[6px] border border-subtle bg-surface-1',
-                  highlight.includes(key) && !cell && 'cell-valid border-arcane-400/40',
+                  highlight.includes(key) && !cell && 'cell-valid border-ember-400/40',
                 )}
               >
                 {cell && <MiniCard power={cell.power} side={cell.side} />}
@@ -120,14 +120,14 @@ function HandCard({ power, name, dimmed }: { power: number; name: string; dimmed
   return (
     <div
       className={cn(
-        'flex h-[120px] w-[86px] flex-col items-center justify-center rounded-md border border-gold-400/60 bg-surface-0 shadow-card',
+        'flex h-[120px] w-[86px] flex-col items-center justify-center rounded-md border border-ember-400/60 bg-surface-0 shadow-card',
         dimmed && 'opacity-35',
       )}
     >
       <span className="font-display text-[10px] uppercase tracking-[0.14em] text-ink-mid">
         {name}
       </span>
-      <span className="mt-1 font-display text-3xl font-bold text-gold-300 tabular">{power}</span>
+      <span className="mt-1 font-display text-3xl font-bold text-ember-300 tabular">{power}</span>
     </div>
   );
 }
@@ -151,7 +151,7 @@ const STEPS: Step[] = [
       </div>
     ),
     points: [
-      'Two mystics, one board, five cards each.',
+      'Two players, one board, five cards each.',
       'The board is three columns wide and five rows tall.',
       'Win more columns than your opponent and the duel is yours.',
     ],
@@ -178,7 +178,7 @@ const STEPS: Step[] = [
     figure: <MiniBoard cells={openingBoard()} />,
     points: [
       'Before the first turn, fate takes one random card from each hand.',
-      'Both land in the middle column — yours in gold, your opponent’s in crimson.',
+      'Both land in the middle column — yours edged in ember, theirs in steel blue.',
       'You start your first turn with the four cards that are left.',
     ],
   },
@@ -235,7 +235,7 @@ const STEPS: Step[] = [
           })()}
         />
         <div className="flex items-center gap-6 text-sm">
-          <span className="text-gold-300">
+          <span className="text-ember-300">
             You <span className="font-display text-lg font-bold tabular">8</span>
           </span>
           <span className="type-micro text-ink-low">Column 2</span>
@@ -266,12 +266,12 @@ const STEPS: Step[] = [
                 className={cn(
                   'flex h-16 w-16 items-center justify-center rounded-md border',
                   column.owner === 'you'
-                    ? 'border-gold-400/45 bg-gold-400/10'
+                    ? 'border-ember-400/45 bg-ember-400/10'
                     : 'border-danger/45 bg-danger/10',
                 )}
               >
                 {column.owner === 'you' ? (
-                  <Crown size={22} strokeWidth={1.75} className="text-gold-300" />
+                  <Crown size={22} strokeWidth={1.75} className="text-ember-300" />
                 ) : (
                   <X size={22} strokeWidth={1.75} className="text-danger" />
                 )}
@@ -280,7 +280,7 @@ const STEPS: Step[] = [
             </div>
           ))}
         </div>
-        <p className="type-micro text-gold-300">You take two columns to one</p>
+        <p className="type-micro text-ember-300">You take two columns to one</p>
       </div>
     ),
     points: [
@@ -346,12 +346,12 @@ export default function GameTutorial({
           type="button"
           onClick={onClose}
           aria-label="Close tutorial"
-          className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-md text-ink-low transition-colors duration-150 hover:bg-surface-3 hover:text-ink-hi focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-arcane-400"
+          className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-md text-ink-low transition-colors duration-150 hover:bg-surface-3 hover:text-ink-hi focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ember-400"
         >
           <X size={18} strokeWidth={1.75} />
         </button>
 
-        <h2 className="text-gold-gradient font-display text-2xl font-bold leading-tight">
+        <h2 className="text-ember-gradient font-display text-2xl font-bold leading-tight">
           {step.title}
         </h2>
         <div className="mt-2 flex items-center gap-3">
@@ -360,7 +360,7 @@ export default function GameTutorial({
           </span>
           <div className="h-[3px] w-40 overflow-hidden rounded-full bg-surface-3">
             <div
-              className="h-full rounded-full bg-gold-400 transition-[width] duration-200 ease-arcane"
+              className="h-full rounded-full bg-ember-400 transition-[width] duration-200 ease-arcane"
               style={{ width: `${((index + 1) / STEPS.length) * 100}%` }}
             />
           </div>
@@ -373,7 +373,7 @@ export default function GameTutorial({
         <ul className="mt-5 space-y-2.5">
           {step.points.map((point) => (
             <li key={point} className="flex items-start gap-2.5 text-sm text-ink-mid">
-              <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rotate-45 bg-gold-400" />
+              <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rotate-45 bg-ember-400" />
               {point}
             </li>
           ))}

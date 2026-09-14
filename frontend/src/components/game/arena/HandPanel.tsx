@@ -34,28 +34,30 @@ export default function HandPanel({
 }: HandPanelProps) {
   return (
     <div
-      className="flex flex-col rounded-lg border border-subtle bg-surface-1 px-4 py-3"
+      className="flex flex-col rounded-lg border border-subtle bg-surface-1/70 px-4 py-3"
       style={{ height: 'var(--hand)' }}
     >
       <div className="mb-2 flex items-center justify-between gap-4">
-        <span className="type-micro text-ink-low">Your Mystical Hand</span>
+        <span className="type-label text-ink-low">
+          Your hand · {cards.length} left
+        </span>
         <div className="flex items-center gap-2">
-          <Button variant="secondary" size="md" onClick={onPass} disabled={!isMyTurn || isFinished}>
-            Pass Turn
+          <Button variant="secondary" size="sm" onClick={onPass} disabled={!isMyTurn || isFinished}>
+            Pass turn
           </Button>
           {awaitingOpponent ? (
-            <Button variant="ghost" size="md" disabled>
-              <Spinner size={16} />
-              Awaiting opponent…
+            <Button variant="ghost" size="sm" disabled>
+              <Spinner size={14} />
+              Waiting on them…
             </Button>
           ) : (
             <Button
               variant="ghost"
-              size="md"
+              size="sm"
               onClick={onRequestEarlyEnd}
               disabled={!isMyTurn || isFinished || earlyEndBlocked}
             >
-              Request Early End
+              End early
             </Button>
           )}
         </div>

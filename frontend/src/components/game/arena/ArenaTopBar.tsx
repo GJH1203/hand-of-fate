@@ -1,4 +1,4 @@
-import { ArrowLeft, Wifi, WifiOff } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -26,36 +26,47 @@ export default function ArenaTopBar({
   const connected = connection === 'connected';
 
   return (
-    <header className="flex items-center justify-between gap-4 border-b border-subtle bg-surface-1/70 px-4 backdrop-blur-md">
-      <Button variant="ghost" size="md" onClick={onLeave}>
-        <ArrowLeft size={16} strokeWidth={1.75} />
-        Back to Menu
-      </Button>
+    <header className="flex items-center justify-between gap-4 border-b border-subtle bg-surface-0/75 px-4 backdrop-blur-xl">
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="md" onClick={onLeave}>
+          <ArrowLeft size={16} strokeWidth={1.75} />
+          Menu
+        </Button>
 
-      <div className="flex items-center gap-2 text-[13px] text-ink-mid">
-        <span className={`h-2 w-2 rounded-full ${connected ? 'bg-success' : 'bg-danger'}`} />
-        {connected ? (
-          <>
-            <Wifi size={16} strokeWidth={1.75} className="text-success" />
-            Connected
-          </>
-        ) : (
-          <>
-            <WifiOff size={16} strokeWidth={1.75} className="text-danger" />
-            Reconnecting…
-            <Spinner size={14} className="text-danger" />
-          </>
-        )}
+        {/*
+         * The legend. Two swatches naming the two colours the board is played in.
+         *
+         * Ownership on the board is carried by the card's edge colour and nothing else
+         * — that is what let the cards drop the "YOU" pill that used to cover the art —
+         * which only works if the colours are stated somewhere. Here, once, rather than
+         * on all fifteen squares.
+         */}
+        <div className="flex items-center gap-3 border-l border-subtle pl-4 text-[13px]">
+          <span className="flex items-center gap-1.5 text-ink-mid">
+            <span className="h-2.5 w-2.5 rounded-[3px] bg-ember-400" />
+            You
+          </span>
+          <span className="flex items-center gap-1.5 text-ink-mid">
+            <span className="h-2.5 w-2.5 rounded-[3px] bg-steel-400" />
+            <span className="max-w-[12ch] truncate">{opponentName}</span>
+          </span>
+        </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        {earlyEndPending && <Badge tone="warning">Early End Requested</Badge>}
-        <Badge tone={isMyTurn ? 'success' : 'danger'} dot>
-          {isMyTurn ? 'Your Turn' : `${opponentName}'s Turn`}
+      <div className="flex items-center gap-2.5">
+        {!connected && (
+          <span className="flex items-center gap-1.5 text-[13px] text-danger">
+            <Spinner size={13} />
+            Reconnecting…
+          </span>
+        )}
+        {earlyEndPending && <Badge tone="warning">Early end asked</Badge>}
+        <Badge tone={isMyTurn ? 'success' : 'steel'} dot>
+          {isMyTurn ? 'Your turn' : `${opponentName}’s turn`}
         </Badge>
         {roomCode && (
-          <Badge tone="gold" className="font-mono tracking-[0.12em]">
-            Room {roomCode}
+          <Badge tone="neutral" className="tabular tracking-[0.18em]">
+            {roomCode}
           </Badge>
         )}
       </div>
