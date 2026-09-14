@@ -16,26 +16,34 @@ type Direction = 'up' | 'down';
 type Leader = 'me' | 'them' | 'none';
 
 /*
- * The rule that carries the lead — in weight, in ink, and in WHICH HALF OF THE
- * COLUMN IT RUNS UNDER.
+ * One frame longer than `--t-move`, so the state swap that ends a motion lands
+ * after the motion has finished rather than cutting it off at two thirds.
+ */
+const MOTION_MS = 460;
+
+/*
+ * The rule that carries the lead — in weight, in metal, and above all in WHICH
+ * HALF OF THE COLUMN IT RUNS UNDER.
  *
  * Weight alone only separates owned from level. Between the two owners this was
- * a 3px bar in vermillion against a 3px bar in prussian, and those two inks
- * measure 1.64:1 against each other, so in greyscale — or for a player with
- * either common form of red-green colour blindness — the column head was the one
- * place in the application where whose column it is could not be read at all.
+ * once a bar in vermillion against a bar in prussian, two inks that measure
+ * 1.64:1 against each other, so in greyscale — or for a player with either
+ * common form of red-green colour blindness — the column head was the one place
+ * in the application where whose column it is could not be read at all. Gold
+ * against silver is 1.25:1, closer still, so the fix matters more here, not
+ * less.
  *
- * Position fixes it, and the strip already had the answer in it: your total is
- * printed on the left of the pair and theirs on the right. So the lead rule runs
+ * Position is the fix, and the strip already had the answer in it: your total is
+ * set on the left of the pair and theirs on the right. So the lead rule runs
  * under the half that is winning. It is a tally mark under the winning number,
  * it is unmistakable without colour, and it is the same primary channel the
- * cards use. A level column keeps the full-width hairline, because nobody's half
- * has earned it.
+ * cards use. A level column keeps the full-width hairline, because neither half
+ * has earned the weight.
  */
 const RULE: Record<Leader, string> = {
-  me: 'left-0 right-1/2 h-[3px] bg-verm',
-  them: 'left-1/2 right-0 h-[3px] bg-prus',
-  none: 'inset-x-0 h-[1.5px] bg-rule-min',
+  me: 'left-0 right-1/2 h-[3px] bg-gold',
+  them: 'left-1/2 right-0 h-[3px] bg-luna',
+  none: 'inset-x-0 h-px bg-gold-deep',
 };
 
 const ORIGIN: Record<Leader, string> = { me: 'left', them: 'right', none: 'center' };
@@ -50,7 +58,7 @@ const ORIGIN: Record<Leader, string> = { me: 'left', them: 'right', none: 'cente
  *
  * The outgoing digit runs the opposite keyframe in reverse: `slug-roll-down`
  * played backwards starts at rest and exits upward, which is the leaving half of
- * a gain. It is `aria-hidden` — for the fifth of a second both digits are in the
+ * a gain. It is `aria-hidden` — for a fifth of a second both digits are in the
  * DOM, and a screen reader announcing "three two" for a score of two is worse
  * than no animation at all.
  */
@@ -74,7 +82,7 @@ function Slug({
           aria-hidden
           className="absolute inset-0 block"
           style={{
-            animation: `${direction === 'up' ? 'slug-roll-down' : 'slug-roll-up'} var(--t-move) var(--ease-settle) reverse forwards`,
+            animation: `${direction === 'up' ? 'slug-roll-down' : 'slug-roll-up'} var(--t-move) var(--ease-rise) reverse forwards`,
           }}
         >
           {from}
@@ -84,7 +92,7 @@ function Slug({
         className="block"
         style={
           rolling
-            ? { animation: `slug-roll-${direction} var(--t-move) var(--ease-settle)` }
+            ? { animation: `slug-roll-${direction} var(--t-move) var(--ease-rise)` }
             : undefined
         }
       >
@@ -100,21 +108,20 @@ function directionOf(before: number, after: number): Direction | undefined {
 }
 
 /**
- * The strip at the head of a column: the two totals, and whose column it is.
+ * The head of a column: the two totals, and whose column it is.
  *
- * Both totals are always printed in their own plate — yours vermillion, theirs
- * prussian — because a total is a fact about a player and not about who is
- * winning. Which is a change: the leader used to be the strip's colour, so a
- * number changed ink when somebody else overtook it and you could not read your
- * own score without first working out whose it was.
+ * Each total is always set in its own metal — yours gold, theirs silver —
+ * because a total is a fact about a player and not about who is winning. Which
+ * is a change: the leader used to be the whole strip's colour, so a number
+ * changed hue when somebody else overtook it and you could not read your own
+ * score without first working out whose it was.
  *
- * The lead is carried by the rule under the strip instead, and that rule is the
- * point of the whole component. A total changes thirty times a match; a column
- * changes hands four to eight times, and those are the only moments that decide
- * the game. So the two motions are deliberately different sizes: a total rolls
- * one slug in its stick, and a column changing hands redraws its rule in the new
- * leader's ink as a fresh pass of the press, wiping from that player's side of
- * the strip.
+ * The lead is carried by the rule beneath instead, and that rule is the point of
+ * the whole component. A total changes thirty times a match; a column changes
+ * hands four to eight times, and those are the only moments that decide the
+ * game. So the two motions are deliberately different sizes: a total rolls one
+ * slug in its stick, and a column changing hands has its gilt rule drawn again
+ * from the new owner's side of the strip.
  */
 export default function ColumnIndicator({
   columnIndex,
@@ -155,20 +162,21 @@ export default function ColumnIndicator({
       fromMine: before.mine,
       fromTheirs: before.theirs,
     });
-    const timer = window.setTimeout(() => setRoll(null), 260);
+    const timer = window.setTimeout(() => setRoll(null), MOTION_MS);
     return () => window.clearTimeout(timer);
   }, [mine, theirs]);
 
   /*
-   * The ink on the sheet lags the ink the data says it should be, for exactly
-   * the length of one press pass. That is not a delay for its own sake: if the
-   * rule simply changed colour and then wiped, the new ink would already be on
-   * screen at full width for the frame before the wipe began, and the wipe would
-   * be a redraw of something you had seen. Holding the old pass until the new one
-   * covers it is what a second pass of the press actually looks like.
+   * The rule on the screen lags the rule the data says it should be, for exactly
+   * the length of one drawing. That is not a delay for its own sake: if the rule
+   * simply changed metal and then wiped, the new gold would already be there at
+   * full width for the frame before the wipe began, and the wipe would be a
+   * redraw of something you had already seen. Holding the old line until the new
+   * one covers it is what being drawn again actually looks like.
    *
    * The incoming rule is keyed on its leader so it is a new element every time —
-   * an animation that has already run on an element will not run again.
+   * an animation that has already run on an element will not run again — and it
+   * holds its final width, so the swap underneath it is invisible.
    */
   const [printed, setPrinted] = useState<Leader>(leader);
   const [incoming, setIncoming] = useState<Leader | null>(null);
@@ -182,7 +190,7 @@ export default function ColumnIndicator({
     const timer = window.setTimeout(() => {
       setPrinted(leader);
       setIncoming(null);
-    }, 260);
+    }, MOTION_MS);
     return () => window.clearTimeout(timer);
   }, [leader, printed]);
 
@@ -203,40 +211,34 @@ export default function ColumnIndicator({
        */
       className="relative flex h-11 flex-col items-center justify-center gap-[3px]"
     >
-      <span className="type-micro text-ink-3">Col {columnIndex + 1}</span>
+      <span className="type-micro text-parchment-3">
+        Col <span className="type-num">{columnIndex + 1}</span>
+      </span>
 
       <span className="type-num flex items-center gap-1 text-[15px] leading-none">
-        <Slug
-          value={mine}
-          from={roll?.fromMine}
-          direction={roll?.mine}
-          className="text-verm-text"
-        />
-        <span aria-hidden className="h-[0.85em] w-[0.75px] bg-rule-min" />
-        <Slug value={theirs} from={roll?.fromTheirs} direction={roll?.theirs} className="text-prus" />
+        <Slug value={mine} from={roll?.fromMine} direction={roll?.mine} className="text-gold" />
+        <span aria-hidden className="h-[0.85em] w-px bg-gold-deep" />
+        <Slug value={theirs} from={roll?.fromTheirs} direction={roll?.theirs} className="text-luna" />
       </span>
 
       {/*
-       * The rule under the strip is also the rule at the head of the column: the
-       * strip is pulled down onto the board, so this line lands exactly where
-       * the first row of cells begins and the lead is printed on the column
-       * itself rather than on a chip floating above it.
+       * The rule under the head is also the rule at the head of the column: the
+       * strip is pulled down onto the board, so this line lands exactly where the
+       * first row of cells begins and the lead is drawn on the column itself
+       * rather than on a chip floating above it.
        */}
-      <span
-        aria-hidden
-        className={cn('pointer-events-none absolute bottom-0', RULE[printed])}
-      />
+      <span aria-hidden className={cn('pointer-events-none absolute bottom-0', RULE[printed])} />
       {incoming && (
         <span
           key={incoming}
           aria-hidden
           className={cn('pointer-events-none absolute bottom-0', RULE[incoming])}
           style={{
-            // From the new leader's side: your total is printed on the left of
-            // the strip and theirs on the right, so the press runs out of the
-            // half of the column that just won it.
+            // From the new leader's side: your total is set on the left of the
+            // head and theirs on the right, so the line is drawn out of the half
+            // of the column that just won it.
             transformOrigin: ORIGIN[incoming],
-            animation: 'press-wipe var(--t-move) var(--ease-settle)',
+            animation: 'press-wipe var(--t-move) var(--ease-rise) forwards',
           }}
         />
       )}

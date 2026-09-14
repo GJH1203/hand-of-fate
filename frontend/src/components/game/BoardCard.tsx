@@ -1,6 +1,6 @@
 import React from 'react';
 
-import Pips from './Pips';
+import Pips, { OwnerMark } from './Pips';
 import { cn } from '@/lib/utils';
 import type { Card } from '@/types/game';
 
@@ -13,75 +13,69 @@ interface BoardCardProps {
 }
 
 /**
- * A card once it is on the board. It carries no artwork at all.
+ * A card once it is on the board: a small arched panel standing on the gilded
+ * field, the way a figure stands on the gold ground of an icon.
  *
- * That sounds like a loss and is the opposite. The raster was measured against
- * the page at 1.16:1 to 1.23:1 — a placed card and an empty square were the same
- * value, separated by one hairline — and on paper the same crop is a 13:1 black
- * rectangle. Reduced to board size it is worse than useless: at 48px the three
- * cards are indistinguishable scratches. So the artwork stays in the hand, where
- * it is 128px tall and genuinely good, and the board is set type.
+ * It carries no artwork. That sounds like a loss and is the opposite — measured
+ * against the old page the board crop was 1.16:1, so a placed card and an empty
+ * square were the same value separated by one hairline, and reduced to board
+ * size the three illustrations are indistinguishable scratches. The artwork
+ * stays in the hand where it is 128px tall and genuinely good; the board is
+ * drawn.
  *
- * OWNERSHIP IS FOUR CHANNELS AND ONLY ONE OF THEM IS COLOUR, because vermillion
- * against prussian measures 1.64:1 and could never have carried it alone:
+ * OWNERSHIP IS FOUR CHANNELS AND THE FIRST OF THEM IS A SHAPE.
  *
- *   position   your band is at the FOOT, theirs at the HEAD. Survives greyscale,
- *              every kind of colour blindness, 48px, and a photograph of a
- *              screen. This is the primary channel and must never be traded away.
- *   hatch      yours runs vertical, theirs horizontal — Petra Sancta's 1638
- *              heraldic convention, where gules is vertical and azure is
- *              horizontal. It is orthogonal to hue and luminance, and it is not
- *              an accessibility retrofit bolted onto a historical style; it IS
- *              the historical style, and it happens to be the right engineering.
- *   rule       yours is printed twice — a keyline plus an inner rule. Theirs is
- *              a single keyline. Survives forced-colors, where background-image
- *              is dropped but border-style is not.
- *   ink        vermillion against prussian. The weakest of the four, and last.
- *
- * The band never overlaps the pips, so no amount of plate offset can eat the
- * ownership signal.
+ *   figure   a rayed disc for Sol, a crescent for Luna. A sun is not a moon in
+ *            greyscale, at 48px, in a photograph of a screen, or under any form
+ *            of colour blindness. This is the channel that carries the meaning.
+ *   position the mark sits at the FOOT of your cards and the HEAD of theirs, so
+ *            a glance down a column reads as a rhythm before anything is
+ *            identified.
+ *   weight   yours is framed twice — a gilt rule and an inner keyline. Theirs is
+ *            framed once. Survives forced-colors, where border-style is kept.
+ *   metal    gold against silver, and it is LAST. The two measure about 1.25:1
+ *            against each other, which is even closer than the vermillion and
+ *            prussian this replaces. Metal is the confirmation, never the cue.
  */
 export default function BoardCard({ card, mine, ownerName, ghost }: BoardCardProps) {
-  const label = `${card.name}, power ${card.power}${ownerName ? `, ${ownerName}` : ''}`;
+  const label = `${card.name}, power ${card.power}, ${mine ? 'yours' : ownerName ?? 'your opponent'}`;
 
   return (
     <div
       title={label}
       aria-label={label}
       className={cn(
-        'relative flex h-full w-full items-center justify-center overflow-hidden bg-paper-raised',
-        'border-rule border-ink rounded-card',
+        'relative flex h-full w-full flex-col items-center justify-center overflow-hidden',
+        'rounded-arch border-rule bg-night-1',
+        mine ? 'border-gold' : 'border-luna-deep',
         ghost && 'opacity-40',
       )}
     >
-      {/* Yours is printed twice: the inner rule is the second impression. */}
+      {/* Framed twice if it is yours: the inner keyline is the second pass. */}
       {mine && (
         <span
           aria-hidden
-          className="pointer-events-none absolute inset-[3px] border border-ink"
+          className="pointer-events-none absolute inset-[3px] rounded-arch border border-gold-deep"
         />
       )}
-
-      {/*
-       * The band. Height is a percentage of the cell rather than a pixel value
-       * so it survives the full 48px-to-112px range without a media query, with
-       * a floor so it cannot thin to nothing on the smallest board.
-       */}
-      <span
-        aria-hidden
-        className={cn(
-          'pointer-events-none absolute inset-x-0 h-[11%] min-h-[6px]',
-          mine ? 'bottom-0 hatch-mine' : 'top-0 hatch-theirs',
-        )}
-      />
 
       <Pips
         power={card.power}
         className={cn(
-          // 72% of the cell, nudged clear of the owner's band.
-          'w-[72%] translate-y-[var(--pip-shift)]',
-          mine ? '[--pip-shift:-4%]' : '[--pip-shift:4%]',
-          mine ? 'text-verm' : 'text-prus',
+          'w-[58%] translate-y-[var(--pip-shift)]',
+          mine ? '[--pip-shift:-6%] text-gold-lit' : '[--pip-shift:6%] text-luna-lit',
+        )}
+      />
+
+      {/*
+       * The owner's figure, at the foot for Sol and the head for Luna. It never
+       * overlaps the stars, so the count and the owner can always both be read.
+       */}
+      <OwnerMark
+        mine={mine}
+        className={cn(
+          'pointer-events-none absolute left-1/2 h-[15%] max-h-[13px] min-h-[8px] w-auto -translate-x-1/2 aspect-square',
+          mine ? 'bottom-[5%] text-gold' : 'top-[5%] text-luna',
         )}
       />
     </div>
