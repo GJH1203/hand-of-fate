@@ -1,7 +1,7 @@
 import type { Config } from "tailwindcss";
 
 /*
- * The Arcane Noir palette, mirrored from the CSS variables in globals.css.
+ * The Ember & Ash palette, mirrored from the CSS variables in globals.css.
  *
  * The literals are duplicated rather than pointed at var(--…) on purpose: Tailwind's
  * opacity modifiers (`bg-surface-2/60`) only work on colours it can read the channels
@@ -22,30 +22,32 @@ export default {
       },
       colors: {
         surface: {
-          0: "#0A0C16",
-          1: "#111527",
-          2: "#1A1F36",
-          3: "#232946",
+          0: "#0C0B0A",
+          1: "#141210",
+          2: "#1C1A17",
+          3: "#2A2621",
         },
         ink: {
-          hi: "#EDEEF5",
-          mid: "#A9AEC7",
-          low: "#767C9E",
+          hi: "#F2EEE7",
+          mid: "#A8A29A",
+          low: "#7A746C",
         },
-        gold: {
-          300: "#EBCB7E",
-          400: "#D9AE4E",
-          500: "#B98D2F",
+        /* The accent, and the colour of your own cards. */
+        ember: {
+          300: "#F0B268",
+          400: "#D98E43",
+          500: "#A9662A",
         },
-        arcane: {
-          300: "#A08BF0",
-          400: "#8468E4",
-          500: "#6C4FD1",
+        /* The opponent, and anything purely informational. */
+        steel: {
+          300: "#8FBBD9",
+          400: "#5C93BA",
+          500: "#3E6B8C",
         },
-        success: "#3DD68C",
-        danger: "#F0716F",
-        warning: "#E7A13B",
-        info: "#56C2E6",
+        success: "#5FBF8F",
+        danger: "#E0645C",
+        warning: "#D98E43",
+        info: "#5C93BA",
 
         // shadcn's names, kept so the components that read them still work
         background: "hsl(var(--background))",
@@ -83,21 +85,33 @@ export default {
         ring: "hsl(var(--ring))",
       },
       borderColor: {
-        subtle: "rgba(255,255,255,0.08)",
-        strong: "rgba(255,255,255,0.16)",
+        subtle: "rgba(242,238,231,0.09)",
+        strong: "rgba(242,238,231,0.18)",
       },
       borderRadius: {
-        sm: "6px",
-        md: "10px",
-        lg: "14px",
+        xs: "4px",
+        sm: "7px",
+        md: "11px",
+        lg: "16px",
       },
       boxShadow: {
-        card: "0 10px 30px rgba(0,0,0,0.45)",
-        "glow-gold": "0 0 0 1px rgba(217,174,78,.4), 0 0 22px rgba(217,174,78,.16)",
-        "glow-violet": "0 0 0 1px rgba(132,104,228,.45), 0 0 20px rgba(132,104,228,.20)",
+        sm: "0 2px 6px -2px rgba(8,6,4,0.6)",
+        card: "0 18px 44px -14px rgba(8,6,4,0.85), 0 2px 8px -3px rgba(8,6,4,0.5)",
+        lift: "0 26px 60px -18px rgba(8,6,4,0.9), 0 3px 10px -4px rgba(8,6,4,0.55)",
+        "glow-ember": "0 0 0 1px rgba(217,142,67,.45), 0 0 26px -4px rgba(217,142,67,.38)",
+        "glow-steel": "0 0 0 1px rgba(92,147,186,.45), 0 0 24px -4px rgba(92,147,186,.32)",
       },
       transitionTimingFunction: {
+        /* Decelerating — everything that moves, moves on this. */
         arcane: "cubic-bezier(0.2, 0.8, 0.2, 1)",
+        /* Overshoots slightly, for anything that should feel physical. */
+        spring: "cubic-bezier(0.34, 1.56, 0.64, 1)",
+      },
+      zIndex: {
+        raised: "10",
+        sticky: "30",
+        overlay: "50",
+        toast: "60",
       },
     },
   },

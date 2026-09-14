@@ -3,78 +3,107 @@
 @tailwind utilities;
 
 /*
- * Arcane Noir — the design system.
+ * Ember & Ash — the design system.
  *
- * Every colour, radius and shadow in the application comes from here. The palette
- * is taken from the card faces: near-black ink blue, gold as the only lead accent,
- * violet demoted from "background" to "interaction feedback".
+ * Three decisions hold the whole thing together.
+ *
+ * One accent. The old palette led with gold *and* violet, which meant no colour on
+ * the page was the important one. Ember is the only accent now, and "warning" is an
+ * alias of it, because every warning here is really the same request for attention.
+ *
+ * The duel is warm against cool. Your cards are ember, your opponent's are cold
+ * steel. Crimson used to do double duty as "the other player" and "something went
+ * wrong" — two meanings on one colour, on a screen where both appear at once.
+ * Crimson now means only the second. Warm against cool also survives colour
+ * blindness, which gold against crimson did not.
+ *
+ * The ground is warm. Near-black with a little brown in it, so the indigo arena
+ * art and the blue lightning read as the only cold light in the room.
  */
 
 @layer base {
   :root {
-    /* Surfaces — deep ink blue, darkest at the page, lighter as things stack up */
-    --bg-0: #0a0c16;
-    --bg-1: #111527;
-    --bg-2: #1a1f36;
-    --bg-3: #232946;
+    /* Ink — warm near-black, darkest at the page, lighter as surfaces stack */
+    --bg-0: #0c0b0a;
+    --bg-1: #141210;
+    --bg-2: #1c1a17;
+    --bg-3: #2a2621;
 
-    /* Borders and text */
-    --border-subtle: rgba(255, 255, 255, 0.08);
-    --border-strong: rgba(255, 255, 255, 0.16);
-    --text-hi: #edeef5;
-    --text-mid: #a9aec7;
-    --text-low: #767c9e;
+    /* Borders and text, tinted to the same warm family as the ground */
+    --border-subtle: rgba(242, 238, 231, 0.09);
+    --border-strong: rgba(242, 238, 231, 0.18);
+    --text-hi: #f2eee7;
+    --text-mid: #a8a29a;
+    --text-low: #7a746c;
 
-    /* Arcane gold — the lead accent, borrowed from the card frames */
-    --gold-300: #ebcb7e;
-    --gold-400: #d9ae4e;
-    --gold-500: #b98d2f;
-    --gold-glow: rgba(217, 174, 78, 0.22);
+    /* Ember — the only accent. Lit brass, not the yellow gold it replaces. */
+    --ember-300: #f0b268;
+    --ember-400: #d98e43;
+    --ember-500: #a9662a;
+    --ember-glow: rgba(217, 142, 67, 0.22);
 
-    /* Arcane violet — interaction feedback and accents only, never a background */
-    --violet-300: #a08bf0;
-    --violet-400: #8468e4;
-    --violet-500: #6c4fd1;
-    --violet-glow: rgba(132, 104, 228, 0.3);
+    /* Steel — the opponent, and anything purely informational */
+    --steel-300: #8fbbd9;
+    --steel-400: #5c93ba;
+    --steel-500: #3e6b8c;
+    --steel-glow: rgba(92, 147, 186, 0.28);
 
-    /* Semantic */
-    --success: #3dd68c;
-    --danger: #f0716f;
-    --warning: #e7a13b;
-    --info: #56c2e6;
-
-    --radius-sm: 6px;
-    --radius-md: 10px;
-    --radius-lg: 14px;
-    --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.45);
-    --glow-gold: 0 0 0 1px rgba(217, 174, 78, 0.4), 0 0 22px rgba(217, 174, 78, 0.16);
-    --glow-violet: 0 0 0 1px rgba(132, 104, 228, 0.45), 0 0 20px rgba(132, 104, 228, 0.2);
+    /* Semantic. Warning is ember on purpose; info is steel on purpose. */
+    --success: #5fbf8f;
+    --danger: #e0645c;
+    --warning: #d98e43;
+    --info: #5c93ba;
 
     /*
-     * shadcn's variables, pointed at the palette above. Components that still read
-     * them (Card, Alert, Tooltip) land in the same world as everything else instead
-     * of rendering the stock light theme on a black page.
+     * Radii vary by how big the thing is. A 6px corner on a full-width panel looks
+     * like a mistake, and a 16px corner on a badge looks like a speech bubble.
      */
-    --background: 231 42% 6%;
-    --foreground: 232 30% 95%;
-    --card: 230 41% 11%;
-    --card-foreground: 232 30% 95%;
-    --popover: 230 41% 11%;
-    --popover-foreground: 232 30% 95%;
-    --primary: 42 65% 58%;
-    --primary-foreground: 33 62% 6%;
-    --secondary: 231 32% 16%;
-    --secondary-foreground: 232 30% 95%;
-    --muted: 231 32% 16%;
-    --muted-foreground: 231 18% 72%;
-    --accent: 253 71% 68%;
-    --accent-foreground: 232 30% 95%;
-    --destructive: 1 79% 69%;
-    --destructive-foreground: 232 30% 95%;
-    --border: 231 25% 22%;
-    --input: 231 25% 22%;
-    --ring: 253 71% 65%;
-    --radius: 0.625rem;
+    --radius-xs: 4px;
+    --radius-sm: 7px;
+    --radius-md: 11px;
+    --radius-lg: 16px;
+
+    /*
+     * Shadows carry the ground's hue rather than pure black, and they all fall from
+     * the same place — above, slightly in front — so the page has one light source.
+     */
+    --shadow-sm: 0 2px 6px -2px rgba(8, 6, 4, 0.6);
+    --shadow-card: 0 18px 44px -14px rgba(8, 6, 4, 0.85), 0 2px 8px -3px rgba(8, 6, 4, 0.5);
+    --shadow-lift: 0 26px 60px -18px rgba(8, 6, 4, 0.9), 0 3px 10px -4px rgba(8, 6, 4, 0.55);
+    --glow-ember: 0 0 0 1px rgba(217, 142, 67, 0.45), 0 0 26px -4px rgba(217, 142, 67, 0.38);
+    --glow-steel: 0 0 0 1px rgba(92, 147, 186, 0.45), 0 0 24px -4px rgba(92, 147, 186, 0.32);
+
+    /* One stacking scale, so nothing ever needs a 9999 again. */
+    --z-base: 0;
+    --z-raised: 10;
+    --z-sticky: 30;
+    --z-overlay: 50;
+    --z-toast: 60;
+
+    /*
+     * shadcn's variables, pointed at the palette above, so the components that still
+     * read them land in the same world as everything else.
+     */
+    --background: 30 10% 5%;
+    --foreground: 38 26% 93%;
+    --card: 30 12% 7%;
+    --card-foreground: 38 26% 93%;
+    --popover: 30 12% 7%;
+    --popover-foreground: 38 26% 93%;
+    --primary: 28 68% 56%;
+    --primary-foreground: 30 40% 6%;
+    --secondary: 30 10% 11%;
+    --secondary-foreground: 38 26% 93%;
+    --muted: 30 10% 11%;
+    --muted-foreground: 33 7% 63%;
+    --accent: 28 68% 56%;
+    --accent-foreground: 30 40% 6%;
+    --destructive: 4 68% 62%;
+    --destructive-foreground: 38 26% 93%;
+    --border: 30 9% 18%;
+    --input: 30 9% 18%;
+    --ring: 28 68% 56%;
+    --radius: 0.6875rem;
   }
 }
 
@@ -85,22 +114,32 @@
 
   html {
     color-scheme: dark;
+    scroll-behavior: smooth;
   }
 
   body {
     background-color: var(--bg-0);
     color: var(--text-hi);
     font-family: var(--font-ui), system-ui, -apple-system, sans-serif;
-    font-size: 0.9375rem; /* 15px body */
-    line-height: 1.55;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    /*
+     * Space Grotesk ships proportional figures. Every number in a card game sits in
+     * a column that changes — scores, power, codes, counters — so they are lined and
+     * tabular everywhere, not only where somebody remembered to add a class.
+     */
+    font-variant-numeric: tabular-nums lining-nums;
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
 
   h1,
   h2 {
     font-family: var(--font-display), Georgia, serif;
-    font-weight: 700;
-    letter-spacing: 0.01em;
+    font-weight: 600;
+    /* Large type needs the air taken out of it, not added. */
+    letter-spacing: -0.02em;
+    text-wrap: balance;
   }
 
   h3,
@@ -109,11 +148,17 @@
   h6 {
     font-family: var(--font-ui), system-ui, sans-serif;
     font-weight: 600;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
   }
 
   /*
    * The reason the login inputs used to turn into two white plasters: Chrome paints
-   * its own autofill background and the only way to stop it is to cover it with an
+   * its own autofill background, and the only way to stop it is to cover it with an
    * inset shadow, then park the transition far enough in the future that it never runs.
    */
   input:-webkit-autofill,
@@ -122,12 +167,12 @@
   input:-webkit-autofill:active {
     -webkit-box-shadow: 0 0 0 1000px var(--bg-2) inset;
     -webkit-text-fill-color: var(--text-hi);
-    caret-color: var(--text-hi);
+    caret-color: var(--ember-300);
     transition: background-color 9999s ease-in-out 0s;
   }
 
   ::selection {
-    background: rgba(132, 104, 228, 0.35);
+    background: rgba(217, 142, 67, 0.3);
     color: var(--text-hi);
   }
 
@@ -145,68 +190,131 @@
     background-clip: content-box;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(160, 139, 240, 0.5);
+    background: rgba(217, 142, 67, 0.45);
     background-clip: content-box;
   }
 }
 
 @layer components {
-  /* Type scale. Sizes are fixed rather than fluid — the layouts are desktop-first. */
+  /*
+   * Type scale.
+   *
+   * The display face is Cormorant Garamond, a high-contrast old-style serif, and it
+   * only works large: below roughly 20px its thin strokes disappear on a dark ground.
+   * So the split is by size rather than by role — serif for anything display-sized,
+   * Space Grotesk for everything a player has to read quickly, numbers included.
+   */
   .type-display {
     font-family: var(--font-display), Georgia, serif;
-    font-size: 2.75rem;
-    font-weight: 700;
-    line-height: 1.1;
-    letter-spacing: 0.04em;
+    font-size: clamp(2.75rem, 1.6rem + 3.6vw, 4.5rem);
+    font-weight: 600;
+    line-height: 0.94;
+    letter-spacing: -0.035em;
   }
   .type-h1 {
     font-family: var(--font-display), Georgia, serif;
-    font-size: 2rem;
-    font-weight: 700;
-    line-height: 1.15;
-    letter-spacing: 0.02em;
+    font-size: clamp(2rem, 1.4rem + 1.9vw, 2.75rem);
+    font-weight: 600;
+    line-height: 1.04;
+    letter-spacing: -0.028em;
   }
   .type-h2 {
     font-family: var(--font-display), Georgia, serif;
-    font-size: 1.375rem;
+    font-size: 1.5rem;
     font-weight: 600;
-    line-height: 1.25;
+    line-height: 1.2;
+    letter-spacing: -0.018em;
   }
   .type-h3 {
     font-family: var(--font-ui), system-ui, sans-serif;
     font-size: 1.0625rem;
     font-weight: 600;
     line-height: 1.35;
+    letter-spacing: -0.01em;
+  }
+  .type-body {
+    font-size: 0.9375rem;
+    line-height: 1.65;
+    /* Roughly 65 characters. Long measures are why the old rule lists read as a wall. */
+    max-width: 62ch;
   }
   .type-small {
     font-size: 0.8125rem;
-    line-height: 1.5;
+    line-height: 1.55;
   }
+  /*
+   * Labels. Small caps rather than shouted uppercase: the same job, without the
+   * all-caps texture the old design put on every third element.
+   */
+  .type-label {
+    font-family: var(--font-ui), system-ui, sans-serif;
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1.4;
+    font-variant-caps: all-small-caps;
+    letter-spacing: 0.1em;
+  }
+  /* Kept for the few places that genuinely want a machine label. */
   .type-micro {
     font-size: 0.6875rem;
     font-weight: 600;
     line-height: 1.4;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.12em;
   }
 
-  /* Numbers that sit in a column — scores, codes, counters — must not jitter. */
   .tabular {
-    font-variant-numeric: tabular-nums;
+    font-variant-numeric: tabular-nums lining-nums;
   }
 
-  /* The one gradient allowed on text, and it stays inside a single hue family. */
-  .text-gold-gradient {
-    background: linear-gradient(105deg, #f3dfa6 0%, var(--gold-400) 45%, #9a742a 100%);
+  /*
+   * The wordmark. A single hue swept across its own lightness range — a gradient
+   * that stays inside one colour reads as a material, two colours reads as a logo.
+   */
+  .text-ember-gradient {
+    background: linear-gradient(102deg, #ffd9a3 0%, var(--ember-300) 38%, var(--ember-500) 100%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
   }
 
   /* The hairline under a title. */
-  .rule-gold {
+  .rule-ember {
     height: 1px;
-    background: linear-gradient(90deg, transparent, var(--gold-400), transparent);
+    background: linear-gradient(90deg, transparent, var(--ember-400), transparent);
+  }
+
+  /*
+   * Glass, done properly: the blur, then a bright hairline along the top edge and a
+   * dark one along the bottom, which is what makes a real pane look lit rather than
+   * like a rectangle someone blurred.
+   */
+  .glass {
+    background: rgba(20, 18, 16, 0.72);
+    backdrop-filter: blur(14px) saturate(1.2);
+    -webkit-backdrop-filter: blur(14px) saturate(1.2);
+    box-shadow:
+      inset 0 1px 0 rgba(242, 238, 231, 0.07),
+      inset 0 -1px 0 rgba(8, 6, 4, 0.55),
+      var(--shadow-card);
+  }
+
+  /* Skip link — visible the moment it has focus, invisible otherwise. */
+  .skip-link {
+    position: fixed;
+    left: 1rem;
+    top: -100px;
+    z-index: 60;
+    border-radius: var(--radius-sm);
+    background: var(--ember-400);
+    color: #1d1206;
+    padding: 0.625rem 1rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    transition: top 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .skip-link:focus {
+    top: 1rem;
   }
 }
 
@@ -214,36 +322,99 @@
   .shadow-card {
     box-shadow: var(--shadow-card);
   }
-  .glow-gold {
-    box-shadow: var(--glow-gold);
+  .shadow-lift {
+    box-shadow: var(--shadow-lift);
   }
-  .glow-violet {
-    box-shadow: var(--glow-violet);
+  .glow-ember {
+    box-shadow: var(--glow-ember);
+  }
+  .glow-steel {
+    box-shadow: var(--glow-steel);
+  }
+
+  /*
+   * Film grain. A flat vector page on a dark ground shows every banding step in a
+   * gradient; a little noise hides them and gives the ink some tooth.
+   */
+  .grain::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    pointer-events: none;
+    opacity: 0.05;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 
   /* A cell you are allowed to drop the selected card into. */
   .cell-valid {
     box-shadow:
-      inset 0 0 0 1px rgba(132, 104, 228, 0.55),
-      inset 0 0 18px rgba(132, 104, 228, 0.2);
-    animation: breathe 1.6s ease-in-out infinite;
+      inset 0 0 0 1px rgba(217, 142, 67, 0.4),
+      inset 0 0 20px -4px rgba(217, 142, 67, 0.35);
+    animation: breathe 2.4s ease-in-out infinite;
   }
   .cell-valid:hover {
     box-shadow:
-      inset 0 0 0 1px rgba(217, 174, 78, 0.75),
-      inset 0 0 20px rgba(217, 174, 78, 0.22);
+      inset 0 0 0 1px rgba(240, 178, 104, 0.85),
+      inset 0 0 24px -2px rgba(217, 142, 67, 0.45);
     animation: none;
+  }
+
+  /*
+   * Staggered entry. Nothing mounts all at once; each child arrives a beat after the
+   * one before it. Six steps covers every list on the site.
+   */
+  .stagger > * {
+    opacity: 0;
+    animation: rise-in 520ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  }
+  .stagger > *:nth-child(1) {
+    animation-delay: 60ms;
+  }
+  .stagger > *:nth-child(2) {
+    animation-delay: 140ms;
+  }
+  .stagger > *:nth-child(3) {
+    animation-delay: 220ms;
+  }
+  .stagger > *:nth-child(4) {
+    animation-delay: 300ms;
+  }
+  .stagger > *:nth-child(5) {
+    animation-delay: 380ms;
+  }
+  .stagger > *:nth-child(6) {
+    animation-delay: 460ms;
   }
 }
 
-/* Motion baseline: colour and shadow 150ms, movement 200ms on a decelerating curve. */
+/* Motion baseline: colour and shadow 150ms, movement 220ms on a decelerating curve. */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 @keyframes breathe {
   0%,
   100% {
-    opacity: 0.55;
+    opacity: 0.5;
   }
   50% {
     opacity: 1;
+  }
+}
+
+/* The sweep across a skeleton block. Transform only — it never leaves the compositor. */
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
   }
 }
 
@@ -253,35 +424,35 @@
     opacity: var(--star-opacity, 0.5);
   }
   50% {
-    opacity: calc(var(--star-opacity, 0.5) * 0.35);
+    opacity: calc(var(--star-opacity, 0.5) * 0.3);
   }
 }
 
 @keyframes modal-in {
   from {
     opacity: 0;
-    transform: scale(0.97);
+    transform: scale(0.97) translate3d(0, 8px, 0);
   }
   to {
     opacity: 1;
-    transform: scale(1);
+    transform: none;
   }
 }
 
 @keyframes toast-in {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translate3d(0, 10px, 0);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
   }
 }
 
 @keyframes score-pop {
   0% {
-    transform: scale(1.25);
+    transform: scale(1.3);
   }
   100% {
     transform: scale(1);
@@ -290,20 +461,38 @@
 
 @keyframes card-land {
   0% {
-    box-shadow: inset 0 0 0 1px rgba(217, 174, 78, 0.9), 0 0 26px rgba(217, 174, 78, 0.45);
+    box-shadow: inset 0 0 0 1px rgba(240, 178, 104, 0.95), 0 0 30px -4px rgba(217, 142, 67, 0.55);
   }
   100% {
-    box-shadow: inset 0 0 0 1px rgba(217, 174, 78, 0), 0 0 0 rgba(217, 174, 78, 0);
+    box-shadow: inset 0 0 0 1px rgba(240, 178, 104, 0), 0 0 0 rgba(217, 142, 67, 0);
   }
 }
 
 @keyframes drift {
   0%,
   100% {
-    transform: translateY(0) rotate(0deg);
+    transform: translate3d(0, 0, 0) rotate(var(--drift-rotate, 0deg));
   }
   50% {
-    transform: translateY(-14px) rotate(3deg);
+    transform: translate3d(0, -16px, 0) rotate(calc(var(--drift-rotate, 0deg) + 2.5deg));
+  }
+}
+
+/*
+ * The arena plate breathing.
+ *
+ * The values are absolute, not relative, and that is the whole trap: a keyframe that
+ * sets `opacity` beats the inline `opacity` on the element, so an element parked at
+ * 3.5% animated between 0.45 and 0.8 instead and put the artwork at full strength
+ * behind every page. Keep these numbers in step with the plate itself.
+ */
+@keyframes plate-breathe {
+  0%,
+  100% {
+    opacity: 0.03;
+  }
+  50% {
+    opacity: 0.055;
   }
 }
 
@@ -315,5 +504,8 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+  .stagger > * {
+    opacity: 1;
   }
 }
