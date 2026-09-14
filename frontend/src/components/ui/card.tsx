@@ -2,6 +2,16 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
+/*
+ * shadcn's Card, retoned onto paper. It is not dead — `Leaderboard` still builds
+ * every panel out of it — but it is the last surface in the application that is not
+ * a `Panel`, and the two should converge.
+ *
+ * A card here is a lifted object rather than a sheet: paper-raised stock inside a
+ * full-weight ink rule, square, no shadow. The `shadow-sm` it shipped with is gone
+ * for good, along with the 11px radius; the one shadow in this design belongs to
+ * `.sheet` and is spent already.
+ */
 const Card = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
@@ -9,7 +19,7 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "rounded-lg border bg-card text-card-foreground shadow-sm",
+      "border-rule border-ink bg-paper-raised text-ink",
       className
     )}
     {...props}
@@ -33,12 +43,14 @@ const CardTitle = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
+  /*
+   * `tracking-tight` is gone rather than retuned. A renaissance face opens up under
+   * its own weight; closing it is a grotesque's habit and there is no negative
+   * tracking anywhere in this system.
+   */
   <div
     ref={ref}
-    className={cn(
-      "text-2xl font-semibold leading-none tracking-tight",
-      className
-    )}
+    className={cn("type-h2 text-ink", className)}
     {...props}
   />
 ))
@@ -50,7 +62,7 @@ const CardDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("text-sm text-muted-foreground", className)}
+    className={cn("type-small text-ink-2", className)}
     {...props}
   />
 ))

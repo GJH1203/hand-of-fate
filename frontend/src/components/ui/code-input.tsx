@@ -15,12 +15,16 @@ interface CodeInputProps {
 const ALLOWED = /[^A-Z0-9]/g;
 
 /**
- * The room code, one character per slot.
+ * The room code, one character per slot — six letterpress slugs in a stick.
  *
  * A six-character code pasted into a single text field is a form. Six slots is a
  * game — and it is also the only shape that makes a mistyped character obvious at
  * a glance. Typing advances, backspace retreats, and pasting the whole code (with
  * or without the surrounding link) fills every slot at once.
+ *
+ * 32px, and that is now the only size the code is ever set at. It used to be 44px
+ * in the lobby and 30px here, which meant the thing you read off one screen and
+ * typed into the other did not look like the same object.
  */
 export function CodeInput({
   value,
@@ -106,13 +110,24 @@ export function CodeInput({
           autoFocus={autoFocus && index === 0}
           aria-label={`${ariaLabel}, character ${index + 1} of ${length}`}
           className={cn(
-            "h-[68px] w-[54px] rounded-md border border-subtle bg-surface-2/80 text-center",
-            // Space Grotesk, not the display serif: a room code is read out loud and
-            // typed back in, so it wants unambiguous figures, not elegant ones.
-            "font-ui text-[30px] font-semibold uppercase text-ember-300 tabular",
-            "transition-[border-color,box-shadow,transform] duration-200 ease-arcane",
-            "caret-ember-300 hover:border-strong",
-            "focus:-translate-y-0.5 focus:border-ember-400 focus:outline-none focus:shadow-glow-ember",
+            // `block`, because `.slug` is written for a flex box and this is an input.
+            "slug block h-16 w-12 text-center text-ink caret-verm",
+            // The mono, not the display serif: a room code is read out loud and typed
+            // back in, so it wants unambiguous figures, not elegant ones.
+            "type-code",
+            /*
+             * `.type-code` tracks at 0.28em, which is right for a code set as one run
+             * of characters. Here the gap between the slugs is the tracking, and the
+             * trailing 0.28em on a single centred character would push it visibly
+             * left of its box.
+             */
+            "tracking-[0]",
+            /*
+             * Focus is a heavier impression, not a glow and not a lift. Border-box
+             * sizing means going from 1.5px to 3px moves nothing on the page. The
+             * offset outline from globals.css is left alone on top of it.
+             */
+            "transition-[border-width] duration-ink focus:border-heavy",
           )}
         />
       ))}
