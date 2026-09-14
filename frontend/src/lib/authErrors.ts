@@ -7,11 +7,11 @@
  * "Unexpected end of JSON input", "Failed to create game session" — told them
  * nothing true and sent at least one person looking for a bug in their password.
  */
-const REALM_UNREACHABLE = 'The realm is unreachable right now — please try again in a moment.'
+const SERVER_UNREACHABLE = 'We could not reach the server. Try again in a moment.'
 
 export function humanizeAuthError(raw?: string | null): string {
   const text = (raw ?? '').trim()
-  if (!text) return REALM_UNREACHABLE
+  if (!text) return SERVER_UNREACHABLE
 
   const lower = text.toLowerCase()
 
@@ -37,7 +37,7 @@ export function humanizeAuthError(raw?: string | null): string {
     return 'Fill in every field to continue.'
   }
 
-  return REALM_UNREACHABLE
+  return SERVER_UNREACHABLE
 }
 
-export { REALM_UNREACHABLE }
+export { SERVER_UNREACHABLE }

@@ -92,7 +92,7 @@ export default function AuthCallback() {
               <InlineAlert tone="info" className="text-left">
                 {message}
               </InlineAlert>
-              <Spinner size={24} className="mx-auto text-arcane-300" />
+              <Spinner size={24} className="mx-auto text-steel-300" />
             </>
           )}
 
