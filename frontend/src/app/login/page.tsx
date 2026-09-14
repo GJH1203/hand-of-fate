@@ -3,84 +3,137 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
-import { ArrowRight, BookOpen, Mail } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
-import { Field, Input } from '@/components/ui/input';
 import { InlineAlert } from '@/components/ui/inline-alert';
-import { Panel } from '@/components/ui/panel';
 import { Spinner } from '@/components/ui/spinner';
 import { unifiedAuthService } from '@/services/unifiedAuthService';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
 import { humanizeAuthError } from '@/lib/authErrors';
+import { cn } from '@/lib/utils';
 import GameTutorial from '@/components/tutorial/GameTutorial';
 
 /*
- * The left half of the sign-in screen.
+ * The three cards, lying on the table beside the sheet.
  *
- * The old page was a card in the dead centre of an otherwise empty viewport, which is
- * the most common shape an auth page can have. Splitting it gives the artwork somewhere
- * to live at full bleed and gives the form a left edge to align to, and it puts the one
- * thing a returning player wants — the door — on the side they read to.
+ * What was here before was a full-bleed panel of `battle-arena.png` — a glowing
+ * indigo rune plate — with the form on a black half beside it. On bone paper that
+ * is a lightbox stapled to a printed sheet, and there is no dark plate anywhere in
+ * this design except the cards themselves. So the dark plate that stays is the one
+ * that earns it: the shipped card faces, uncropped, laid on the walnut. Navy and
+ * gold on wood is exactly where they belong, and they state the deck — one, three,
+ * five — without a legend.
+ *
+ * The rotations reuse `.laid`, the same hand-laid device the board uses, so the
+ * spread reads as three cards somebody put down rather than three images in a row.
+ * Fixed values, not `Math.random`: this renders on the server too.
  */
-function BrandPanel() {
+const SPREAD = [
+  { src: '/gifs/spark.png', rot: '-6.5deg', y: '12px' },
+  { src: '/gifs/lightning.png', rot: '2deg', y: '-8px' },
+  { src: '/gifs/thunder.png', rot: '6.5deg', y: '16px' },
+];
+
+function CardSpread() {
   return (
-    <section className="relative hidden overflow-hidden lg:flex lg:flex-col lg:justify-between lg:p-14">
-      <div
-        aria-hidden
-        className="absolute inset-0 bg-cover bg-center"
-        style={{
-          backgroundImage: "url('/backgrounds/battle-arena.png')",
-          opacity: 0.55,
-        }}
-      />
-      {/* Warm wash over the cold plate, so it belongs to the rest of the palette */}
-      <div
-        aria-hidden
-        className="absolute inset-0"
-        style={{
-          background:
-            'linear-gradient(155deg, rgba(12,11,10,0.3) 0%, rgba(12,11,10,0.72) 48%, rgba(12,11,10,0.96) 100%)',
-        }}
-      />
-      {/* The seam between the two halves, lit */}
-      <div
-        aria-hidden
-        className="absolute inset-y-0 right-0 w-px"
-        style={{
-          background:
-            'linear-gradient(180deg, transparent, rgba(217,142,67,0.35) 45%, transparent)',
-        }}
-      />
-
-      <div className="relative">
+    <div aria-hidden className="hidden shrink-0 items-center lg:flex">
+      {SPREAD.map(({ src, rot, y }) => (
         <Image
-          src="/images/mystical-portal.png"
+          key={src}
+          src={src}
           alt=""
-          width={64}
-          height={64}
-          priority
-          style={{ filter: 'drop-shadow(0 0 28px rgba(92,147,186,0.45))' }}
+          width={184}
+          height={276}
+          /* Whole faces, never cropped: each one is a complete printed object. */
+          /*
+           * The overlap stops short of the longest name. At -mr-10 the Thunder
+           * card cut "LIGHTNING" mid-letter, which reads as a clipping bug
+           * rather than as a fan of cards.
+           */
+          className="laid -mr-6 h-auto w-[144px] select-none last:mr-0 xl:-mr-7 xl:w-[184px]"
+          style={{ '--lay-rot': rot, '--lay-y': y } as React.CSSProperties}
         />
-      </div>
+      ))}
+    </div>
+  );
+}
 
-      <div className="relative max-w-[30ch]">
-        <h1 className="type-display text-ink-hi">
-          Hand of
-          <br />
-          <span className="text-ember-gradient">Fate</span>
-        </h1>
-        <p className="type-body mt-6 text-ink-mid">
-          Fifteen squares, five cards, and one opponent deciding at the same moment you
-          are. Win two columns of three.
+/**
+ * A sheet on the table, with the keyline a card back is printed with inside it.
+ *
+ * The frame appears only once the sheet has an edge of its own to sit inside:
+ * below `sm` the paper runs to all four sides of the screen, and a rule drawn
+ * there is a box around the phone rather than around the printing.
+ */
+function SheetFrame({ className, children }: { className?: string; children: React.ReactNode }) {
+  return (
+    <div className={cn('sheet min-h-dvh w-full p-0 sm:min-h-0 sm:p-3', className)}>
+      {/* Border colour comes from the global `* { border-color: var(--ink) }`. */}
+      <div className="border-0 px-7 py-12 sm:border-hair sm:px-11 sm:py-12">{children}</div>
+    </div>
+  );
+}
+
+/**
+ * A message that is not a correction: verified, sent, already registered.
+ *
+ * Deliberately not an `InlineAlert`. There is no success colour in this design and
+ * inventing one here would put a third ink on the sheet to say "that worked" —
+ * so it is a plain ruled note, and the errata slip stays reserved for errors.
+ */
+function Note({ children }: { children: React.ReactNode }) {
+  return (
+    <p
+      role="status"
+      className="border-hair bg-paper-raised px-3.5 py-2.5 font-mono text-[13px] leading-relaxed text-ink-2"
+    >
+      {children}
+    </p>
+  );
+}
+
+interface FormFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  id: string;
+  label: string;
+  hint?: string;
+  /** Shown instead of the hint, and announced. */
+  error?: string;
+}
+
+/**
+ * Label, field, and one line underneath — a hint, or an error in its place.
+ *
+ * All three are mono: a label, a hint and an error are apparatus, and the serif
+ * has a 15px floor that none of them clear. The error is set in `--verm-deep`
+ * rather than `--verm`, which is the only vermillion that carries small text.
+ */
+function FormField({ id, label, hint, error, ...input }: FormFieldProps) {
+  const noteId = error ? `${id}-error` : hint ? `${id}-hint` : undefined;
+
+  return (
+    <div>
+      <label htmlFor={id} className="type-label mb-2 block text-ink-2">
+        {label}
+      </label>
+      <input
+        id={id}
+        className="field-input"
+        aria-invalid={!!error}
+        aria-describedby={noteId}
+        {...input}
+      />
+      {error ? (
+        <p id={noteId} role="alert" className="mt-2 font-mono text-[12px] leading-snug text-verm-deep">
+          {error}
         </p>
-      </div>
-
-      <p className="type-label relative text-ink-low">
-        Three columns · five rows · about four minutes
-      </p>
-    </section>
+      ) : (
+        hint && (
+          <p id={noteId} className="mt-2 font-mono text-[12px] leading-snug text-ink-3">
+            {hint}
+          </p>
+        )
+      )}
+    </div>
   );
 }
 
@@ -118,31 +171,38 @@ function UnifiedAuthPageContent() {
 
   if (!isSupabaseConfigured) {
     return (
-      <main id="main" className="flex min-h-dvh items-center justify-center p-6">
-        <Panel className="w-full max-w-md p-8">
-          <h1 className="type-h2 text-ink-hi">Configuration required</h1>
-          <p className="type-small mt-2 text-ink-low">
+      <main
+        id="main"
+        className="mx-auto flex min-h-dvh w-full max-w-[600px] items-center px-0 sm:px-8 sm:py-12"
+      >
+        <SheetFrame>
+          <p className="type-label text-ink-3">Setup</p>
+          <h1 className="type-h1 mt-4 text-ink">Configuration required</h1>
+          <p className="type-body mt-4 text-ink-2">
             Supabase credentials are needed before anyone can sign in.
           </p>
-          <ol className="mt-5 list-decimal space-y-2 pl-5 text-sm text-ink-mid">
-            <li>
+          {/* The step numbers are numbers, so the marker is set in the mono. */}
+          <ol className="mt-7 list-decimal space-y-3 pl-6 marker:font-mono marker:text-[13px] marker:text-ink-3">
+            <li className="type-small text-ink-2">
               Create a project at{' '}
               <a
                 href="https://supabase.com"
                 target="_blank"
                 rel="noreferrer"
-                className="text-ember-300 underline-offset-4 hover:underline"
+                className="text-verm-text underline decoration-verm underline-offset-[3px]"
               >
                 supabase.com
               </a>
             </li>
-            <li>Copy the project URL and the anon key</li>
-            <li>
+            <li className="type-small text-ink-2">Copy the project URL and the anon key</li>
+            <li className="type-small text-ink-2">
               Put them in{' '}
-              <code className="rounded-xs bg-surface-2 px-1.5 py-0.5">frontend/.env.local</code>
+              <code className="border-hair bg-paper-raised px-1.5 py-0.5 font-mono text-[13px] text-ink">
+                frontend/.env.local
+              </code>
             </li>
           </ol>
-        </Panel>
+        </SheetFrame>
       </main>
     );
   }
@@ -188,7 +248,7 @@ function UnifiedAuthPageContent() {
       const result = await unifiedAuthService.signUp(email, password, username);
 
       if (result.alreadyRegistered) {
-        // Not a failure worth a red banner — they have an account, they are just on
+        // Not a failure worth an errata slip — they have an account, they are just on
         // the wrong form. Send them to the other one with the address kept.
         setIsSignUp(false);
         setPassword('');
@@ -264,43 +324,48 @@ function UnifiedAuthPageContent() {
 
   if (pendingVerification) {
     return (
-      <main id="main" className="flex min-h-dvh items-center justify-center p-6">
-        <Panel className="w-full max-w-[420px] p-8">
-          <div className="flex h-12 w-12 items-center justify-center rounded-[14px] bg-ember-400/10 ring-1 ring-inset ring-ember-400/30">
-            <Mail size={20} strokeWidth={1.75} className="text-ember-300" />
-          </div>
-          <h1 className="type-h2 mt-5 text-ink-hi">Check your inbox</h1>
-          <p className="type-small mt-2 text-ink-mid">
-            A verification link is on its way to{' '}
-            <span className="text-ink-hi">{verificationEmail}</span>. Nothing yet? Look in the
-            spam folder, or send it again.
+      <main
+        id="main"
+        className="mx-auto flex min-h-dvh w-full max-w-[600px] items-center px-0 sm:px-8 sm:py-12"
+      >
+        <SheetFrame>
+          <p className="type-label text-verm-text">Verification sent</p>
+          <h1 className="type-h1 mt-4 text-ink">Check your inbox</h1>
+          <p className="type-body mt-4 text-ink-2">A verification link is on its way to</p>
+          {/* The address is data, so it is set in the mono and boxed like a slug. */}
+          <p className="mt-3 border-hair bg-paper-raised px-3.5 py-2.5 font-mono text-[13px] text-ink">
+            {verificationEmail}
+          </p>
+          <p className="type-body mt-4 text-ink-2">
+            Nothing yet? Look in the spam folder, or send it again.
           </p>
 
           {message && (
-            <InlineAlert tone="success" className="mt-5">
-              {message}
-            </InlineAlert>
+            <div className="mt-6">
+              <Note>{message}</Note>
+            </div>
           )}
-          {error && (
-            <InlineAlert tone="danger" className="mt-5">
-              {error}
-            </InlineAlert>
-          )}
+          {error && <InlineAlert className="mt-6">{error}</InlineAlert>}
 
-          <Button
-            variant="primary"
-            size="lg"
-            className="mt-7 w-full"
+          <button
+            type="button"
+            /*
+             * `disabled:text-paper` is a local repair: the shared `.btn:disabled`
+             * drops the label to --ink-4, which on a key button's ink fill is
+             * 2.4:1. A busy button still has to be readable.
+             */
+            className="btn btn--key mt-8 h-11 w-full px-5 disabled:border-ink disabled:text-paper"
             onClick={handleResendVerification}
             disabled={isLoading}
           >
-            {isLoading && <Spinner size={16} />}
+            {isLoading && <Spinner size={15} />}
             {isLoading ? 'Sending…' : 'Send it again'}
-          </Button>
+          </button>
 
-          <div className="mt-5 text-center">
-            <Button
-              variant="link"
+          <div className="mt-7">
+            <button
+              type="button"
+              className="link"
               onClick={() => {
                 setPendingVerification(false);
                 setVerificationEmail('');
@@ -310,48 +375,43 @@ function UnifiedAuthPageContent() {
               }}
             >
               Back to sign in
-            </Button>
+            </button>
           </div>
-        </Panel>
+        </SheetFrame>
       </main>
     );
   }
 
   return (
-    <div className="grid min-h-dvh lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] xl:grid-cols-[1.15fr_1fr]">
-      <BrandPanel />
-
+    <>
       {/*
-        * The form half gets its own opaque ground. The shared background is deliberately
-        * faint, but "faint artwork behind a password field" is still artwork behind a
-        * password field — and the split only reads as a split if one side is picture and
-        * the other is paper.
-        */}
+       * One sheet, off to the left, with the cards on the table beside it. Not a
+       * split screen: a split screen needs both halves to be surfaces, and here
+       * only one of them is. The other half is furniture.
+       */}
       <main
         id="main"
-        className="relative flex items-center justify-center px-6 py-14"
-        style={{ backgroundColor: '#0C0B0A' }}
+        className="mx-auto flex min-h-dvh w-full max-w-[1160px] items-center justify-center gap-8 px-0 sm:px-8 sm:py-12 lg:justify-between lg:px-10 xl:gap-14"
       >
-        <div className="w-full max-w-[380px]">
-          {/* The wordmark only appears here when the panel beside it is not on screen. */}
-          <div className="mb-10 lg:hidden">
-            <Image
-              src="/images/mystical-portal.png"
-              alt=""
-              width={52}
-              height={52}
-              priority
-              style={{ filter: 'drop-shadow(0 0 22px rgba(92,147,186,0.4))' }}
-            />
-            <h1 className="type-h1 mt-5 text-ink-hi">
-              Hand of <span className="text-ember-gradient">Fate</span>
+        <SheetFrame className="sm:max-w-[560px]">
+          <header>
+            <h1 className="type-display text-ink">
+              Hand of
+              <br />
+              Fate
             </h1>
-          </div>
+            <hr className="mt-5 border-0 border-t-heavy border-t-ink" />
+            <p className="type-body mt-5 text-ink-2">
+              A real-time duel for two. Fifteen squares, five cards each, and every card
+              you lay has to touch one you already own — take the most columns to win.
+            </p>
+            <p className="type-label mt-5 text-ink-3">3 columns · 5 rows · about 4 minutes</p>
+          </header>
 
-          <h2 className="type-h1 text-ink-hi">
-            {isSignUp ? 'Make an account' : 'Sign in'}
+          <h2 className="type-h2 mt-12 text-ink">
+            {isSignUp ? 'Create an account' : 'Sign in'}
           </h2>
-          <p className="type-small mt-2 text-ink-low">
+          <p className="type-small mt-2 text-ink-2">
             {isSignUp
               ? 'One name, one address, and you are in the next duel.'
               : 'Your matches and score are waiting where you left them.'}
@@ -360,62 +420,56 @@ function UnifiedAuthPageContent() {
           <form
             onSubmit={isSignUp ? handleSignUp : handleSignIn}
             noValidate
-            className="mt-8 space-y-5"
+            className="mt-7 max-w-[400px] space-y-5"
           >
             {isSignUp && (
-              <Field label="Username" htmlFor="username" error={fieldErrors.username}>
-                <Input
-                  id="username"
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="The name on the board"
-                  autoComplete="username"
-                  aria-invalid={!!fieldErrors.username}
-                />
-              </Field>
+              <FormField
+                id="username"
+                label="Username"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="The name on the board"
+                autoComplete="username"
+                error={fieldErrors.username}
+              />
             )}
 
-            <Field label="Email" htmlFor="email" error={fieldErrors.email}>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                autoComplete="email"
-                aria-invalid={!!fieldErrors.email}
-              />
-            </Field>
+            <FormField
+              id="email"
+              label="Email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              autoComplete="email"
+              error={fieldErrors.email}
+            />
 
-            <Field
+            <FormField
+              id="password"
               label="Password"
-              htmlFor="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              /* The hint below says the length; the placeholder saying it too is the
+                 same sentence twice, and the placeholder is the copy that vanishes. */
+              placeholder={isSignUp ? 'Choose a password' : 'Your password'}
+              autoComplete={isSignUp ? 'new-password' : 'current-password'}
               hint={isSignUp ? 'At least 6 characters' : undefined}
               error={fieldErrors.password}
-            >
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder={isSignUp ? 'At least 6 characters' : 'Your password'}
-                autoComplete={isSignUp ? 'new-password' : 'current-password'}
-                aria-invalid={!!fieldErrors.password}
-              />
-            </Field>
+            />
 
-            {error && <InlineAlert tone="danger">{error}</InlineAlert>}
-            {message && <InlineAlert tone="success">{message}</InlineAlert>}
+            {error && <InlineAlert>{error}</InlineAlert>}
+            {message && <Note>{message}</Note>}
 
-            <Button
+            <button
               type="submit"
-              variant="primary"
-              size="lg"
-              className="w-full"
+              /* See the resend button: the shared disabled colour is unreadable on ink. */
+              className="btn btn--key h-11 w-full px-5 disabled:border-ink disabled:text-paper"
               disabled={isLoading}
             >
-              {isLoading && <Spinner size={16} />}
+              {isLoading && <Spinner size={15} />}
               {isLoading
                 ? isSignUp
                   ? 'Creating…'
@@ -423,24 +477,28 @@ function UnifiedAuthPageContent() {
                 : isSignUp
                   ? 'Create account'
                   : 'Sign in'}
-              {!isLoading && <ArrowRight size={18} strokeWidth={1.75} />}
-            </Button>
+            </button>
           </form>
 
-          <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-subtle pt-6">
-            <p className="type-small text-ink-low">
+          <div className="mt-9 flex flex-wrap items-center justify-between gap-x-6 gap-y-4 border-t-hair pt-6">
+            <p className="type-small text-ink-2">
               {isSignUp ? 'Already have an account? ' : 'First time here? '}
-              <Button variant="link" size="sm" onClick={switchMode}>
+              <button type="button" className="link" onClick={switchMode}>
                 {isSignUp ? 'Sign in' : 'Make one'}
-              </Button>
+              </button>
             </p>
 
-            <Button variant="ghost" size="sm" onClick={() => setShowTutorial(true)}>
-              <BookOpen size={15} strokeWidth={1.75} />
+            <button
+              type="button"
+              className="btn btn--quiet h-9 px-3"
+              onClick={() => setShowTutorial(true)}
+            >
               How to play
-            </Button>
+            </button>
           </div>
-        </div>
+        </SheetFrame>
+
+        <CardSpread />
       </main>
 
       <GameTutorial
@@ -448,7 +506,7 @@ function UnifiedAuthPageContent() {
         onClose={() => setShowTutorial(false)}
         finishLabel="Got it"
       />
-    </div>
+    </>
   );
 }
 
@@ -456,8 +514,13 @@ export default function UnifiedAuthPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-dvh items-center justify-center">
-          <Spinner size={26} className="text-ember-300" />
+        <div className="flex min-h-dvh items-center justify-center p-6">
+          <div className="sheet px-8 py-6">
+            <p className="type-label flex items-center gap-3 text-ink-3">
+              <Spinner size={13} />
+              Loading
+            </p>
+          </div>
         </div>
       }
     >

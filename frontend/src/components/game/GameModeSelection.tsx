@@ -1,13 +1,10 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
-import { ArrowRight, KeyRound, RotateCw } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { ArrowRight } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
 import { CodeInput } from '@/components/ui/code-input';
-import { InlineAlert } from '@/components/ui/inline-alert';
 import { Modal } from '@/components/ui/modal';
-import { Panel } from '@/components/ui/panel';
 import { GameMode } from '@/types/gameMode';
 import { useUnifiedAuth } from '@/hooks/useUnifiedAuth';
 import { onlineGameService, ActiveGame } from '@/services/onlineGameService';
@@ -16,6 +13,19 @@ import { cn } from '@/lib/utils';
 interface GameModeSelectionProps {
   onModeSelect: (mode: GameMode, matchId?: string) => void;
 }
+
+/*
+ * The gutter.
+ *
+ * A 7rem margin down the left of the sheet holding the label for whatever sits
+ * beside it — the section on the header, the seat you would be taking on each of
+ * the two actions. It is what makes this a laid-out page rather than a stack of
+ * centred blocks, and because both use the same measure the titles line up all
+ * the way down. It collapses below `sm`, where the label simply sits above.
+ */
+const GUTTER = 'sm:grid sm:grid-cols-[7rem_1fr] sm:gap-x-6';
+/** 7rem of gutter plus the 1.5rem gap: anything indented to the text column. */
+const GUTTER_INDENT = 'sm:ml-[8.5rem]';
 
 export default function GameModeSelection({ onModeSelect }: GameModeSelectionProps) {
   const { user } = useUnifiedAuth();
@@ -105,30 +115,43 @@ export default function GameModeSelection({ onModeSelect }: GameModeSelectionPro
   };
 
   return (
-    <main id="main" className="mx-auto flex min-h-dvh max-w-[720px] flex-col justify-center px-6 py-16">
-      <div className="stagger">
-        <p className="type-label text-ember-400">Online</p>
-        <h1 className="type-h1 mt-3 text-ink-hi">Start a duel</h1>
-        <p className="type-body mt-3 text-ink-mid">
-          Open a room and send the code, or type in the one you were sent. Either way the
-          board opens as soon as both of you are there.
-        </p>
+    <main
+      id="main"
+      className="mx-auto flex min-h-dvh w-full max-w-[760px] flex-col justify-center px-0 sm:px-8 sm:py-12"
+    >
+      <div className="sheet min-h-dvh px-7 py-14 sm:min-h-0 sm:px-14 sm:py-16">
+        <header className={GUTTER}>
+          <p className="type-label text-verm-text sm:mt-[0.6rem]">Online</p>
+          <div className="mt-4 sm:mt-0">
+            <h1 className="type-h1 text-ink">Start a duel</h1>
+            <p className="type-body mt-4 text-ink-2">
+              Open a room and send the code, or type in the one you were sent. Either way the
+              board opens as soon as both of you are there.
+            </p>
+          </div>
+        </header>
 
         {activeGame && (
-          <div className="mt-8">
-            <InlineAlert tone="warning">
-              <span className="text-ink-hi">You are already in a duel.</span> Rejoin it, or
-              start something else and give it up.
-            </InlineAlert>
-            <Button
-              size="lg"
-              variant="secondary"
-              className="mt-3 w-full border-success/40 text-success hover:border-success/70 hover:bg-success/10 hover:text-success sm:w-auto"
+          /*
+           * An errata slip, not a coloured alert. Nothing has gone wrong here — there
+           * is a correction to make to what you were about to do — and the ochre bar
+           * down the leading edge is the whole signal. A player's ink is never spent
+           * on a message, which is what stopped crimson meaning both "the opponent"
+           * and "something is wrong" on the same screen.
+           */
+          <div role="status" className={cn('errata mt-9', GUTTER_INDENT)}>
+            <p className="type-small text-ink-2">
+              <span className="text-ink">You are already in a duel.</span> Rejoin it, or start
+              something else and give it up.
+            </p>
+            <button
+              type="button"
               onClick={handleReconnect}
+              disabled={dispatched}
+              className="btn btn--rule mt-3 h-10 px-4"
             >
-              <RotateCw size={18} strokeWidth={1.75} />
               Rejoin that duel
-            </Button>
+            </button>
           </div>
         )}
 
@@ -140,26 +163,31 @@ export default function GameModeSelection({ onModeSelect }: GameModeSelectionPro
          * out at 45% and said "Coming Soon", which spent half the screen saying nothing.
          * Stacked rows let the first one be visibly the main one, and the unbuilt modes
          * shrink to the line of text they are worth.
+         *
+         * Which of them is the main one is now carried by the weight of the rule above
+         * it — 3px against 1.5px — rather than by a colour or a fill. On paper that is
+         * the only honest way to say "this one first": ink is full strength everywhere
+         * and the line gets heavier.
          */}
-        <div className="mt-9 space-y-3">
+        <div className="mt-12 border-b-rule border-ink">
           <ActionRow
+            seat="Host"
             title="Create a room"
             body="You get a six-character code. Send it to whoever you are playing."
-            accent
+            primary
             disabled={dispatched}
             onClick={startCreate}
-            icon={<ArrowRight size={18} strokeWidth={1.75} />}
           />
           <ActionRow
+            seat="Challenger"
             title="Join with a code"
             body="Already been sent one? Type the six characters and you are in."
             disabled={dispatched}
             onClick={startJoin}
-            icon={<KeyRound size={18} strokeWidth={1.75} />}
           />
         </div>
 
-        <p className="type-small mt-8 border-t border-subtle pt-6 text-ink-low">
+        <p className="type-small mt-8 border-t-hair border-rule-ghost pt-6 text-ink-3">
           Quick match and local same-device duels are not built yet.
         </p>
       </div>
@@ -170,21 +198,28 @@ export default function GameModeSelection({ onModeSelect }: GameModeSelectionPro
         title="Join a duel"
         widthClassName="max-w-md"
       >
-        <p className="type-small text-ink-low">
-          The six characters your opponent sent you.
-        </p>
+        <p className="type-small text-ink-2">The six characters your opponent sent you.</p>
 
         <div className="mt-6">
           <CodeInput value={code} onChange={setCode} autoFocus />
         </div>
 
         <div className="mt-7 flex justify-end gap-3">
-          <Button variant="ghost" onClick={() => setShowJoin(false)}>
+          <button
+            type="button"
+            onClick={() => setShowJoin(false)}
+            className="btn btn--quiet h-10 px-4"
+          >
             Cancel
-          </Button>
-          <Button variant="primary" onClick={submitJoin} disabled={code.length !== 6 || dispatched}>
+          </button>
+          <button
+            type="button"
+            onClick={submitJoin}
+            disabled={code.length !== 6 || dispatched}
+            className="btn btn--key h-10 px-5"
+          >
             Join
-          </Button>
+          </button>
         </div>
       </Modal>
 
@@ -194,17 +229,25 @@ export default function GameModeSelection({ onModeSelect }: GameModeSelectionPro
         title="Give up your current duel?"
         widthClassName="max-w-sm"
       >
-        <p className="text-sm text-ink-mid">
+        <p className="type-small text-ink-2">
           You are in a match already. Starting another one abandons it, and it cannot be
           picked up again.
         </p>
         <div className="mt-6 flex justify-end gap-3">
-          <Button variant="ghost" onClick={() => setPendingAction(null)}>
+          <button
+            type="button"
+            onClick={() => setPendingAction(null)}
+            className="btn btn--quiet h-10 px-4"
+          >
             Cancel
-          </Button>
-          <Button variant="danger" onClick={confirmAbandonAndContinue}>
+          </button>
+          <button
+            type="button"
+            onClick={confirmAbandonAndContinue}
+            className="btn btn--key h-10 px-5"
+          >
             Abandon it
-          </Button>
+          </button>
         </div>
       </Modal>
     </main>
@@ -212,52 +255,70 @@ export default function GameModeSelection({ onModeSelect }: GameModeSelectionPro
 }
 
 interface ActionRowProps {
+  /** The seat this action puts you in. Sits in the gutter, and matches the lobby's list. */
+  seat: string;
   title: string;
   body: string;
-  /** The one row on the screen that gets the accent. */
-  accent?: boolean;
+  /** The one row on the screen that gets the heavy rule. */
+  primary?: boolean;
   disabled?: boolean;
   onClick: () => void;
-  icon: React.ReactNode;
 }
 
-/** A full-width row you press. The chevron slides on hover; the whole row presses. */
-function ActionRow({ title, body, accent, disabled, onClick, icon }: ActionRowProps) {
+/**
+ * A full-width row you press.
+ *
+ * Ruled top and bottom and flush with the measure, so the stack reads as a set
+ * table rather than as two floating cards: the rules line up with the headline
+ * above them and with each other. Pressing moves the row down a pixel, because a
+ * letterpress pushes the ink into the sheet — it does not lift off it.
+ *
+ * The arrow is the only icon, and it is here because it says where the row goes,
+ * not because a row wants an ornament. It travels on hover, which is the one kind
+ * of motion this design allows: something that physically moves.
+ */
+function ActionRow({ seat, title, body, primary, disabled, onClick }: ActionRowProps) {
   return (
-    <Panel
-      tone="quiet"
-      spotlight
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
       className={cn(
-        'group w-full text-left transition-[transform,box-shadow] duration-200 ease-arcane',
-        !disabled && 'hover:-translate-y-0.5 hover:shadow-card',
-        disabled && 'pointer-events-none opacity-40',
+        'group w-full border-ink py-6 text-left transition-colors duration-ink',
+        primary ? 'border-t-heavy' : 'border-t-rule',
+        GUTTER,
+        disabled ? 'cursor-not-allowed' : 'hover:bg-paper-sunk active:translate-y-px',
       )}
     >
-      <button
-        type="button"
-        onClick={onClick}
-        disabled={disabled}
-        className={cn(
-          'flex w-full items-center gap-5 rounded-lg border px-6 py-5 text-left transition-colors duration-200 ease-arcane',
-          'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ember-400',
-          accent
-            ? 'border-ember-400/35 hover:border-ember-400/60'
-            : 'border-subtle hover:border-strong',
-        )}
-      >
-        <span className="min-w-0 flex-1">
-          <span className="type-h3 block text-ink-hi">{title}</span>
-          <span className="type-small mt-1 block text-ink-mid">{body}</span>
+      <span className={cn('type-label block sm:mt-[0.45rem]', disabled ? 'text-ink-4' : 'text-ink-3')}>
+        {seat}
+      </span>
+
+      <span className="mt-2 block min-w-0 sm:mt-0">
+        <span className="flex items-start justify-between gap-6">
+          <span
+            className={cn(
+              primary ? 'type-h2' : 'type-h3',
+              'block',
+              disabled ? 'text-ink-4' : 'text-ink',
+            )}
+          >
+            {title}
+          </span>
+          <ArrowRight
+            aria-hidden
+            size={18}
+            strokeWidth={1.75}
+            className={cn(
+              'mt-1 shrink-0 transition-transform duration-move ease-settle',
+              disabled ? 'text-ink-4' : 'text-ink group-hover:translate-x-1',
+            )}
+          />
         </span>
-        <span
-          className={cn(
-            'flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] transition-transform duration-200 ease-arcane group-hover:translate-x-1',
-            accent ? 'bg-ember-400 text-[#231405]' : 'bg-white/[0.06] text-ink-mid',
-          )}
-        >
-          {icon}
+        <span className={cn('type-small mt-1.5 block', disabled ? 'text-ink-4' : 'text-ink-2')}>
+          {body}
         </span>
-      </button>
-    </Panel>
+      </span>
+    </button>
   );
 }

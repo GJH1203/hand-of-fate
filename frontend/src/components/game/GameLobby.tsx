@@ -1,12 +1,9 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
-import { Check, Copy, Link2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Check, Copy } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
-import { Panel } from '@/components/ui/panel';
-import { Spinner } from '@/components/ui/spinner';
 import { useToast } from '@/components/ui/toast';
 import { onlineGameService } from '@/services/onlineGameService';
 import { OnlineMatchInfo } from '@/types/gameMode';
@@ -93,122 +90,179 @@ export default function GameLobby({
   };
 
   return (
-    <main id="main" className="mx-auto flex min-h-dvh max-w-[520px] flex-col justify-center px-6 py-16">
-      <div className="stagger">
-        <p className="type-label text-ember-400">
+    <main
+      id="main"
+      className="mx-auto flex min-h-dvh w-full max-w-[620px] flex-col justify-center px-0 sm:px-8 sm:py-12"
+    >
+      <div className="sheet min-h-dvh px-7 py-14 sm:min-h-0 sm:px-12 sm:py-16">
+        <p className="type-label text-verm-text">
           {hasOpponent ? 'Both here' : isHost ? 'Waiting' : 'Joining'}
         </p>
-        <h1 className="type-h1 mt-3 text-ink-hi">
+        <h1 className="type-h1 mt-5 text-ink">
           {hasOpponent ? 'Your opponent is here' : isHost ? 'Send them the code' : 'Finding the room'}
         </h1>
 
         {/*
-         * The code, set as large as the room allows.
+         * The code, set as six slugs.
          *
          * It is the one thing on this screen anybody has to do something with — read it
-         * out, or type it into a chat window — so it is the size of a headline and not
-         * a field label. The characters are spaced out because six run-together
-         * characters get miscopied, and lined tabular so they never reflow.
+         * out, or paste it into a chat window — so it is set the way a compositor would
+         * set six characters that must not be misread: one piece of type per character,
+         * in its own body, with a real gap to the next. Six run-together characters get
+         * miscopied; six separate boxes cannot be.
          */}
-        <Panel tone="raised" className="mt-7 overflow-hidden">
-          <div className="flex items-center gap-4 px-6 py-6">
-            <code className="flex-1 text-center text-[44px] font-bold leading-none tracking-[0.22em] text-ember-300 tabular">
-              {gameCode}
-            </code>
+        <div className="mt-10">
+          <div className="flex items-center justify-between gap-4">
+            <p className="type-label text-ink-3">Room code</p>
             <button
               type="button"
               onClick={copyCode}
               aria-label="Copy the room code"
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-ink-mid transition-all duration-200 ease-arcane hover:bg-ember-400/10 hover:text-ember-300 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ember-400"
+              className="btn btn--quiet h-9 w-9 p-0"
             >
               {copiedCode ? (
-                <Check size={19} strokeWidth={2} className="text-success" />
+                <Check aria-hidden size={17} strokeWidth={2} />
               ) : (
-                <Copy size={19} strokeWidth={1.75} />
+                <Copy aria-hidden size={16} strokeWidth={1.75} />
               )}
             </button>
           </div>
 
-          {/* Seat list. A filled bar for a seat taken, a hollow one for a seat waiting. */}
-          <div className="border-t border-subtle">
-            <Seat label={isHost ? 'You — host' : 'Host'} present />
-            <Seat
-              label={hasOpponent ? (isHost ? 'Challenger' : 'You — challenger') : 'Waiting for a challenger'}
-              present={hasOpponent}
-              last
-            />
+          {/* Read as one string, not as six loose characters. */}
+          <span className="sr-only">Room code: {gameCode.split('').join(' ')}</span>
+
+          <div aria-hidden className="mt-3 flex gap-2 sm:gap-2.5">
+            {gameCode.split('').map((char, index) => (
+              <span
+                key={index}
+                className={cn(
+                  'slug h-[3.75rem] flex-1 sm:h-[4.5rem]',
+                  /*
+                   * The fourth slug sits one pixel low, always — not on hover, not
+                   * animated. A stick of type with one piece standing slightly proud
+                   * of its neighbours is what a real setting looks like, and a system
+                   * with no irregularity anywhere in it reads as generated. This is
+                   * deliberate and it is not a bug.
+                   */
+                  index === 3 && 'translate-y-px',
+                )}
+              >
+                {/*
+                 * `.type-code` carries 0.28em of tracking, which is space added after
+                 * each character — on a single character in a centred box that pushes
+                 * the glyph left of centre by exactly that much. The matching left
+                 * padding puts it back.
+                 */}
+                <span className="type-code pl-[0.28em] text-ink">{char}</span>
+              </span>
+            ))}
           </div>
-        </Panel>
+        </div>
+
+        {/*
+         * The seat list: a filled lozenge for a seat taken, a hollow one for a seat
+         * still empty. The hollow one is the only thing on the screen that loops, and
+         * it loops because the honest answer really is "we are still waiting".
+         */}
+        <div className="mt-10 border-y-rule border-ink">
+          <Seat role="Host" present status={isHost ? 'You' : 'Seated'} />
+          <Seat
+            role="Challenger"
+            present={hasOpponent}
+            status={hasOpponent ? (isHost ? 'Seated' : 'You') : 'Waiting'}
+            divider
+          />
+        </div>
 
         {hasOpponent ? (
-          <p className="mt-6 flex items-center gap-2.5 text-sm text-ink-mid">
-            <span className="h-2 w-2 rounded-full bg-success" />
+          <p className="type-label mt-8 text-ink">
             Board opens in{' '}
-            <span className="text-[17px] font-bold text-ember-300 tabular">{countdown}</span>
+            <span className="type-num ml-0.5 text-[15px] text-verm-text">{countdown}</span>
           </p>
         ) : (
-          <p className="type-small mt-6 text-ink-low">
+          <p className="type-small mt-8 text-ink-2">
             The board opens by itself the moment they arrive. You can leave this tab open.
           </p>
         )}
 
-        <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
+        <div className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-4">
           {isHost && !hasOpponent && (
-            <Button variant="secondary" size="lg" onClick={copyLink}>
-              <Link2 size={18} strokeWidth={1.75} />
+            <button type="button" onClick={copyLink} className="btn btn--rule h-11 px-5">
               Copy invite link
-            </Button>
+            </button>
           )}
           {!hasOpponent && (
-            <Button variant="link" onClick={() => setConfirmAbandon(true)}>
-              Close this room
-            </Button>
+            <button type="button" onClick={() => setConfirmAbandon(true)} className="link">
+              Stop waiting
+            </button>
           )}
         </div>
       </div>
 
+      {/*
+       * This dialog used to promise that the room closed and the code expired. Nothing
+       * in the backend does either: `cleanupMatch` is written and never called, so the
+       * room's entry outlives the player who left it. The copy now claims only what
+       * leaving actually does, which is take you back to the menu.
+       */}
       <Modal
         open={confirmAbandon}
         onClose={() => setConfirmAbandon(false)}
-        title="Close this room?"
+        title="Stop waiting?"
         widthClassName="max-w-sm"
       >
-        <p className="text-sm text-ink-mid">
-          You will go back to the menu and stop waiting. Anyone you already sent the code to
-          will not be able to get in.
+        <p className="type-small text-ink-2">
+          You go back to the menu and stop waiting for a challenger. Tell whoever you sent the
+          code to, so they are not left waiting on a room you have walked away from.
         </p>
         <div className="mt-6 flex justify-end gap-3">
-          <Button variant="ghost" onClick={() => setConfirmAbandon(false)}>
+          <button
+            type="button"
+            onClick={() => setConfirmAbandon(false)}
+            className="btn btn--quiet h-10 px-4"
+          >
             Keep waiting
-          </Button>
-          <Button variant="danger" onClick={onCancel}>
-            Close it
-          </Button>
+          </button>
+          <button type="button" onClick={onCancel} className="btn btn--key h-10 px-5">
+            Stop waiting
+          </button>
         </div>
       </Modal>
     </main>
   );
 }
 
-/** One row of the seat list: a status mark, a name, and nothing else. */
-function Seat({ label, present, last }: { label: string; present: boolean; last?: boolean }) {
+interface SeatProps {
+  /** Host or Challenger — the same two words the start screen puts in its gutter. */
+  role: string;
+  present: boolean;
+  /** Who is in it: you, somebody else, or nobody yet. */
+  status: string;
+  divider?: boolean;
+}
+
+/** One row of the seat list: a mark, the seat, and who is in it. */
+function Seat({ role, present, status, divider }: SeatProps) {
   return (
     <div
       className={cn(
-        'flex items-center gap-3 px-6 py-3.5 text-sm',
-        !last && 'border-b border-subtle',
+        'flex items-center gap-3 py-3.5',
+        divider && 'border-t-hair border-rule-ghost',
       )}
     >
       {present ? (
-        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-success/15">
-          <Check size={12} strokeWidth={2.5} className="text-success" />
-        </span>
+        <span aria-hidden className="h-2 w-2 rotate-45 bg-ink" />
       ) : (
-        <span className="flex h-5 w-5 items-center justify-center">
-          <Spinner size={14} className="text-ink-low" />
-        </span>
+        <span
+          aria-hidden
+          className="h-2 w-2 rotate-45 border-rule border-ink-3"
+          style={{ animation: 'ink-pulse 1900ms var(--ease-settle) infinite' }}
+        />
       )}
-      <span className={present ? 'text-ink-hi' : 'text-ink-low'}>{label}</span>
+      <span className={cn('type-label', present ? 'text-ink' : 'text-ink-3')}>{role}</span>
+      <span className={cn('type-micro ml-auto', present ? 'text-ink-2' : 'text-ink-3')}>
+        {status}
+      </span>
     </div>
   );
 }

@@ -4,11 +4,8 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowRight, BookOpen, Check, Copy, LogOut } from 'lucide-react'
+import { Check, Copy } from 'lucide-react'
 
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Panel } from '@/components/ui/panel'
 import { Skeleton, Spinner } from '@/components/ui/spinner'
 import { useToast } from '@/components/ui/toast'
 import { useUnifiedAuth } from '@/hooks/useUnifiedAuth'
@@ -92,10 +89,16 @@ export default function Home() {
   };
 
   if (isLoading) {
+    /*
+     * On its own slip of paper. A line of ink centred on the bare table would be
+     * dark-on-dark; nothing in this interface is printed anywhere but a sheet.
+     */
     return (
-      <div className="flex min-h-dvh items-center justify-center gap-3 text-ink-mid">
-        <Spinner size={18} className="text-ember-300" />
-        Checking your session…
+      <div className="flex min-h-dvh items-center justify-center px-6">
+        <div className="sheet flex items-center gap-3 px-7 py-5">
+          <Spinner size={16} className="text-ink-3" />
+          <span className="type-label text-ink-2">Checking your session</span>
+        </div>
       </div>
     );
   }
@@ -105,16 +108,13 @@ export default function Home() {
   if (showTutorial && user?.playerId) {
     return (
       <GuidedTutorial
-        playerName={user.username || 'Apprentice'}
+        playerName={user.username || 'Player'}
         onComplete={finishTutorial}
         onSkip={finishTutorial}
       />
     );
   }
 
-  // There is no rank in PlayerDto yet — the badge has always read "Apprentice" for
-  // everyone, and saying so here is better than dressing a constant up as data.
-  const rank = 'Apprentice';
   const lifetimeScore = playerData?.lifetimeScore ?? 0;
   const initial = (user?.username || '?').charAt(0).toUpperCase();
 
@@ -122,199 +122,233 @@ export default function Home() {
     if (!user?.playerId) return;
     await navigator.clipboard.writeText(user.playerId);
     setCopied(true);
-    toast('Player ID copied', 'success');
+    // No tone: there is no success colour in this system, and a confirmation that
+    // something was copied does not need one.
+    toast('Player ID copied');
     window.setTimeout(() => setCopied(false), 2000);
   };
 
   return (
+    /*
+     * Two sheets on the table, with walnut in the margins once there is room for it.
+     * Below `sm` they run to the edges — paper filling the desk is honest, and a
+     * 16px strip of table down each side of a phone is not a margin, it is a seam.
+     */
     <div className="min-h-dvh">
-      <header className="sticky top-0 z-sticky border-b border-subtle bg-surface-0/70 backdrop-blur-xl">
-        <div className="mx-auto flex h-[68px] max-w-[1180px] items-center justify-between gap-4 px-6">
-          <div className="flex min-w-0 items-center gap-3">
-            {/*
-             * A squircle rather than a circle. Circular avatars are the single most
-             * universal component default there is, and this one sits next to a board
-             * made entirely of rounded squares — it should match the board.
-             */}
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-ember-400/[0.12] font-ui text-[15px] font-bold text-ember-300 ring-1 ring-inset ring-ember-400/35">
-              {initial}
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="truncate text-[15px] font-semibold tracking-[-0.01em] text-ink-hi">
-                  {user?.username}
-                </span>
-                <Badge tone="ember">{rank}</Badge>
+      <div className="mx-auto w-full max-w-[1140px] px-0 pt-0 sm:px-8 sm:pt-6">
+        {/*
+         * The header is printed at the head of the sheet: bone paper, a heavy rule
+         * under it, and `.sheet`'s own cast falling on whatever slides beneath. It
+         * used to be a translucent bar with the page smeared through it, which is
+         * the one piece of the old vocabulary this design has no answer for at all:
+         * paper is opaque, and a strip of it pinned over a page hides the page.
+         */}
+        <header className="sticky top-0 z-sticky sm:top-6">
+          <div className="sheet flex h-[70px] items-center justify-between gap-3 border-b-heavy px-4 sm:px-8">
+            <div className="flex min-w-0 items-center gap-3">
+              {/*
+               * A square ruled box rather than a squircle. The initial is a stamp on
+               * the sheet, so it is set in the mono with the rest of the apparatus,
+               * and it is aria-hidden because the name is right beside it.
+               */}
+              <span
+                aria-hidden
+                className="flex h-10 w-10 shrink-0 items-center justify-center border-rule border-ink bg-paper-raised font-mono text-[15px] font-medium text-ink"
+              >
+                {initial}
+              </span>
+
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="truncate text-[17px] leading-tight text-ink">
+                    {user?.username}
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={copyPlayerId}
+                  aria-label="Copy your full player ID"
+                  className="group mt-0.5 flex min-w-0 items-center gap-1.5 font-mono text-[11px] tracking-[0.06em] text-ink-3 transition-colors duration-ink hover:text-ink"
+                >
+                  <span className="truncate tabular">{user?.playerId?.slice(0, 8)}…</span>
+                  {copied ? (
+                    <Check size={12} strokeWidth={2} className="shrink-0 text-ink" />
+                  ) : (
+                    <Copy
+                      size={12}
+                      strokeWidth={1.75}
+                      className="shrink-0 opacity-70 group-hover:opacity-100"
+                    />
+                  )}
+                </button>
               </div>
+            </div>
+
+            {/*
+             * No icons on these two. An icon earns its place when it is the whole
+             * control — the copy button above has no label and needs one — and is
+             * ornament when it sits next to a word that already says it.
+             */}
+            <div className="flex shrink-0 items-center gap-1.5">
               <button
                 type="button"
-                onClick={copyPlayerId}
-                aria-label="Copy your full player ID"
-                className="group -ml-0.5 flex items-center gap-1.5 rounded-xs px-0.5 text-[12px] text-ink-low transition-colors duration-200 hover:text-ink-mid focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ember-400"
+                onClick={() => setShowTutorial(true)}
+                className="btn btn--quiet h-9 px-2.5 sm:px-3"
               >
-                <span className="tabular">{user?.playerId?.slice(0, 8)}…</span>
-                {copied ? (
-                  <Check size={13} strokeWidth={2} className="text-success" />
-                ) : (
-                  <Copy size={13} strokeWidth={1.75} className="opacity-60 group-hover:opacity-100" />
-                )}
+                Tutorial
+              </button>
+              <button type="button" onClick={logout} className="btn btn--quiet h-9 px-2.5 sm:px-3">
+                Sign out
               </button>
             </div>
           </div>
+        </header>
 
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" size="md" onClick={() => setShowTutorial(true)}>
-              <BookOpen size={16} strokeWidth={1.75} />
-              Tutorial
-            </Button>
-            <Button variant="ghost" size="md" onClick={logout} className="hover:text-danger">
-              <LogOut size={16} strokeWidth={1.75} />
-              Sign out
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <main id="main" className="mx-auto max-w-[1180px] px-6">
-        {/*
-         * The hero is a 12-column grid split 7/5 rather than a centred stack, and the
-         * stat plate on the right is pulled up past the headline's baseline so the two
-         * halves interlock instead of sitting in two tidy boxes. Everything in the
-         * left column is left-aligned to one edge; the old page centred five separate
-         * elements and the eye had nowhere to rest.
-         */}
-        <section className="grid grid-cols-1 items-start gap-10 pb-20 pt-16 lg:grid-cols-12 lg:gap-12 lg:pb-28 lg:pt-24">
-          <div className="stagger lg:col-span-7">
-            <p className="type-label text-ember-400">Real-time · one against one</p>
-
-            <h1 className="type-display mt-4 text-ink-hi">
-              Three columns.
-              <br />
-              <span className="text-ember-gradient">Take two.</span>
-            </h1>
-
-            <p className="type-body mt-6 text-ink-mid">
-              Five cards each, fifteen squares, and one rule that decides everything: you can
-              only build outward from what you already hold. Read the board, starve the column
-              they want, and take the two that matter.
-            </p>
-
-            <div className="mt-9 flex flex-wrap items-center gap-x-7 gap-y-4">
-              <Button asChild variant="primary" size="lg">
-                <Link href="/game">
-                  Enter the arena
-                  <ArrowRight size={18} strokeWidth={1.75} />
-                </Link>
-              </Button>
-              <Button variant="link" onClick={() => setShowTutorial(true)}>
-                Walk me through a turn
-              </Button>
-            </div>
-
-            <p className="type-small mt-8 text-ink-low">
-              Campaign mode is not built yet. Online duels are.
-            </p>
-          </div>
-
+        <main id="main" className="pb-0 sm:pb-14">
           {/*
-           * Offset downward on wide screens so the plate's top edge lands against the
-           * body copy rather than the headline — the overlap is what stops this reading
-           * as a two-column table.
+           * The hero is a 12-column grid split 7/5 rather than a centred stack, and
+           * the plate on the right is pulled down past the headline's baseline so the
+           * two halves interlock instead of sitting in two tidy boxes. Everything in
+           * the left column aligns to one edge; the old page centred five separate
+           * elements and the eye had nowhere to rest.
            */}
-          <div className="lg:col-span-5 lg:mt-14">
-            <Panel tone="raised" className="overflow-hidden p-0">
-              <div className="relative px-7 pb-7 pt-8">
-                <div
-                  aria-hidden
-                  className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full"
-                  style={{
-                    background:
-                      'radial-gradient(circle, rgba(217,142,67,0.16) 0%, transparent 68%)',
-                  }}
-                />
-                <p className="type-label relative text-ink-low">Power score</p>
-                {loadingStats ? (
-                  <Skeleton className="relative mt-3 h-[58px] w-32" />
-                ) : (
-                  <p className="relative mt-2 text-[64px] font-bold leading-none tracking-[-0.04em] text-ember-300 tabular">
-                    {lifetimeScore}
-                  </p>
-                )}
-                <p className="type-small relative mt-3 max-w-[34ch] text-ink-low">
-                  Earned one duel at a time. It only goes up when you win.
+          <div className="sheet mt-3 px-5 py-12 sm:mt-6 sm:px-10 sm:py-16 lg:px-14 lg:py-20">
+            <section className="grid grid-cols-1 items-start gap-10 lg:grid-cols-12 lg:gap-12">
+              <div className="lg:col-span-7">
+                <p className="type-label text-verm-text">Real-time · one against one</p>
+
+                <h1 className="type-display mt-5 text-ink">
+                  Three columns.
+                  <br />
+                  {/*
+                   * Vermillion at full strength clears AA only from 24px up, which
+                   * this line is four times over. Anywhere smaller it would have to
+                   * be --verm-text, and there is no smaller vermillion on this page.
+                   */}
+                  <span className="text-verm">Take two.</span>
+                </h1>
+
+                <p className="type-body mt-6 text-ink-2">
+                  Five cards each, fifteen squares, and one rule that decides everything: you can
+                  only build outward from what you already hold. Read the board, starve the column
+                  they want, and take the two that matter.
+                </p>
+
+                <div className="mt-9 flex flex-wrap items-center gap-x-8 gap-y-4">
+                  <Link href="/game" className="btn btn--key h-12 px-6">
+                    Enter the arena
+                  </Link>
+                  <button type="button" onClick={() => setShowTutorial(true)} className="link">
+                    Walk me through a turn
+                  </button>
+                </div>
+
+                <p className="type-small mt-8 text-ink-3">
+                  Campaign mode is not built yet. Online duels are.
                 </p>
               </div>
 
               {/*
-                * Caption under the diagram rather than beside it. Beside it, the text got
-                * a 15-character measure and ragged into six lines; the board is narrow
-                * enough that the plate can afford the vertical space instead.
-                */}
-              <div className="border-t border-subtle px-7 pb-7 pt-6">
-                <p className="type-label text-ink-low">A finished board</p>
-                <BoardDiagram className="mt-4" />
-                <p className="type-small mt-4 text-ink-mid">
-                  Ember took the left column 8 to 1 and the right 6 to 5. Two of three is the
-                  match — the middle one never mattered.
+               * Offset downward on wide screens so the plate's top edge lands against
+               * the body copy rather than the headline — the overlap is what stops
+               * this reading as a two-column table.
+               */}
+              <div className="lg:col-span-5 lg:mt-16">
+                <div className="border-rule border-ink bg-paper-raised">
+                  <div className="px-6 pb-6 pt-6 sm:px-7">
+                    <p className="type-label text-ink-3">Power score</p>
+                    {loadingStats ? (
+                      <Skeleton className="mt-3 h-[52px] w-28" />
+                    ) : (
+                      /*
+                       * A number, so it is set in the mono and printed in the key
+                       * plate. It was a 64px semi-bold serif in ember, which broke
+                       * both halves of the type rule at once.
+                       */
+                      <p className="type-num mt-2 text-[56px] leading-none text-ink">
+                        {lifetimeScore}
+                      </p>
+                    )}
+                    <p className="type-small mt-3 max-w-[34ch] text-ink-2">
+                      Earned one duel at a time. It only goes up when you win.
+                    </p>
+                  </div>
+
+                  <div className="border-t-rule px-6 pb-7 pt-6 sm:px-7">
+                    <p className="type-label text-ink-3">A finished board</p>
+                    <BoardDiagram className="mt-4" />
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          {/*
+           * The rules get a sheet of their own, so there is a band of table between
+           * them and the hero doing the work a horizontal divider used to do.
+           *
+           * Each step is a number, a hairline and a paragraph — the number carries the
+           * hierarchy, so none of them needs a box or an edge to read as a group. The
+           * numerals are mono and in ink: ochre is the attention colour but it is a
+           * fill and a rule only, and vermillion means "you", which a step number is
+           * not.
+           */}
+          <section
+            aria-labelledby="rules-heading"
+            className="sheet mt-3 px-5 py-12 sm:mt-6 sm:px-10 sm:py-16 lg:px-14 lg:py-20"
+          >
+            <div className="grid grid-cols-1 gap-x-16 gap-y-10 lg:grid-cols-12">
+              <div className="lg:col-span-4">
+                <h2 id="rules-heading" className="type-h1 text-ink">
+                  How a duel goes
+                </h2>
+                <p className="type-small mt-4 max-w-[36ch] text-ink-2">
+                  About four minutes, start to finish. There is no deck to build and nothing to
+                  unlock — every match starts from the same five cards.
                 </p>
               </div>
-            </Panel>
-          </div>
-        </section>
 
-        {/*
-         * The rules, as a zig-zag rather than a row of equal cards. Each step is a
-         * number, a hairline and a paragraph — the number carries the hierarchy, so
-         * none of them needs a box, a border or a shadow to be legible as a group.
-         */}
-        <section aria-labelledby="rules-heading" className="border-t border-subtle py-16 lg:py-24">
-          <div className="grid grid-cols-1 gap-x-16 gap-y-10 lg:grid-cols-12">
-            <div className="lg:col-span-4">
-              <h2 id="rules-heading" className="type-h1 text-ink-hi">
-                How a duel goes
-              </h2>
-              <p className="type-small mt-4 max-w-[36ch] text-ink-low">
-                About four minutes, start to finish. There is no deck to build and nothing to
-                unlock — every match starts from the same five cards.
-              </p>
+              <ol className="lg:col-span-8">
+                {STEPS.map((step, index) => (
+                  <li
+                    key={step.title}
+                    className="grid grid-cols-[auto_1fr] gap-x-6 border-t-hair py-7 first:border-t-0 first:pt-0"
+                  >
+                    <span className="type-num pt-[0.35rem] text-[0.9375rem] tracking-[0.08em] text-ink-3">
+                      {String(index + 1).padStart(2, '0')}
+                    </span>
+                    <div>
+                      <h3 className="type-h3 text-ink">{step.title}</h3>
+                      <p className="type-body mt-2 text-ink-2">{step.body}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
             </div>
 
-            <ol className="lg:col-span-8">
-              {STEPS.map((step, index) => (
-                <li
-                  key={step.title}
-                  className="grid grid-cols-[auto_1fr] gap-x-6 border-t border-subtle py-7 first:border-t-0 first:pt-0"
+            {/*
+             * A colophon at the foot of the sheet rather than a footer band of its
+             * own. There is nothing to put in a second bar, and inventing privacy and
+             * terms pages to fill one would be inventing pages.
+             */}
+            <div className="mt-14 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-t-heavy pt-6">
+              <p className="type-small text-ink-3">
+                Hand of Fate — a 1v1 card duel at{' '}
+                <a
+                  href="https://handoffate.org"
+                  className="text-ink-2 underline decoration-ink-3 decoration-[1.5px] underline-offset-[3px] transition-colors duration-ink hover:text-ink hover:decoration-ink"
                 >
-                  <span className="type-label pt-1 text-ember-400 tabular">
-                    {String(index + 1).padStart(2, '0')}
-                  </span>
-                  <div>
-                    <h3 className="type-h3 text-ink-hi">{step.title}</h3>
-                    <p className="type-body mt-2 text-ink-mid">{step.body}</p>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </div>
-        </section>
-      </main>
-
-      <footer className="border-t border-subtle">
-        <div className="mx-auto flex max-w-[1180px] flex-wrap items-center justify-between gap-4 px-6 py-8">
-          <p className="type-small text-ink-low">
-            Hand of Fate — a 1v1 card duel at{' '}
-            <a
-              href="https://handoffate.org"
-              className="text-ink-mid underline-offset-4 transition-colors duration-200 hover:text-ember-300 hover:underline"
-            >
-              handoffate.org
-            </a>
-          </p>
-          <Button variant="link" size="sm" onClick={() => setShowTutorial(true)}>
-            How to play
-          </Button>
-        </div>
-      </footer>
+                  handoffate.org
+                </a>
+              </p>
+              <button type="button" onClick={() => setShowTutorial(true)} className="link">
+                How to play
+              </button>
+            </div>
+          </section>
+        </main>
+      </div>
     </div>
   )
 }
