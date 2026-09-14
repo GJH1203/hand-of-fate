@@ -12,11 +12,13 @@
  * the game, so the first real duel looked unfamiliar.
  *
  * Every sentence here is plain text, and it stays plain text: the component sets
- * the numerals in it in the mono on the way to the screen, so nothing in this file
- * has to know about type. What it does have to be is TRUE about the board the
- * player will actually see — which is why no line below names a colour as the way
- * to tell the two sides apart. Ownership is read off the band at the foot or the
- * head of a card first, and the ink last.
+ * the numerals in it on the way to the screen, so nothing in this file has to know
+ * about type. What it does have to be is TRUE about the board the player will
+ * actually see — which is why no line below asks anybody to tell the two sides
+ * apart by their metal. Ownership is read off a FIGURE first: a sun at the foot of
+ * your cards, a moon at the head of theirs. Gold against silver measures about
+ * 1.25:1, so the metal confirms what the figure has already said and could never
+ * carry it alone.
  */
 
 export type Side = 'you' | 'opponent';
@@ -143,8 +145,8 @@ export const STEPS: Step[] = [
     title: 'The opening',
     subtitle: 'One card from each hand',
     instruction:
-      'Before anyone moves, one card is taken at random from each hand and placed on the board. Yours was a Lightning; theirs was a Spark. Your cards carry their band along the foot; theirs carry it along the head.',
-    tip: 'You begin your first turn with four cards, not five. Which one is taken is never yours to choose.',
+      'Before anyone moves, one card is taken at random from each hand and placed on the board. Yours was a Lightning; theirs was a Spark. Your cards carry a sun at the foot; theirs carry a moon at the head.',
+    tip: 'The sun is gold and the moon silver, but read the figure first — the metal only confirms it. You begin your first turn with four cards, not five, and which one is taken is never yours to choose.',
     grid: gridWith(P.yourOpening, P.theirOpening),
     hand: handAfter(),
     actions: ['continue'],
@@ -155,7 +157,7 @@ export const STEPS: Step[] = [
     subtitle: 'Place beside your own card',
     instruction:
       'A card may only be placed next to a card you already own. Take your second Lightning and set it below the first to build column 2.',
-    tip: 'Pick the Lightning, then click the empty square that shows its pips.',
+    tip: 'Pick the Lightning, then click the empty square that shows its stars.',
     grid: gridWith(P.yourOpening, P.theirOpening),
     hand: handAfter(),
     actions: ['place'],
@@ -186,9 +188,9 @@ export const STEPS: Step[] = [
   {
     id: 'scoring',
     title: 'How a column is won',
-    subtitle: 'Count the pips',
+    subtitle: 'Count the stars',
     instruction:
-      'Add up the pips of your cards in a column. The higher total controls it. An equal total controls it for nobody.',
+      'Add up the stars of your cards in a column. The higher total controls it. An equal total controls it for nobody.',
     tip: 'You hold column 2 at 6 to 4 and column 3 at 5 to nothing.',
     grid: gridWith(P.yourOpening, P.theirOpening, P.yourSecond, P.theirSecond, P.yourThunder),
     hand: handAfter('you-lightning-b', 'you-thunder'),
